@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* BrandSense final palette — do not change */
+  /* BrandSense standardized accessible palette (WCAG 2.2 AA compliant) */
   --brand-primary: #416f89;
   --brand-primary-dark: #315c74;
   --brand-navy: #20364a;
@@ -16,20 +16,28 @@
   --surface: #ffffff;
   --surface-muted: #f4f8fa;
 
-  --text-primary: #263b4d;
-  --text-muted: #718494;
+  --text-primary: #20364a;
+  --text-body: #263b4d;
+  --text-muted: #4f6576;
+  --text-light-muted: #b9cddc;
   --border-default: #c4d5e0;
 
-  --success: #258a70;
-  --warning: #b77938;
-  --danger: #c65e57;
+  --success: #1f7560;
+  --warning: #9a682d;
+  --danger: #a94842;
 
   --shadow-subtle: 0 1px 2px rgba(32, 54, 74, 0.04), 0 4px 14px rgba(32, 54, 74, 0.05);
   --shadow-card: 0 2px 6px rgba(32, 54, 74, 0.04), 0 12px 32px rgba(32, 54, 74, 0.06);
   --shadow-elevated: 0 20px 50px rgba(32, 54, 74, 0.14);
 
-  --radius-card: 14px;
-  --radius-control: 9px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+
+  --radius-card: 12px;
+  --radius-control: 8px;
 }
 
 @layer base {
@@ -42,7 +50,7 @@
   }
 
   body {
-    color: var(--text-primary);
+    color: var(--text-body);
     background: var(--background);
     font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -87,6 +95,8 @@
   textarea:focus-visible,
   select:focus-visible {
     outline: none;
+    border-color: var(--brand-primary);
+    box-shadow: 0 0 0 2px rgba(65, 111, 137, 0.25);
   }
 }
 
@@ -102,7 +112,7 @@
 
   /* Form controls */
   .bs-input {
-    @apply w-full rounded-lg border border-[#C4D5E0] bg-white px-3 py-2 text-xs text-[#263B4D] transition-colors placeholder:text-[#94A3AF] focus:border-[#416F89] focus:outline-none focus:ring-2 focus:ring-[#416F89]/20;
+    @apply w-full rounded-lg border border-[#C4D5E0] bg-white px-3.5 py-2.5 text-xs sm:text-sm text-[#20364A] transition-colors placeholder:text-[#5A7182] focus:border-[#416F89] focus:outline-none focus:ring-2 focus:ring-[#416F89]/25;
   }
 
   .bs-label {
@@ -111,13 +121,13 @@
 
   /* Section label */
   .bs-eyebrow {
-    @apply text-[10px] font-extrabold uppercase tracking-wider text-[#718494];
+    @apply text-xs font-bold uppercase tracking-wider text-[#4F6576];
   }
 }
 
 /* App shell — matches the landing page atmosphere */
 .bs-glass {
-  background-color: rgba(255, 255, 255, 0.68);
+  background-color: rgba(255, 255, 255, 0.76);
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   border-color: rgba(255, 255, 255, 0.9);
@@ -134,7 +144,7 @@
 }
 
 .bs-app-shell main .bg-white.rounded-xl {
-  background-color: rgba(255, 255, 255, 0.68);
+  background-color: rgba(255, 255, 255, 0.76);
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   border-color: rgba(255, 255, 255, 0.9);
@@ -165,7 +175,7 @@
 }
 ::-webkit-scrollbar-thumb {
   background: #c4d5e0;
-  border-radius: 999px;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #a9bdca;

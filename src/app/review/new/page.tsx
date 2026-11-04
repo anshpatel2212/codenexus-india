@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/Button';
 import { 
-  FileText, 
   Upload, 
   Sparkles, 
   Check, 
@@ -13,7 +12,6 @@ import {
   Loader2, 
   X,
   ShieldCheck,
-  ChevronRight
 } from 'lucide-react';
 import { ContentType } from '@/types';
 import { apiClient } from '@/services/api-client';
@@ -92,11 +90,11 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
             <h1 className="font-heading text-xl sm:text-2xl font-extrabold text-[#20364A] tracking-tight">
               Submit Content for Pre-Publication Review
             </h1>
-            <span className="px-2.5 py-0.5 rounded bg-[#D5E3EC] text-[#31566D] text-xs font-bold">
+            <span className="px-2.5 py-0.5 rounded bg-[#D5E3EC] text-[#20364A] text-xs font-bold">
               Deterministic Scan
             </span>
           </div>
-          <p className="mt-1 text-xs sm:text-sm text-[#718494]">
+          <p className="mt-1 text-xs sm:text-sm text-[#4F6576]">
             Submit social posts, ad copy, press releases, or campaign documents for instant multi-vector verification.
           </p>
         </div>
@@ -106,27 +104,29 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
           <div className="bg-white p-6 sm:p-7 rounded-xl border border-[#C4D5E0] shadow-subtle space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-[#20364A] mb-1.5">
-                  Review Title
+                <label htmlFor="review-title" className="block text-xs font-bold text-[#20364A] mb-1.5">
+                  Review Title <span className="text-[#A94842]" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="text"
+                  id="review-title"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Q3 Global Product Announcement Post"
-                  className="w-full px-3 py-2 text-xs bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#416F89] text-[#263B4D]"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#416F89]/25 focus:border-[#416F89] text-[#20364A]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#20364A] mb-1.5">
-                  Content Type
+                <label htmlFor="content-type" className="block text-xs font-bold text-[#20364A] mb-1.5">
+                  Content Type <span className="text-[#A94842]" aria-hidden="true">*</span>
                 </label>
                 <select
+                  id="content-type"
                   value={contentType}
                   onChange={(e) => setContentType(e.target.value as ContentType)}
-                  className="w-full px-3 py-2 text-xs bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#416F89] text-[#263B4D]"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#416F89]/25 focus:border-[#416F89] text-[#20364A]"
                 >
                   <option>Social Media</option>
                   <option>Advertisement</option>
@@ -140,32 +140,34 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-[#20364A] mb-1.5">
-                  Active Brand Profile & Policy
+                <label htmlFor="brand-profile" className="block text-xs font-bold text-[#20364A] mb-1.5">
+                  Active Brand Profile &amp; Policy <span className="text-[#A94842]" aria-hidden="true">*</span>
                 </label>
                 <select
+                  id="brand-profile"
                   value={brandProfile}
                   onChange={(e) => setBrandProfile(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#416F89] text-[#263B4D]"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#416F89]/25 focus:border-[#416F89] text-[#20364A]"
                 >
                   <option>Corporate Core (Global English)</option>
                   <option>B2B Commercial Sales</option>
-                  <option>Investor Relations & ESG</option>
+                  <option>Investor Relations &amp; ESG</option>
                   <option>Regional EMEA Compliant</option>
-                  <option>Healthcare & Medical Regulated</option>
+                  <option>Healthcare &amp; Medical Regulated</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#20364A] mb-1.5">
+                <label htmlFor="special-instructions" className="block text-xs font-bold text-[#20364A] mb-1.5">
                   Special Review Instructions (Optional)
                 </label>
                 <input
                   type="text"
+                  id="special-instructions"
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
                   placeholder="e.g. Extra scrutiny on performance warranties"
-                  className="w-full px-3 py-2 text-xs bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#416F89] text-[#263B4D]"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#416F89]/25 focus:border-[#416F89] text-[#20364A]"
                 />
               </div>
             </div>
@@ -173,13 +175,14 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
             {/* Input Toggle */}
             <div className="pt-2">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-[#20364A]">Content Input Mode</span>
-                <div className="flex gap-1 bg-[#D5E3EC]/50 p-1 rounded-lg text-xs">
+                <span className="text-xs font-bold text-[#20364A]" id="input-mode-label">Content Input Mode</span>
+                <div className="flex gap-1 bg-[#D5E3EC]/60 p-1 rounded-lg text-xs" role="toolbar" aria-labelledby="input-mode-label">
                   <button
                     type="button"
                     onClick={() => setInputMode('text')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                      inputMode === 'text' ? 'bg-white text-[#20364A] shadow-sm' : 'text-[#718494]'
+                    aria-pressed={inputMode === 'text'}
+                    className={`px-3 py-1 rounded-md text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] ${
+                      inputMode === 'text' ? 'bg-white text-[#20364A] shadow-sm' : 'text-[#4F6576] hover:text-[#20364A]'
                     }`}
                   >
                     Direct Editor
@@ -187,8 +190,9 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
                   <button
                     type="button"
                     onClick={() => setInputMode('file')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                      inputMode === 'file' ? 'bg-white text-[#20364A] shadow-sm' : 'text-[#718494]'
+                    aria-pressed={inputMode === 'file'}
+                    className={`px-3 py-1 rounded-md text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] ${
+                      inputMode === 'file' ? 'bg-white text-[#20364A] shadow-sm' : 'text-[#4F6576] hover:text-[#20364A]'
                     }`}
                   >
                     Upload Document
@@ -198,15 +202,20 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
 
               {inputMode === 'text' ? (
                 <div>
+                  <label htmlFor="review-content" className="sr-only">
+                    Marketing content to review
+                  </label>
                   <textarea
+                    id="review-content"
                     rows={8}
                     required
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Paste or write your marketing copy here..."
-                    className="w-full p-4 text-xs font-sans bg-[#EDF3F6]/40 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#416F89] text-[#263B4D] leading-relaxed"
+                    aria-describedby="char-word-counter"
+                    className="w-full p-4 text-xs sm:text-sm font-sans bg-[#EDF3F6]/40 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#416F89]/25 focus:border-[#416F89] text-[#20364A] leading-relaxed"
                   />
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-[#718494]">
+                  <div id="char-word-counter" className="mt-2 flex items-center justify-between text-xs text-[#4F6576]">
                     <span>
                       {content.length} characters • {content.trim().split(/\s+/).filter(Boolean).length} words
                     </span>
@@ -216,46 +225,49 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
               ) : (
                 <div className="space-y-4">
                   {uploadedFile ? (
-                    <div className="p-4 bg-[rgba(65,111,137,.1)] rounded-lg border border-[rgba(65,111,137,.25)] flex items-center justify-between">
+                    <div className="p-4 bg-[#416F89]/10 rounded-lg border border-[#416F89]/25 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <FileCheck className="w-8 h-8 text-[#416F89]" />
+                        <FileCheck className="w-8 h-8 text-[#416F89]" aria-hidden="true" />
                         <div>
                           <p className="text-xs font-bold text-[#20364A]">{uploadedFile.name}</p>
-                          <p className="text-[10px] text-[#718494]">{uploadedFile.type} • {uploadedFile.size}</p>
+                          <p className="text-xs text-[#4F6576]">{uploadedFile.type} • {uploadedFile.size}</p>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => setUploadedFile(null)}
-                        className="text-[#718494] hover:text-[#20364A] p-1"
+                        className="text-[#4F6576] hover:text-[#20364A] p-1.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89]"
+                        aria-label="Remove uploaded file"
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-5 h-5" />
                       </button>
                     </div>
                   ) : (
                     <div className="p-8 border-2 border-dashed border-[#C4D5E0] rounded-xl bg-[#EDF3F6]/50 text-center">
-                      <Upload className="w-8 h-8 text-[#416F89] mx-auto mb-2" />
-                      <h4 className="font-heading text-xs font-bold text-[#20364A]">
+                      <Upload className="w-8 h-8 text-[#416F89] mx-auto mb-2" aria-hidden="true" />
+                      <h2 className="font-heading text-xs sm:text-sm font-bold text-[#20364A]">
                         Drop campaign file here (PDF, DOCX, PNG, JPG)
-                      </h4>
-                      <p className="text-[11px] text-[#718494] mt-1">
+                      </h2>
+                      <p className="text-xs text-[#4F6576] mt-1">
                         Extracts text, checks image branding, and validates claims
                       </p>
                       <div className="mt-4 flex flex-wrap justify-center gap-2">
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleSimulateFileUpload('PDF Document', 'Global_Campaign_Draft.pdf')}
-                          className="px-2.5 py-1 text-xs bg-white border border-[#C4D5E0] rounded-lg font-bold text-[#20364A] hover:bg-[#EDF3F6]"
                         >
                           Attach PDF Sample
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleSimulateFileUpload('DOCX File', 'Press_Release_Q3.docx')}
-                          className="px-2.5 py-1 text-xs bg-white border border-[#C4D5E0] rounded-lg font-bold text-[#20364A] hover:bg-[#EDF3F6]"
                         >
                           Attach Word Document
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -265,8 +277,8 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
 
             {/* Run Button */}
             <div className="pt-4 border-t border-[#C4D5E0] flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs text-[#718494]">
-                <ShieldCheck className="w-4 h-4 text-[#258A70]" />
+              <div className="flex items-center gap-2 text-xs text-[#4F6576]">
+                <ShieldCheck className="w-4 h-4 text-[#1F7560]" aria-hidden="true" />
                 <span>Zero Training Guarantee: Your creative IP stays isolated.</span>
               </div>
 
@@ -274,7 +286,7 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
                 type="submit"
                 variant="primary"
                 size="md"
-                leftIcon={<Sparkles className="w-4 h-4 text-[#F4D77B]" />}
+                leftIcon={<Sparkles className="w-4 h-4 text-[#F4D77B]" aria-hidden="true" />}
               >
                 Run Brand Review
               </Button>
@@ -284,20 +296,25 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
 
         {/* Processing Modal Sequence */}
         {isProcessing && (
-          <div className="fixed inset-0 bg-[#20364A]/70  z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-[#20364A]/70 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="processing-modal-title"
+          >
             <div className="bg-white rounded-xl max-w-lg w-full p-8 shadow-elevated border border-[#C4D5E0] text-center animate-in fade-in zoom-in-95">
-              <div className="w-14 h-14 rounded-lg bg-[#20364A] text-white flex items-center justify-center mx-auto mb-5 shadow-lg">
+              <div className="w-14 h-14 rounded-lg bg-[#20364A] text-white flex items-center justify-center mx-auto mb-5 shadow-lg" aria-hidden="true">
                 <Sparkles className="w-7 h-7 animate-pulse text-[#F4D77B]" />
               </div>
 
-              <h3 className="font-heading text-xl font-extrabold text-[#20364A] tracking-tight">
+              <h2 id="processing-modal-title" className="font-heading text-xl font-extrabold text-[#20364A] tracking-tight">
                 BrandSense Deep Review in Progress
-              </h3>
-              <p className="text-xs text-[#718494] mt-1 mb-6">
+              </h2>
+              <p className="text-xs text-[#4F6576] mt-1 mb-6">
                 Executing multi-vector audit against Acme Core Brand Guardrails...
               </p>
 
-              <div className="space-y-3 text-left">
+              <div className="space-y-3 text-left" aria-live="polite">
                 {processingSteps.map((step, idx) => {
                   const isDone = idx < currentStep;
                   const isCurrent = idx === currentStep;
@@ -307,21 +324,21 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
                       key={idx}
                       className={`p-3 rounded-lg border transition-all text-xs flex items-center gap-3 ${
                         isDone
-                          ? 'bg-[#258A70]/10 border-[#258A70]/25 text-[#258A70]'
+                          ? 'bg-[#1F7560]/10 border-[#1F7560]/25 text-[#1F7560]'
                           : isCurrent
                           ? 'bg-[#20364A] text-white border-[#31566D] shadow-md scale-[1.02]'
-                          : 'bg-[#EDF3F6]/50 border-[#C4D5E0] text-[#718494] opacity-60'
+                          : 'bg-[#EDF3F6]/50 border-[#C4D5E0] text-[#4F6576] opacity-60'
                       }`}
                     >
                       <div className="flex-shrink-0">
                         {isDone ? (
-                          <div className="w-5 h-5 rounded-full bg-[#258A70] text-white flex items-center justify-center">
+                          <div className="w-5 h-5 rounded-full bg-[#1F7560] text-white flex items-center justify-center" aria-hidden="true">
                             <Check className="w-3 h-3" />
                           </div>
                         ) : isCurrent ? (
-                          <Loader2 className="w-5 h-5 text-[#F4D77B] animate-spin" />
+                          <Loader2 className="w-5 h-5 text-[#F4D77B] animate-spin" aria-hidden="true" />
                         ) : (
-                          <div className="w-5 h-5 rounded-full border border-[#C4D5E0] text-[#718494] flex items-center justify-center text-[10px]">
+                          <div className="w-5 h-5 rounded-full border border-[#C4D5E0] text-[#4F6576] flex items-center justify-center text-xs" aria-hidden="true">
                             {idx + 1}
                           </div>
                         )}
@@ -329,7 +346,7 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
 
                       <div className="truncate">
                         <p className="font-bold truncate">{step.title}</p>
-                        <p className={`text-[10px] truncate ${isCurrent ? 'text-[#B7C9D2]' : 'text-[#718494]'}`}>
+                        <p className={`text-xs truncate ${isCurrent ? 'text-[#D5E3EC]' : 'text-[#4F6576]'}`}>
                           {step.sub}
                         </p>
                       </div>

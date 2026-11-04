@@ -95,8 +95,8 @@ export default function SignupPage() {
       </div>
 
       {error && (
-        <div className={styles.errorBanner} role="alert">
-          <AlertCircle className="w-3.5 h-3.5" />
+        <div className={styles.errorBanner} role="alert" id="register-error-banner">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
           <span>{error}</span>
         </div>
       )}
@@ -114,10 +114,15 @@ export default function SignupPage() {
               onChange={(e) => setFullName(e.target.value)}
               className={fieldErrors.fullName ? styles.inputError : undefined}
               aria-invalid={Boolean(fieldErrors.fullName)}
+              aria-describedby={fieldErrors.fullName ? 'fullName-error' : undefined}
               required
             />
           </div>
-          {fieldErrors.fullName && <p className={styles.fieldError}>{fieldErrors.fullName}</p>}
+          {fieldErrors.fullName && (
+            <p id="fullName-error" className={styles.fieldError} role="alert">
+              {fieldErrors.fullName}
+            </p>
+          )}
         </div>
 
         <div className={styles.formGroup}>
@@ -132,10 +137,15 @@ export default function SignupPage() {
               onChange={(e) => setEmail(e.target.value)}
               className={fieldErrors.email ? styles.inputError : undefined}
               aria-invalid={Boolean(fieldErrors.email)}
+              aria-describedby={fieldErrors.email ? 'email-error' : undefined}
               required
             />
           </div>
-          {fieldErrors.email && <p className={styles.fieldError}>{fieldErrors.email}</p>}
+          {fieldErrors.email && (
+            <p id="email-error" className={styles.fieldError} role="alert">
+              {fieldErrors.email}
+            </p>
+          )}
         </div>
 
         <div className={styles.formGroup}>
@@ -152,6 +162,7 @@ export default function SignupPage() {
               data-has-toggle="true"
               className={fieldErrors.password ? styles.inputError : undefined}
               aria-invalid={Boolean(fieldErrors.password)}
+              aria-describedby={fieldErrors.password ? 'password-error' : undefined}
               required
             />
             <button
@@ -163,7 +174,11 @@ export default function SignupPage() {
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
-          {fieldErrors.password && <p className={styles.fieldError}>{fieldErrors.password}</p>}
+          {fieldErrors.password && (
+            <p id="password-error" className={styles.fieldError} role="alert">
+              {fieldErrors.password}
+            </p>
+          )}
         </div>
 
         <div className={styles.formGroup}>
@@ -180,6 +195,7 @@ export default function SignupPage() {
               data-has-toggle="true"
               className={fieldErrors.confirmPassword ? styles.inputError : undefined}
               aria-invalid={Boolean(fieldErrors.confirmPassword)}
+              aria-describedby={fieldErrors.confirmPassword ? 'confirmPassword-error' : undefined}
               required
             />
             <button
@@ -192,24 +208,32 @@ export default function SignupPage() {
             </button>
           </div>
           {fieldErrors.confirmPassword && (
-            <p className={styles.fieldError}>{fieldErrors.confirmPassword}</p>
+            <p id="confirmPassword-error" className={styles.fieldError} role="alert">
+              {fieldErrors.confirmPassword}
+            </p>
           )}
         </div>
 
-        <label className={styles.terms}>
+        <label className={styles.terms} htmlFor="terms">
           <input
             type="checkbox"
             id="terms"
             checked={termsAccepted}
             onChange={(e) => setTermsAccepted(e.target.checked)}
             aria-invalid={Boolean(fieldErrors.terms)}
+            aria-describedby={fieldErrors.terms ? 'terms-error' : undefined}
+            required
           />
           <span>
             I agree to the <Link href="/terms">Terms of Service</Link> and{' '}
             <Link href="/privacy">Privacy Policy</Link>.
           </span>
         </label>
-        {fieldErrors.terms && <p className={styles.fieldError}>{fieldErrors.terms}</p>}
+        {fieldErrors.terms && (
+          <p id="terms-error" className={styles.fieldError} role="alert">
+            {fieldErrors.terms}
+          </p>
+        )}
 
         <button type="submit" className={styles.primaryBtn} disabled={loading} aria-busy={loading}>
           {loading ? 'Creating account...' : 'Create Account →'}

@@ -9,7 +9,7 @@ interface AuthShellProps {
 
 const copy = {
   login: {
-    badge: 'YOUR BRAND JOURNEY STARTS HERE',
+    badge: 'Your brand journey starts here',
     heading: (
       <>
         Think better.
@@ -23,7 +23,7 @@ const copy = {
       'Welcome to BrandSense. Your workspace for understanding, managing and growing your brand with confidence.',
   },
   register: {
-    badge: 'START YOUR BRAND JOURNEY',
+    badge: 'Start your brand journey',
     heading: (
       <>
         Make your
@@ -45,7 +45,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({ variant, children }) => {
         variant === 'login' ? styles.pageLogin : styles.pageRegister
       }`}
     >
-      <nav className={styles.nav}>
+      <nav className={styles.nav} aria-label="Authentication navigation">
         <Link href="/" className={styles.logo}>
           Brand<span>Sense</span>
         </Link>
@@ -60,14 +60,14 @@ export const AuthShell: React.FC<AuthShellProps> = ({ variant, children }) => {
             variant === 'login' ? styles.loginWrapper : styles.registerWrapper
           }`}
         >
-          <section className={styles.welcomePanel}>
+          <section className={styles.welcomePanel} aria-labelledby="auth-welcome-heading">
             <div className={styles.welcomeContent}>
               <div className={styles.welcomeBadge}>
-                <span className={styles.badgeDot} />
+                <span className={styles.badgeDot} aria-hidden="true" />
                 {content.badge}
               </div>
 
-              <h1>{content.heading}</h1>
+              <h1 id="auth-welcome-heading">{content.heading}</h1>
 
               <p>{content.description}</p>
             </div>

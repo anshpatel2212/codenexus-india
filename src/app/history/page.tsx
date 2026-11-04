@@ -71,102 +71,107 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
             <span className="bs-eyebrow block mb-1.5">Audit history</span>
             <div className="flex items-center gap-2">
               <h1 className="font-heading text-xl sm:text-2xl font-extrabold text-[#20364A] tracking-tight">
-                Revision & Audit History
+                Revision &amp; Audit History
               </h1>
-              <span className="px-2.5 py-0.5 rounded bg-[#D5E3EC] text-[#31566D] text-xs font-bold">
+              <span className="px-2.5 py-0.5 rounded bg-[#D5E3EC] text-[#20364A] text-xs font-bold">
                 Version Control
               </span>
             </div>
-            <p className="mt-1 text-xs sm:text-sm text-[#718494]">
+            <p className="mt-1 text-xs sm:text-sm text-[#4F6576]">
               Complete provenance trail of editorial modifications, accepted fixes, and reviewer sign-offs.
             </p>
           </div>
 
           <Link href="/review/results">
-            <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="w-3.5 h-3.5" />}>
+            <Button variant="outline" size="sm" leftIcon={<ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />}>
               Back to Active Review
             </Button>
           </Link>
         </div>
 
         {/* Timeline Selector */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {versions.map((v) => {
-            const isSelected = selectedVersion === v.versionNumber;
-            return (
-              <div
-                key={v.versionNumber}
-                onClick={() => setSelectedVersion(v.versionNumber)}
-                className={`p-5 rounded-xl border cursor-pointer transition-all ${
-                  isSelected
-                    ? 'bg-white border-[#416F89] ring-2 ring-[#416F89]/20 shadow-[0_15px_45px_rgba(32,54,74,.09)]'
-                    : 'bg-white border-[#C4D5E0] hover:border-[#416F89]/40 shadow-sm'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#D5E3EC]/70 text-[#31566D] font-mono">
-                    Version {v.versionNumber}.0
-                  </span>
-                  <span className={`text-xs font-mono font-extrabold ${
-                    v.complianceScore >= 90 ? 'text-[#258A70]' :
-                    v.complianceScore >= 75 ? 'text-[#416F89]' : 'text-[#B77938]'
-                  }`}>
-                    {v.complianceScore}% Score
-                  </span>
-                </div>
+        <div>
+          <h2 className="sr-only">Version Timeline</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {versions.map((v) => {
+              const isSelected = selectedVersion === v.versionNumber;
+              return (
+                <button
+                  key={v.versionNumber}
+                  type="button"
+                  onClick={() => setSelectedVersion(v.versionNumber)}
+                  aria-pressed={isSelected}
+                  className={`text-left p-5 rounded-xl border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] ${
+                    isSelected
+                      ? 'bg-white border-[#416F89] ring-2 ring-[#416F89]/20 shadow-[0_15px_45px_rgba(32,54,74,.09)]'
+                      : 'bg-white border-[#C4D5E0] hover:border-[#416F89]/40 shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-[#D5E3EC]/70 text-[#20364A] font-mono">
+                      Version {v.versionNumber}.0
+                    </span>
+                    <span className={`text-xs font-mono font-extrabold ${
+                      v.complianceScore >= 90 ? 'text-[#1F7560]' :
+                      v.complianceScore >= 75 ? 'text-[#416F89]' : 'text-[#9A682D]'
+                    }`}>
+                      {v.complianceScore}% Score
+                    </span>
+                  </div>
 
-                <p className="text-xs font-bold text-[#20364A] line-clamp-1">{v.status}</p>
-                <p className="text-[11px] text-[#718494] mt-1 line-clamp-2">{v.summary}</p>
+                  <p className="text-xs sm:text-sm font-bold text-[#20364A] line-clamp-1">{v.status}</p>
+                  <p className="text-xs text-[#4F6576] mt-1 line-clamp-2 leading-relaxed">{v.summary}</p>
 
-                <div className="mt-4 pt-3 border-t border-[#C4D5E0] flex items-center justify-between text-[10px] text-[#718494]">
-                  <span>{v.date}</span>
-                  <span className="font-bold text-[#416F89]">
-                    {v.acceptedCount} fixes applied
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+                  <div className="mt-4 pt-3 border-t border-[#C4D5E0] flex items-center justify-between text-xs text-[#4F6576]">
+                    <span>{v.date}</span>
+                    <span className="font-bold text-[#416F89]">
+                      {v.acceptedCount} fixes applied
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Side-by-Side Comparison */}
         <div className="bg-white rounded-xl border border-[#C4D5E0] shadow-subtle overflow-hidden">
-          <div className="p-5 bg-[#EDF3F6]/60 border-b border-[#C4D5E0] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="p-5 bg-[#EDF3F6]/60 border-b border-[#C4D5E0] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs sm:text-sm">
             <div>
-              <span className="font-bold text-[#20364A]">
+              <h2 className="font-bold text-[#20364A] inline">
                 Comparing Version {currentVer.versionNumber}.0
-              </span>{' '}
-              <span className="text-[#718494]">with Version {previousVer.versionNumber}.0</span>
+              </h2>{' '}
+              <span className="text-[#4F6576]">with Version {previousVer.versionNumber}.0</span>
             </div>
 
-            <div className="flex items-center gap-4 text-xs">
-              <span className="flex items-center gap-1.5 text-[#258A70] font-bold">
-                <Check className="w-3.5 h-3.5" /> {currentVer.acceptedCount} Accepted Fixes
+            <div className="flex items-center gap-4 text-xs font-bold">
+              <span className="flex items-center gap-1.5 text-[#1F7560]">
+                <Check className="w-3.5 h-3.5" aria-hidden="true" /> {currentVer.acceptedCount} Accepted Fixes
               </span>
-              <span className="flex items-center gap-1.5 text-[#718494]">
-                <X className="w-3.5 h-3.5" /> {currentVer.rejectedCount} Rejected
+              <span className="flex items-center gap-1.5 text-[#4F6576]">
+                <X className="w-3.5 h-3.5" aria-hidden="true" /> {currentVer.rejectedCount} Rejected
               </span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-[#C4D5E0]">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-3 text-xs text-[#718494]">
-                <span className="font-bold text-[#20364A]">
+              <div className="flex items-center justify-between mb-3 text-xs text-[#4F6576]">
+                <h3 className="font-bold text-[#20364A] text-xs sm:text-sm">
                   Version {previousVer.versionNumber}.0 (Prior State)
-                </span>
+                </h3>
                 <span>{previousVer.date}</span>
               </div>
-              <div className="p-4 bg-[#EDF3F6]/50 rounded-lg border border-[#C4D5E0] text-xs sm:text-sm text-[#718494] leading-relaxed font-sans whitespace-pre-wrap">
+              <div className="p-4 bg-[#EDF3F6]/50 rounded-lg border border-[#C4D5E0] text-xs sm:text-sm text-[#4F6576] leading-relaxed font-sans whitespace-pre-wrap">
                 {previousVer.content}
               </div>
             </div>
 
-            <div className="p-6 bg-[rgba(65,111,137,.06)]">
-              <div className="flex items-center justify-between mb-3 text-xs text-[#718494]">
-                <span className="font-bold text-[#315C74]">
+            <div className="p-6 bg-[#416F89]/5">
+              <div className="flex items-center justify-between mb-3 text-xs text-[#4F6576]">
+                <h3 className="font-bold text-[#315C74] text-xs sm:text-sm">
                   Version {currentVer.versionNumber}.0 (Selected Revision)
-                </span>
+                </h3>
                 <span>{currentVer.date}</span>
               </div>
               <div className="p-4 bg-white rounded-lg border border-[#416F89]/40 text-xs sm:text-sm text-[#20364A] leading-relaxed font-sans whitespace-pre-wrap shadow-sm">
@@ -175,12 +180,12 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
             </div>
           </div>
 
-          <div className="p-4 bg-[#EDF3F6]/60 border-t border-[#C4D5E0] text-xs text-[#718494] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="p-4 bg-[#EDF3F6]/60 border-t border-[#C4D5E0] text-xs text-[#4F6576] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#258A70]" />
+              <ShieldCheck className="w-4 h-4 text-[#1F7560]" aria-hidden="true" />
               <span>Immutable Audit Trail: All version transitions logged per ISO 27001 requirements.</span>
             </div>
-            <span className="font-mono text-[11px] text-[#718494]">Review ID: {review.id}</span>
+            <span className="font-mono text-xs text-[#4F6576]">Review ID: {review.id}</span>
           </div>
         </div>
       </div>

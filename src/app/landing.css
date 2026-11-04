@@ -11,12 +11,12 @@
   --surface-glass-strong: rgba(255,255,255,.82);
 
   --text: #263B4D;
-  --muted: #718494;
+  --muted: #4F6576;
   --line: rgba(196,213,224,.75);
 
-  --success: #258A70;
-  --warning: #B77938;
-  --danger: #C65E57;
+  --success: #1F7560;
+  --warning: #9A682D;
+  --danger: #A94842;
 
   --shadow: 0 20px 60px rgba(32,54,74,.09);
   --glass-shadow: 0 15px 45px rgba(32,54,74,.07);
@@ -62,6 +62,13 @@ a {
 
 button {
   font: inherit;
+}
+
+a:focus-visible,
+button:focus-visible,
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .container {
@@ -316,7 +323,7 @@ button {
   backdrop-filter: var(--glass-blur);
   padding: 10px 15px;
   border-radius: 100px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--primary-dark);
   margin-bottom: 25px;
@@ -425,7 +432,7 @@ button {
 }
 
 .window-label {
-  font-size: 10px;
+  font-size: 12px;
   color: #8B9894;
   font-weight: 700;
 }
@@ -442,7 +449,7 @@ button {
   margin-bottom: 21px;
 }
 
-.review-header h3 {
+.review-header h2, .review-header h3 {
   font-weight: 700;
   font-size: 14px;
   color: var(--navy);
@@ -450,12 +457,12 @@ button {
 }
 
 .review-header p {
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
 }
 
 .review-status {
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   padding: 7px 9px;
   border-radius: 6px;
@@ -475,14 +482,14 @@ button {
 
 .content-tag {
   color: var(--primary-dark);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-bottom: 12px;
 }
 
-.content-preview h4 {
+.content-preview h3, .content-preview h4 {
   font-family: "DM Sans", sans-serif;
   font-weight: 700;
   font-size: 19px;
@@ -492,9 +499,9 @@ button {
 }
 
 .content-preview p {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.7;
-  color: #75828B;
+  color: var(--text);
 }
 
 .issue-list {
@@ -546,13 +553,13 @@ button {
 .issue-text strong {
   display: block;
   color: var(--navy);
-  font-size: 10px;
+  font-size: 12px;
   margin-bottom: 4px;
 }
 
 .issue-text small {
   color: var(--muted);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -573,7 +580,7 @@ button {
 }
 
 .preview-footer span {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -597,12 +604,12 @@ button {
 
 .floating-note strong {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   margin-bottom: 4px;
 }
 
 .floating-note span {
-  font-size: 9px;
+  font-size: 12px;
   color: var(--yellow);
 }
 
@@ -625,7 +632,7 @@ button {
 }
 
 .brand-strip p {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   font-weight: 600;
 }
@@ -639,7 +646,7 @@ button {
 .brand-values span {
   font-size: 12px;
   font-weight: 800;
-  color: #718494;
+  color: #4F6576;
   letter-spacing: .5px;
 }
 
@@ -683,7 +690,7 @@ button {
 }
 
 .card-number {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 1.5px;
   opacity: .6;
@@ -733,7 +740,7 @@ button {
   background: rgba(255,255,255,.09);
   border: 1px solid rgba(255,255,255,.13);
   border-radius: 6px;
-  font-size: 10px;
+  font-size: 12px;
   color: #D5E3EC;
 }
 
@@ -821,7 +828,7 @@ button {
 
 .feature-card p {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
 }
 
@@ -901,7 +908,7 @@ button {
 }
 
 .step p {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
   color: var(--muted);
   max-width: 200px;
@@ -1014,7 +1021,7 @@ button {
 }
 
 .trust-item p {
-  font-size: 11px;
+  font-size: 12px;
   color: #B7C9D2;
   line-height: 1.65;
 }
@@ -1124,7 +1131,7 @@ footer {
   gap: 75px;
 }
 
-.footer-column h4 {
+.footer-column h3, .footer-column h4 {
   font-weight: 700;
   font-size: 12px;
   margin-bottom: 18px;
@@ -1133,7 +1140,7 @@ footer {
 .footer-column a {
   display: block;
   color: #B7C9D2;
-  font-size: 11px;
+  font-size: 12px;
   margin-bottom: 13px;
   transition: .2s;
 }
@@ -1148,7 +1155,7 @@ footer {
   gap: 15px;
   padding-top: 22px;
   color: #9CB0BD;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 /* SCROLL ANIMATIONS */

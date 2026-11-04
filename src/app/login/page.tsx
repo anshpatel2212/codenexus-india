@@ -105,8 +105,8 @@ export default function LoginPage() {
       </div>
 
       {error && (
-        <div className={styles.errorBanner} role="alert">
-          <AlertCircle className="w-3.5 h-3.5" />
+        <div className={styles.errorBanner} role="alert" id="login-error-banner">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
           <span>{error}</span>
         </div>
       )}
@@ -124,6 +124,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className={errorField === 'email' ? styles.inputError : undefined}
               aria-invalid={errorField === 'email'}
+              aria-describedby={errorField === 'email' ? 'login-error-banner' : undefined}
               required
             />
           </div>
@@ -142,6 +143,7 @@ export default function LoginPage() {
               data-has-toggle="true"
               className={errorField === 'password' ? styles.inputError : undefined}
               aria-invalid={errorField === 'password'}
+              aria-describedby={errorField === 'password' ? 'login-error-banner' : undefined}
               required
             />
             <button
@@ -156,14 +158,14 @@ export default function LoginPage() {
         </div>
 
         <div className={styles.formOptions}>
-          <label className={styles.remember}>
+          <label className={styles.remember} htmlFor="remember">
             <input
               type="checkbox"
               id="remember"
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
             />
-            Remember me
+            <span>Remember me</span>
           </label>
 
           <Link href="/forgot-password" className={styles.forgot}>
@@ -181,8 +183,8 @@ export default function LoginPage() {
       </div>
 
       <div className={styles.securityNote}>
-        <Lock />
-        Your account and data are securely protected.
+        <Lock aria-hidden="true" />
+        <span>Your account and data are securely protected.</span>
       </div>
 
       <div className={styles.demoRow}>

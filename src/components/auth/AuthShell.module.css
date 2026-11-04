@@ -296,7 +296,7 @@
 
 .fieldError {
   margin-top: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: #a94842;
 }
@@ -457,8 +457,8 @@
   justify-content: center;
   gap: 7px;
   margin-top: 25px;
-  font-size: 11px;
-  color: #9aa7b1;
+  font-size: 12px;
+  color: #4F6576;
 }
 
 .formPanelLogin .securityNote {
@@ -477,8 +477,8 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 11px;
-  color: #9aa7b1;
+  font-size: 12px;
+  color: #4F6576;
 }
 
 .demoButton {
@@ -486,7 +486,7 @@
   background: none;
   padding: 0;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #416f89;
   cursor: pointer;
@@ -689,7 +689,7 @@
   .pageLogin .welcomeBadge {
     margin-bottom: 14px;
     padding: 7px 12px;
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .pageLogin .welcomeBottom {
@@ -901,7 +901,7 @@
 
   .pageRegister .terms {
     margin: 0 0 10px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .pageLogin .formPanelLogin .primaryBtn,
