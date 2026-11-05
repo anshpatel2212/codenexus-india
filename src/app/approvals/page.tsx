@@ -58,7 +58,7 @@ export default function ApprovalsPage() {
       if (data.length > 0) {
         setApprovals(data);
         setSelectedApproval(data[0]);
-      } else if (user?.organizationId === 'org-1' || !user?.organizationId) {
+      } else if (user?.isDemo || user?.organizationId === 'org-demo-brandsense' || !user?.organizationId) {
         setApprovals(sampleApprovals);
         setSelectedApproval(sampleApprovals[0]);
       } else {

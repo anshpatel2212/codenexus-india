@@ -19,6 +19,7 @@ import {
   X,
   ChevronRight,
   LogOut,
+  RotateCcw,
 } from 'lucide-react';
 import { BrandSenseLogo } from '@/components/ui/BrandSenseLogo';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +28,9 @@ import { SensaChatDrawer } from '@/components/assistant/SensaChatDrawer';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { RequireAuth } from '@/components/auth/RequireAuth';
+import { authClient } from '@/services/auth-client';
+import { apiClient } from '@/services/api-client';
+import { ApprovalItem } from '@/types';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -42,7 +46,23 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
-  const [selectedOrg, setSelectedOrg] = useState<{ id: string; name: string; tier: string; reviewsThisMonth: number; logo?: string }>(sampleOrganizations[0]);
+  const [selectedOrg, setSelectedOrg] = useState<{ id: string; name: string; tier: string; reviewsThisMonth: number; logo?: string }>(() => ({
+    id: user?.organizationId || 'org-user',
+    name: user?.organisation || 'BrandSense Workspace',
+    tier: `${user?.role || 'Brand Manager'} Workspace`,
+    reviewsThisMonth: 0,
+    logo: (user?.organisation || 'BrandSense').charAt(0).toUpperCase(),
+  }));
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.organizationId) {
+      apiClient.getApprovals(user.organizationId).then((approvals: ApprovalItem[]) => {
+        const pending = (approvals || []).filter((a: ApprovalItem) => a.status === 'Pending').length;
+        setPendingApprovalsCount(pending);
+      });
+    }
+  }, [user?.organizationId]);
 
   useEffect(() => {
     if (user?.organisation) {
@@ -124,7 +144,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     { name: 'New Review', href: '/review/new', icon: FilePlus2, badge: 'New' },
     { name: 'Review History', href: '/history', icon: History },
     { name: 'Brand Knowledge', href: '/knowledge', icon: BookMarked },
-    { name: 'Approvals', href: '/approvals', icon: CheckSquare, badgeCount: 3 },
+    { name: 'Approvals', href: '/approvals', icon: CheckSquare, badgeCount: pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined },
     { name: 'Insights', href: '/insights', icon: BarChart3 },
     { name: 'SENSA AI', href: '/assistant', icon: Sparkles, highlight: true },
     { name: 'Settings', href: '/settings', icon: Settings },
@@ -328,7 +348,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     aria-label="User account actions"
                   >
                     <div className="px-3 py-2 border-b border-[#C4D5E0]">
-                      <p className="text-xs font-bold text-[#20364A] truncate">{accountUser.name}</p>
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-xs font-bold text-[#20364A] truncate">{accountUser.name}</p>
+                        {accountUser.isDemo && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#F4D77B]/40 text-[#9A682D] border border-[#B77938]/30">
+                            Demo Sandbox
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-[#4F6576] truncate">{accountUser.email}</p>
                     </div>
                     <Link
@@ -340,6 +367,22 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                       <Settings className="w-4 h-4 text-[#4F6576]" aria-hidden="true" />
                       Account settings
                     </Link>
+                    {accountUser.isDemo && (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setProfileMenuOpen(false);
+                          authClient.resetDemoData();
+                          toast('Demo sandbox reset to initial seed state.');
+                          setTimeout(() => window.location.reload(), 300);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[#B77938] hover:bg-[#F4D77B]/20 transition-colors focus:outline-none focus-visible:bg-[#F4D77B]/20"
+                      >
+                        <RotateCcw className="w-4 h-4" aria-hidden="true" />
+                        Reset Demo Data
+                      </button>
+                    )}
                     <button
                       type="button"
                       role="menuitem"

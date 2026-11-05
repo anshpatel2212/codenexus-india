@@ -38,15 +38,18 @@ export default function ReviewResultsPage() {
   useEffect(() => {
     let active = true;
 
-    // 1. Try reading the fresh review from localStorage
+    // 1. Try reading user-scoped review from localStorage
     if (typeof window !== 'undefined') {
       try {
-        const stored = localStorage.getItem('brandsense_current_review');
+        const userKey = user?.id ? `brandsense_current_review_${user.id}` : null;
+        const stored = (userKey && localStorage.getItem(userKey)) || localStorage.getItem('brandsense_current_review');
         if (stored) {
           const parsed = JSON.parse(stored);
-          setCurrentReview(parsed);
-          if (parsed.findings) setFindings(parsed.findings);
-          setLoading(false);
+          if (!user?.organizationId || parsed.author?.email === user?.email || (parsed as any).organization_id === user?.organizationId || user?.isDemo) {
+            setCurrentReview(parsed);
+            if (parsed.findings) setFindings(parsed.findings);
+            setLoading(false);
+          }
         }
       } catch {}
     }
@@ -60,7 +63,7 @@ export default function ReviewResultsPage() {
           setFindings((prev) => (prev.length > 0 ? prev : reviews[0].findings));
         }
         setLoading(false);
-      } else if (user?.organizationId === 'org-1' || !user?.organizationId) {
+      } else if (user?.isDemo || user?.organizationId === 'org-demo-brandsense' || !user?.organizationId) {
         // Fallback for demo organization
         setCurrentReview((prev) => prev || sampleReviews[0]);
         setFindings((prev) => (prev.length > 0 ? prev : sampleFindings));

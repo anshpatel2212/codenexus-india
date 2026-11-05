@@ -42,15 +42,27 @@ export default function DashboardPage() {
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [filterType, setFilterType] = useState<string>('All');
   const [loading, setLoading] = useState(true);
+  const [kbCount, setKbCount] = useState({ rules: 0, facts: 0 });
 
   useEffect(() => {
     let active = true;
-    apiClient.getReviews(user?.organizationId).then((data) => {
-      if (active) {
-        setReviews(data);
-        setLoading(false);
-      }
-    });
+    if (user?.organizationId) {
+      apiClient.getReviews(user.organizationId).then((data) => {
+        if (active) {
+          setReviews(data);
+          setLoading(false);
+        }
+      });
+      apiClient.getKnowledgeBase(user.organizationId).then((kb) => {
+        if (active) {
+          const rules = kb.filter((i) => i.type !== 'fact').length;
+          const facts = kb.filter((i) => i.type === 'fact').length;
+          setKbCount({ rules, facts });
+        }
+      });
+    } else {
+      setLoading(false);
+    }
     return () => {
       active = false;
     };
@@ -67,8 +79,39 @@ export default function DashboardPage() {
   const pendingCount = reviews.filter(r => r.status === 'Pending Review' || r.status === 'Changes Requested' || r.status === 'Needs Revision').length;
   const avgScore = reviews.length > 0 
     ? Math.round(reviews.reduce((acc, r) => acc + r.overallScore, 0) / reviews.length * 10) / 10 
-    : 88.4;
-  const passRate = totalReviewsCount > 0 ? Math.round((approvedCount / totalReviewsCount) * 100) : 87;
+    : 0;
+  const passRate = totalReviewsCount > 0 
+    ? Math.round((approvedCount / totalReviewsCount) * 100) 
+    : 0;
+
+  // Derive frequent risk patterns from actual reviews
+  const frequentPatterns = React.useMemo(() => {
+    if (totalReviewsCount === 0) return [];
+    const issueMap = new Map<string, number>();
+    reviews.forEach((r) => {
+      (r.findings || []).forEach((f) => {
+        const key = f.category || f.reason || 'General Compliance Violation';
+        issueMap.set(key, (issueMap.get(key) || 0) + 1);
+      });
+    });
+
+    return Array.from(issueMap.entries())
+      .map(([issue, count]) => ({
+        issue,
+        count,
+        change: 'Mitigated',
+      }))
+      .slice(0, 5);
+  }, [reviews, totalReviewsCount]);
+
+  const dynamicChartData = React.useMemo(() => {
+    if (totalReviewsCount === 0) return [];
+    return reviews.slice(-6).map((r) => ({
+      month: r.title.length > 10 ? r.title.substring(0, 9) + '…' : r.title,
+      score: r.overallScore,
+      reviews: 1,
+    }));
+  }, [reviews, totalReviewsCount]);
 
   return (
     <AppLayout>
@@ -86,7 +129,10 @@ export default function DashboardPage() {
               </span>
             </div>
             <p className="mt-1 text-xs sm:text-sm text-[#4F6576]">
-              Active Guidelines: <strong className="text-[#20364A]">Acme Core v4.2</strong> • 14 brand rules &amp; 42 verified facts loaded.
+              Active Guidelines: <strong className="text-[#20364A]">{user?.organisation || 'BrandSense Workspace'} Policy</strong> •{' '}
+              {kbCount.rules + kbCount.facts > 0
+                ? `${kbCount.rules} brand rules & ${kbCount.facts} verified facts loaded.`
+                : 'No brand guidelines loaded yet. Add rules in Knowledge Base to begin governance.'}
             </p>
           </div>
 
@@ -121,8 +167,8 @@ export default function DashboardPage() {
               </span>
             </div>
             <p className="mt-2 font-heading text-2xl font-extrabold text-[#20364A] tracking-tight">{loading ? '...' : totalReviewsCount}</p>
-            <span className="text-xs text-[#1F7560] font-bold flex items-center gap-1 mt-1">
-              ↑ 18% vs last month
+            <span className={`text-xs font-bold flex items-center gap-1 mt-1 ${totalReviewsCount > 0 ? 'text-[#1F7560]' : 'text-[#4F6576]'}`}>
+              {totalReviewsCount > 0 ? 'Active reviews' : 'No reviews logged yet'}
             </span>
           </div>
 
@@ -145,7 +191,7 @@ export default function DashboardPage() {
               </span>
             </div>
             <p className="mt-2 font-heading text-2xl font-extrabold text-[#9A682D] tracking-tight">{loading ? '...' : flaggedCount}</p>
-            <span className="text-xs text-[#9A682D] font-bold mt-1 block">{flaggedCount > 0 ? 'Revision suggested' : 'Zero issues pending'}</span>
+            <span className="text-xs text-[#9A682D] font-bold mt-1 block">{flaggedCount > 0 ? 'Revisions suggested' : 'Zero issues pending'}</span>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-[#C4D5E0] shadow-subtle">
@@ -162,15 +208,21 @@ export default function DashboardPage() {
           <div className="bg-white p-5 rounded-xl border border-[#C4D5E0] shadow-subtle flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[#4F6576]">Avg Score</span>
-              <span className="px-2 py-0.5 rounded bg-[#1F7560]/10 text-[#1F7560] font-extrabold text-xs">
-                +4.2
-              </span>
+              {totalReviewsCount > 0 && (
+                <span className="px-2 py-0.5 rounded bg-[#1F7560]/10 text-[#1F7560] font-extrabold text-xs">
+                  {avgScore >= 90 ? 'Grade A' : 'In Review'}
+                </span>
+              )}
             </div>
             <div className="flex items-center justify-between mt-2">
-              <span className="font-heading text-2xl font-extrabold text-[#20364A] tracking-tight">{totalReviewsCount > 0 ? avgScore : '—'}</span>
-              <ScoreMeter score={totalReviewsCount > 0 ? Math.round(avgScore) : 100} size="sm" showLabel={false} />
+              <span className="font-heading text-2xl font-extrabold text-[#20364A] tracking-tight">
+                {totalReviewsCount > 0 ? avgScore : '—'}
+              </span>
+              <ScoreMeter score={totalReviewsCount > 0 ? Math.round(avgScore) : 0} size="sm" showLabel={false} />
             </div>
-            <span className="text-xs text-[#315C74] font-bold">Tier: High Confidence</span>
+            <span className="text-xs text-[#315C74] font-bold">
+              {totalReviewsCount > 0 ? (avgScore >= 85 ? 'Tier: High Confidence' : 'Tier: Moderate') : 'Awaiting First Review'}
+            </span>
           </div>
         </div>
 
@@ -183,54 +235,73 @@ export default function DashboardPage() {
                 <h2 className="font-heading text-sm font-bold text-[#20364A]">
                   Compliance Score Trend &amp; Volume Over Time
                 </h2>
-                <p className="text-xs text-[#4F6576]">Monthly brand score average vs completed asset reviews</p>
+                <p className="text-xs text-[#4F6576]">
+                  {totalReviewsCount > 0
+                    ? 'Compliance score index and volume across your recent reviews'
+                    : 'Real-time telemetry generated upon review submissions'}
+                </p>
               </div>
 
-              <div className="flex items-center gap-4 text-xs font-bold">
-                <div className="flex items-center gap-1.5 text-[#20364A]">
-                  <span className="w-3 h-3 rounded-full bg-[#416F89]" aria-hidden="true" />
-                  <span>Score Index</span>
+              {totalReviewsCount > 0 && (
+                <div className="flex items-center gap-4 text-xs font-bold">
+                  <div className="flex items-center gap-1.5 text-[#20364A]">
+                    <span className="w-3 h-3 rounded-full bg-[#416F89]" aria-hidden="true" />
+                    <span>Score Index</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-[#4F6576]">
-                  <span className="w-3 h-3 rounded-full bg-[#C4D5E0]" aria-hidden="true" />
-                  <span>Reviews Logged</span>
-                </div>
-              </div>
+              )}
             </div>
 
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={complianceTrendsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#416F89" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#416F89" stopOpacity={0.0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(196,213,224,.5)" />
-                  <XAxis dataKey="month" stroke="#4F6576" fontSize={12} tickLine={false} />
-                  <YAxis domain={[60, 100]} stroke="#4F6576" fontSize={12} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#20364A',
-                      borderRadius: '8px',
-                      color: '#fff',
-                      fontSize: '12px',
-                      border: 'none',
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="score"
-                    stroke="#416F89"
-                    strokeWidth={2.5}
-                    fillOpacity={1}
-                    fill="url(#scoreGrad)"
-                    name="Score"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            {totalReviewsCount === 0 ? (
+              <div className="h-64 w-full flex flex-col items-center justify-center border border-dashed border-[#C4D5E0] rounded-xl bg-[#F4F8FA]/60 p-6 text-center">
+                <div className="w-12 h-12 rounded-full bg-[#D5E3EC]/70 flex items-center justify-center text-[#416F89] mb-3">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <h3 className="font-heading font-bold text-sm text-[#20364A]">No Review Data Yet</h3>
+                <p className="text-xs text-[#4F6576] max-w-sm mt-1 mb-4 leading-relaxed">
+                  Submit your first copy or marketing draft to see real-time compliance score indices and review volumes plotted over time.
+                </p>
+                <Link href="/review/new">
+                  <Button variant="primary" size="sm" leftIcon={<FilePlus2 className="w-3.5 h-3.5" />}>
+                    Submit First Review
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={dynamicChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#416F89" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#416F89" stopOpacity={0.0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(196,213,224,.5)" />
+                    <XAxis dataKey="month" stroke="#4F6576" fontSize={11} tickLine={false} />
+                    <YAxis domain={[0, 100]} stroke="#4F6576" fontSize={12} tickLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#20364A',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        fontSize: '12px',
+                        border: 'none',
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="score"
+                      stroke="#416F89"
+                      strokeWidth={2.5}
+                      fillOpacity={1}
+                      fill="url(#scoreGrad)"
+                      name="Score"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
 
           {/* Right 4 cols: Frequent Risk Patterns */}
@@ -244,20 +315,30 @@ export default function DashboardPage() {
                 <span className="text-xs text-[#4F6576] font-bold">Past 30 Days</span>
               </div>
 
-              <div className="space-y-3">
-                {topViolationsData.map((item, idx) => (
-                  <div key={idx} className="p-3 rounded-lg bg-[#F4F8FA] border border-[#C4D5E0] text-xs">
-                    <div className="flex items-center justify-between font-bold text-[#20364A]">
-                      <span className="truncate pr-2">{item.issue}</span>
-                      <span className="text-[#1F7560] font-mono text-xs">{item.change}</span>
+              {totalReviewsCount === 0 || frequentPatterns.length === 0 ? (
+                <div className="py-12 text-center text-xs text-[#4F6576]">
+                  <ShieldAlert className="w-8 h-8 text-[#416F89]/40 mx-auto mb-2" />
+                  <p className="font-bold text-[#20364A]">No Risk Patterns Detected</p>
+                  <p className="text-[11px] mt-1 text-[#4F6576] max-w-[220px] mx-auto leading-relaxed">
+                    Recurring brand policy violations, hyperbolic words, and unverified claims will appear here once content is submitted.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {frequentPatterns.map((item, idx) => (
+                    <div key={idx} className="p-3 rounded-lg bg-[#F4F8FA] border border-[#C4D5E0] text-xs">
+                      <div className="flex items-center justify-between font-bold text-[#20364A]">
+                        <span className="truncate pr-2">{item.issue}</span>
+                        <span className="text-[#1F7560] font-mono text-xs">{item.change}</span>
+                      </div>
+                      <div className="flex items-center justify-between mt-1 text-xs text-[#4F6576]">
+                        <span>{item.count} {item.count === 1 ? 'detection' : 'detections'}</span>
+                        <span className="text-[#315C74] font-semibold">Tracked</span>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between mt-1 text-xs text-[#4F6576]">
-                      <span>{item.count} detections</span>
-                      <span className="text-[#315C74] font-semibold">Mitigated</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <Link
