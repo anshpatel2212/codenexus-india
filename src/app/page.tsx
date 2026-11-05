@@ -20,14 +20,14 @@ export default function LandingPage() {
 
     const closeMenu = () => {
       navLinks.classList.remove('active');
-      menuToggle.textContent = '☰';
+      menuToggle.innerHTML = '&#9776;';
       menuToggle.setAttribute('aria-label', 'Open menu');
       menuToggle.setAttribute('aria-expanded', 'false');
     };
 
     const toggleMenu = () => {
       const isOpen = navLinks.classList.toggle('active');
-      menuToggle.textContent = isOpen ? '✕' : '☰';
+      menuToggle.innerHTML = isOpen ? '&#10005;' : '&#9776;';
       menuToggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
       menuToggle.setAttribute('aria-expanded', String(isOpen));
     };
