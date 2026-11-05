@@ -15,12 +15,13 @@ import { getClientEnv } from '@/lib/env';
 interface AuthContextValue {
   user: UserProfile | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<AuthResult>;
+  login: (email: string, password: string, portalRole?: string) => Promise<AuthResult>;
   register: (input: RegisterInput) => Promise<AuthResult>;
   signInDemo: (profile: DemoProfile) => Promise<AuthResult>;
   resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  updateUser: (updates: Partial<UserProfile>) => Promise<UserProfile | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -83,8 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const result = await authClient.login(email, password);
+  const login = async (email: string, password: string, portalRole?: string) => {
+    const result = await authClient.login(email, password, portalRole);
     if (result.success) setUser(result.user);
     return result;
   };
@@ -99,6 +100,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const result = await authClient.signInDemo(profile);
     if (result.success) setUser(result.user);
     return result;
+  };
+
+  const updateUser = async (updates: Partial<UserProfile>): Promise<UserProfile | null> => {
+    if (!user) return null;
+    const updated = await authClient.updateUserProfile(user.id, updates);
+    if (updated) {
+      setUser(updated);
+    }
+    return updated;
   };
 
   const resetPassword = async (email: string) => {
@@ -121,6 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetPassword,
         logout,
         refreshUser,
+        updateUser,
       }}
     >
       {children}

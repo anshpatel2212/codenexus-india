@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { BrandSenseLogo } from '@/components/ui/BrandSenseLogo';
 import styles from './AuthShell.module.css';
 
 interface AuthShellProps {
@@ -46,9 +47,7 @@ export const AuthShell: React.FC<AuthShellProps> = ({ variant, children }) => {
       }`}
     >
       <nav className={styles.nav} aria-label="Authentication navigation">
-        <Link href="/" className={styles.logo}>
-          Brand<span>Sense</span>
-        </Link>
+        <BrandSenseLogo />
         <Link href="/" className={styles.navLink}>
           ← Back to Home
         </Link>

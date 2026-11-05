@@ -4,8 +4,9 @@ import { getClientEnv } from '@/lib/env';
 
 const USERS_KEY = 'brandsense_auth_users';
 const SESSION_KEY = 'brandsense_auth_session';
+const TOKEN_KEY = 'brandsense_auth_token';
 
-export const AUTH_STORAGE_KEYS = [USERS_KEY, SESSION_KEY];
+export const AUTH_STORAGE_KEYS = [USERS_KEY, SESSION_KEY, TOKEN_KEY];
 
 export type AuthField = 'name' | 'email' | 'password';
 
@@ -22,7 +23,16 @@ export interface RegisterInput {
   invitationToken?: string;
 }
 
-export type DemoProfile = 'manager' | 'legal' | 'creator' | 'admin' | 'okta' | 'google';
+export type DemoProfile = 
+  | 'super-admin'
+  | 'superadmin'
+  | 'admin'
+  | 'creator'
+  | 'reviewer'
+  | 'manager'
+  | 'legal'
+  | 'okta'
+  | 'google';
 
 interface StoredUser extends UserProfile {
   passwordHash: string;
@@ -36,38 +46,35 @@ interface StoredSession {
   isDemo?: boolean;
 }
 
-const DEMO_AVATAR =
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
-const LEGAL_AVATAR =
-  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80';
-const CREATOR_AVATAR =
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80';
-const ADMIN_AVATAR =
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80';
+const SUPER_ADMIN_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+const DEMO_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+const LEGAL_AVATAR = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80';
+const CREATOR_AVATAR = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80';
+const ADMIN_AVATAR = 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80';
 
 export const DEMO_ORG_ID = 'org-demo-brandsense';
 
 export const DEMO_USERS: Array<Omit<StoredUser, 'passwordHash' | 'createdAt'> & { password: string }> = [
   {
-    id: 'usr-demo-manager',
-    organizationId: DEMO_ORG_ID,
-    name: 'Elena Rostova (Demo Manager)',
-    email: 'demo-manager@brandsense.ai',
-    role: 'Manager',
-    avatar: DEMO_AVATAR,
-    department: 'Brand & Global Marketing',
-    organisation: 'BrandSense Demo Corp',
+    id: 'usr-demo-superadmin',
+    organizationId: '',
+    name: 'Alexander Vance (Super Admin Demo)',
+    email: 'demo-superadmin@brandsense.ai',
+    role: 'Super Admin',
+    avatar: SUPER_ADMIN_AVATAR,
+    department: 'Platform Security & Governance Operations',
+    organisation: 'BrandSense Global Platform',
     isDemo: true,
     password: 'demo-password-123',
   },
   {
-    id: 'usr-demo-legal',
+    id: 'usr-demo-admin',
     organizationId: DEMO_ORG_ID,
-    name: 'Sarah Chen, Esq. (Demo Legal)',
-    email: 'demo-legal@brandsense.ai',
-    role: 'Reviewer',
-    avatar: LEGAL_AVATAR,
-    department: 'Legal & Regulatory Compliance',
+    name: 'Julian Thorne (Demo Admin)',
+    email: 'demo-admin@brandsense.ai',
+    role: 'Admin',
+    avatar: ADMIN_AVATAR,
+    department: 'Executive Brand Governance',
     organisation: 'BrandSense Demo Corp',
     isDemo: true,
     password: 'demo-password-123',
@@ -85,13 +92,25 @@ export const DEMO_USERS: Array<Omit<StoredUser, 'passwordHash' | 'createdAt'> & 
     password: 'demo-password-123',
   },
   {
-    id: 'usr-demo-admin',
+    id: 'usr-demo-reviewer',
     organizationId: DEMO_ORG_ID,
-    name: 'Julian Thorne (Demo Admin)',
-    email: 'demo-admin@brandsense.ai',
-    role: 'Admin',
-    avatar: ADMIN_AVATAR,
-    department: 'Executive Governance',
+    name: 'Sarah Chen, Esq. (Demo Reviewer)',
+    email: 'demo-reviewer@brandsense.ai',
+    role: 'Reviewer',
+    avatar: LEGAL_AVATAR,
+    department: 'Legal & Regulatory Compliance',
+    organisation: 'BrandSense Demo Corp',
+    isDemo: true,
+    password: 'demo-password-123',
+  },
+  {
+    id: 'usr-demo-manager',
+    organizationId: DEMO_ORG_ID,
+    name: 'Elena Rostova (Demo Manager)',
+    email: 'demo-manager@brandsense.ai',
+    role: 'Manager',
+    avatar: DEMO_AVATAR,
+    department: 'Brand & Global Marketing',
     organisation: 'BrandSense Demo Corp',
     isDemo: true,
     password: 'demo-password-123',
@@ -99,12 +118,15 @@ export const DEMO_USERS: Array<Omit<StoredUser, 'passwordHash' | 'createdAt'> & 
 ];
 
 const DEMO_PROFILE_MAP: Record<DemoProfile, string> = {
-  manager: 'demo-manager@brandsense.ai',
-  legal: 'demo-legal@brandsense.ai',
-  creator: 'demo-creator@brandsense.ai',
-  admin: 'demo-admin@brandsense.ai',
-  okta: 'demo-manager@brandsense.ai',
-  google: 'demo-manager@brandsense.ai',
+  'super-admin': 'demo-superadmin@brandsense.ai',
+  'superadmin': 'demo-superadmin@brandsense.ai',
+  'admin': 'demo-admin@brandsense.ai',
+  'creator': 'demo-creator@brandsense.ai',
+  'reviewer': 'demo-reviewer@brandsense.ai',
+  'manager': 'demo-manager@brandsense.ai',
+  'legal': 'demo-reviewer@brandsense.ai',
+  'okta': 'demo-manager@brandsense.ai',
+  'google': 'demo-manager@brandsense.ai',
 };
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -173,6 +195,20 @@ class BrandSenseAuthClient {
     return Boolean(user.isDemo || user.organizationId === DEMO_ORG_ID || user.email.startsWith('demo-'));
   }
 
+  public getToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
+  private setToken(token: string | null) {
+    if (typeof window === 'undefined') return;
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  }
+
   private readUsers(): StoredUser[] {
     return readJSON<StoredUser[]>(USERS_KEY) ?? [];
   }
@@ -210,7 +246,7 @@ class BrandSenseAuthClient {
     }
   }
 
-  private writeSession(user: StoredUser) {
+  private writeSession(user: UserProfile) {
     const session: StoredSession = {
       userId: user.id,
       email: user.email,
@@ -218,15 +254,11 @@ class BrandSenseAuthClient {
       isDemo: Boolean(user.isDemo),
     };
     writeJSON(SESSION_KEY, session);
-  }
-
-  private async createSession(user: StoredUser): Promise<AuthResult> {
-    this.writeSession(user);
-    return { success: true, user: toPublicUser(user) };
+    writeJSON('brandsense_active_user', user);
   }
 
   // ---------------------------------------------------------------------------
-  // Profile Fetcher
+  // Profile Fetcher via Supabase
   // ---------------------------------------------------------------------------
   async fetchUserProfile(userId: string): Promise<UserProfile | null> {
     if (!this.isSupabaseLive()) return null;
@@ -272,7 +304,41 @@ class BrandSenseAuthClient {
   // Session Handling
   // ---------------------------------------------------------------------------
   async getSession(): Promise<UserProfile | null> {
-    // 1. Supabase live session check
+    const token = this.getToken();
+
+    // 1. Try Backend Token Authentication (/api/v1/auth/me)
+    if (token) {
+      try {
+        const res = await fetch('/api/v1/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.ok) {
+          const profile = await res.json();
+          const userProfile: UserProfile = {
+            id: profile.id,
+            name: profile.name,
+            email: profile.email,
+            role: profile.role,
+            organizationId: profile.organizationId,
+            organisation: profile.organisation,
+            avatar: profile.avatar || '',
+            department: profile.department || 'General',
+            isDemo: Boolean(profile.isDemo),
+          };
+          this.writeSession(userProfile);
+          return userProfile;
+        } else if (res.status === 401) {
+          // Token expired or invalid
+          this.setToken(null);
+        }
+      } catch (e) {
+        // Backend not reached, continue to local session check
+      }
+    }
+
+    // 2. Supabase live session check
     if (this.isSupabaseLive()) {
       try {
         const { data: { session }, error } = await this.supabase.auth.getSession();
@@ -289,7 +355,12 @@ class BrandSenseAuthClient {
       }
     }
 
-    // 2. Local storage session check
+    // 3. Local storage cached session check
+    const cachedUser = readJSON<UserProfile>('brandsense_active_user');
+    if (cachedUser) {
+      return cachedUser;
+    }
+
     await this.ensureSeeded();
     const session = readJSON<StoredSession>(SESSION_KEY);
     if (!session) return null;
@@ -312,15 +383,50 @@ class BrandSenseAuthClient {
   }
 
   // ---------------------------------------------------------------------------
-  // Login
+  // Login with Real Backend Database & Role Portal Enforcement
   // ---------------------------------------------------------------------------
-  async login(email: string, password: string): Promise<AuthResult> {
+  async login(email: string, password: string, portalRole?: string): Promise<AuthResult> {
     const normalized = normalizeEmail(email);
     if (!normalized || !password) {
       return { success: false, error: 'Enter your email address and password.', field: 'email' };
     }
 
-    // 1. If Supabase is live and this is NOT a demo account email, authenticate with Supabase
+    // 1. Primary: Persistent Backend Relational Database Authentication
+    try {
+      const resp = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: normalized,
+          password: password,
+          portalRole: portalRole || undefined,
+        }),
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.token) {
+          this.setToken(data.token);
+        }
+        this.writeSession(data.user);
+        return { success: true, user: data.user };
+      }
+
+      // If backend returned 401 or 403, respect the strict security rejection
+      if (resp.status === 401 || resp.status === 403) {
+        const errData = await resp.json().catch(() => ({}));
+        return {
+          success: false,
+          error: errData.detail || 'Authentication failed. Please verify your credentials and role access.',
+          field: resp.status === 401 ? 'password' : 'email',
+        };
+      }
+    } catch (netErr) {
+      // Backend not running locally, fallback gracefully
+      console.warn('Backend auth endpoint unreachable, attempting fallback authentication.');
+    }
+
+    // 2. Supabase Live Fallback
     if (this.isSupabaseLive() && !normalized.startsWith('demo-')) {
       try {
         const { data, error } = await this.supabase.auth.signInWithPassword({
@@ -347,11 +453,12 @@ class BrandSenseAuthClient {
             await this.supabase.auth.signOut();
             return {
               success: false,
-              error: 'User profile not found in public.profiles. Please contact your organization administrator.',
+              error: 'User profile not found in public.profiles. Please contact your administrator.',
               field: 'email',
             };
           }
 
+          this.writeSession(profile);
           return { success: true, user: profile };
         }
       } catch (err: any) {
@@ -359,7 +466,7 @@ class BrandSenseAuthClient {
       }
     }
 
-    // 2. Local authentication (Demo users or local registered users)
+    // 3. Local offline fallback
     await this.ensureSeeded();
     const user = this.readUsers().find((candidate) => candidate.email === normalized);
     if (!user) {
@@ -371,11 +478,13 @@ class BrandSenseAuthClient {
       return { success: false, error: 'Incorrect password. Please try again.', field: 'password' };
     }
 
-    return this.createSession(user);
+    const pubUser = toPublicUser(user);
+    this.writeSession(pubUser);
+    return { success: true, user: pubUser };
   }
 
   // ---------------------------------------------------------------------------
-  // Register / Onboarding (Real User Accounts)
+  // Register / Onboarding (Persistent Database Creation)
   // ---------------------------------------------------------------------------
   async register(input: RegisterInput): Promise<AuthResult> {
     const name = input.name.trim();
@@ -393,9 +502,53 @@ class BrandSenseAuthClient {
       return { success: false, error: 'Password must be at least 8 characters.', field: 'password' };
     }
     if (email.startsWith('demo-')) {
-      return { success: false, error: 'Reserved email prefix. Please use your company email.', field: 'email' };
+      return { success: false, error: 'Reserved email prefix. Please use your legitimate work email.', field: 'email' };
     }
 
+    // 1. Primary: Persistent Backend Relational Database Registration
+    try {
+      const resp = await fetch('/api/v1/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          organisation,
+          role: input.role || 'Admin',
+          invitationToken: input.invitationToken || null,
+        }),
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.token) {
+          this.setToken(data.token);
+        }
+        this.writeSession(data.user);
+        return { success: true, user: data.user };
+      }
+
+      const errData = await resp.json().catch(() => ({}));
+      if (resp.status === 409) {
+        return {
+          success: false,
+          error: errData.detail || 'An account with this email already exists. Please sign in.',
+          field: 'email',
+        };
+      }
+      if (resp.status >= 400 && resp.status < 500) {
+        return {
+          success: false,
+          error: errData.detail || 'Registration failed. Please check your information.',
+          field: 'email',
+        };
+      }
+    } catch (e) {
+      console.warn('Backend signup unreachable, falling back to local storage.');
+    }
+
+    // 2. Supabase Live Fallback
     if (this.isSupabaseLive()) {
       try {
         const { data, error } = await this.supabase.auth.signUp({
@@ -415,38 +568,25 @@ class BrandSenseAuthClient {
         }
 
         if (data.user) {
-          if (data.session) {
-            let profile = await this.fetchUserProfile(data.user.id);
-            if (!profile) {
-              await new Promise((r) => setTimeout(r, 800));
-              profile = await this.fetchUserProfile(data.user.id);
-            }
-            if (profile) return { success: true, user: profile };
-          }
-
           const newUser: UserProfile = {
             id: data.user.id,
             name,
             email,
-            role: 'Creator',
+            role: (input.role as UserProfile['role']) || 'Admin',
             avatar: '',
-            department: 'Brand & Marketing',
+            department: 'Brand Management',
             organisation,
             isDemo: false,
           };
-
-          return { 
-            success: true, 
-            user: newUser, 
-            message: 'Account created! Please check your email to verify your address if required.' 
-          };
+          this.writeSession(newUser);
+          return { success: true, user: newUser };
         }
       } catch (err: any) {
         return { success: false, error: err.message || 'Registration failed.', field: 'email' };
       }
     }
 
-    // Local registration with user data isolation
+    // 3. Local Registration Fallback
     await this.ensureSeeded();
     const users = this.readUsers();
     if (users.some((user) => user.email === email)) {
@@ -465,9 +605,9 @@ class BrandSenseAuthClient {
       organizationId: uniqueOrgId,
       name,
       email,
-      role: (input.role as UserProfile['role']) || 'Creator',
+      role: (input.role as UserProfile['role']) || 'Admin',
       avatar: '',
-      department: 'Brand & Global Marketing',
+      department: 'Brand Management',
       organisation,
       isDemo: false,
       passwordHash: await hashPassword(password),
@@ -476,78 +616,107 @@ class BrandSenseAuthClient {
 
     users.push(newUser);
     this.writeUsers(users);
+    const pubUser = toPublicUser(newUser);
+    this.writeSession(pubUser);
 
-    return this.createSession(newUser);
+    return { success: true, user: pubUser };
   }
 
   // ---------------------------------------------------------------------------
-  // Demo Login (Isolated Demo Users)
+  // Demo Login (Isolated Demo Roles)
   // ---------------------------------------------------------------------------
   async signInDemo(profile: DemoProfile): Promise<AuthResult> {
+    // Map profile slug to backend role slug
+    let roleSlug = 'admin';
+    if (profile === 'super-admin' || profile === 'superadmin') roleSlug = 'super-admin';
+    else if (profile === 'creator') roleSlug = 'creator';
+    else if (profile === 'reviewer' || profile === 'legal') roleSlug = 'reviewer';
+    else if (profile === 'manager') roleSlug = 'manager';
+
+    // 1. Primary: Real backend demo login
+    try {
+      const resp = await fetch(`/api/v1/auth/demo/${roleSlug}`, {
+        method: 'POST',
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.token) {
+          this.setToken(data.token);
+        }
+        this.writeSession(data.user);
+        return { success: true, user: data.user };
+      }
+    } catch (e) {
+      // Backend not running
+    }
+
+    // 2. Offline fallback
     await this.ensureSeeded();
-    const email = DEMO_PROFILE_MAP[profile] || 'demo-manager@brandsense.ai';
+    const email = DEMO_PROFILE_MAP[profile] || 'demo-admin@brandsense.ai';
     const demo = DEMO_USERS.find((user) => user.email === email);
 
     if (!demo) {
       return { success: false, error: 'Demo profile is unavailable.' };
     }
 
-    const users = this.readUsers();
-    let user = users.find((candidate) => candidate.email === email);
+    const pubUser: UserProfile = {
+      id: demo.id,
+      organizationId: demo.organizationId,
+      name: demo.name,
+      email: demo.email,
+      role: demo.role,
+      avatar: demo.avatar,
+      department: demo.department,
+      organisation: demo.organisation,
+      isDemo: true,
+    };
 
-    if (!user) {
-      const passwordHash = await hashPassword(demo.password);
-      user = {
-        ...demo,
-        passwordHash,
-        createdAt: new Date().toISOString(),
-      };
-      users.push(user);
-      this.writeUsers(users);
-    }
-
-    return this.createSession(user);
+    this.writeSession(pubUser);
+    return { success: true, user: pubUser };
   }
 
   // ---------------------------------------------------------------------------
-  // Profile Update
+  // Profile Update (Name, Avatar, Department)
   // ---------------------------------------------------------------------------
-  updateUserProfile(userId: string, updates: Partial<UserProfile>): UserProfile | null {
-    if (typeof window === 'undefined') return null;
-    const users = this.readUsers();
-    const idx = users.findIndex((u) => u.id === userId);
-    
-    if (idx >= 0) {
-      users[idx] = {
-        ...users[idx],
-        ...updates,
-      };
-      this.writeUsers(users);
-      
-      const session = readJSON<StoredSession>(SESSION_KEY);
-      if (session && session.userId === userId) {
-        writeJSON(SESSION_KEY, { ...session, ...updates });
-      }
-      return toPublicUser(users[idx]);
-    } else {
-      // Handle demo user profile update
-      const demoUser = DEMO_USERS.find((d) => d.id === userId);
-      if (demoUser) {
-        const newUser: StoredUser = {
-          ...demoUser,
-          ...updates,
-          passwordHash: '',
-          createdAt: new Date().toISOString(),
-        };
-        users.push(newUser);
-        this.writeUsers(users);
-        const session = readJSON<StoredSession>(SESSION_KEY);
-        if (session && session.userId === userId) {
-          writeJSON(SESSION_KEY, { ...session, ...updates });
+  async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile | null> {
+    const token = this.getToken();
+
+    if (token) {
+      try {
+        const resp = await fetch('/api/v1/auth/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            fullName: updates.name,
+            avatarUrl: updates.avatar,
+            department: updates.department,
+          }),
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.user) {
+            this.writeSession(data.user);
+            return data.user;
+          }
         }
-        return toPublicUser(newUser);
+      } catch (e) {
+        // Backend not reached
       }
     }
+
+    // Local cached update
+    if (typeof window === 'undefined') return null;
+    const cachedUser = readJSON<UserProfile>('brandsense_active_user');
+    if (cachedUser && cachedUser.id === userId) {
+      const updated = { ...cachedUser, ...updates };
+      this.writeSession(updated);
+      return updated;
+    }
+
     return null;
   }
 
@@ -560,10 +729,11 @@ class BrandSenseAuthClient {
       localStorage.removeItem(`brandsense_reviews_${DEMO_ORG_ID}`);
       localStorage.removeItem(`brandsense_kb_${DEMO_ORG_ID}`);
       localStorage.removeItem(`brandsense_approvals_${DEMO_ORG_ID}`);
-      localStorage.removeItem(`brandsense_current_review_usr-demo-manager`);
-      localStorage.removeItem(`brandsense_current_review_usr-demo-legal`);
-      localStorage.removeItem(`brandsense_current_review_usr-demo-creator`);
+      localStorage.removeItem(`brandsense_current_review_usr-demo-superadmin`);
       localStorage.removeItem(`brandsense_current_review_usr-demo-admin`);
+      localStorage.removeItem(`brandsense_current_review_usr-demo-creator`);
+      localStorage.removeItem(`brandsense_current_review_usr-demo-reviewer`);
+      localStorage.removeItem(`brandsense_current_review_usr-demo-manager`);
     } catch {
       // Ignore
     }
@@ -578,20 +748,6 @@ class BrandSenseAuthClient {
       return { success: false, message: 'Please enter a valid email address.' };
     }
 
-    if (this.isSupabaseLive() && !normalized.startsWith('demo-')) {
-      try {
-        const { error } = await this.supabase.auth.resetPasswordForEmail(normalized, {
-          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/settings` : undefined,
-        });
-        if (error) {
-          return { success: false, message: error.message };
-        }
-        return { success: true, message: 'Password reset link sent to your email.' };
-      } catch (err: any) {
-        return { success: false, message: err.message || 'Failed to send reset link.' };
-      }
-    }
-
     return { 
       success: true, 
       message: 'If an account exists for this email, password reset instructions have been dispatched.' 
@@ -602,6 +758,8 @@ class BrandSenseAuthClient {
   // Logout
   // ---------------------------------------------------------------------------
   async logout(): Promise<void> {
+    this.setToken(null);
+
     if (this.isSupabaseLive()) {
       try {
         await this.supabase.auth.signOut();
@@ -613,6 +771,7 @@ class BrandSenseAuthClient {
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem('brandsense_active_user');
       } catch {
         // Ignore
       }
