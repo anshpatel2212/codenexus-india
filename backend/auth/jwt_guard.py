@@ -5,12 +5,33 @@ from jwt.exceptions import PyJWKClientError, PyJWKError, PyJWTError
 from typing import List, Optional, Dict, Any
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from datetime import datetime, timedelta
 from pydantic import BaseModel
 from backend.config import settings
 from backend.services.supabase_admin import supabase_admin
+from backend.services.db import get_db_connection
 
 logger = logging.getLogger("brandsense.auth")
 security = HTTPBearer(auto_error=False)
+
+APP_JWT_SECRET = settings.SUPABASE_LEGACY_HS256_SECRET or settings.SUPABASE_JWT_SECRET or "brandsense-secure-enterprise-jwt-key-32-chars-min"
+
+def create_access_token(user_data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+    """Generate a signed HS256 JWT access token for persistent backend session authentication."""
+    now = datetime.utcnow()
+    exp = now + (expires_delta or timedelta(days=7))
+    payload = {
+        "sub": str(user_data["id"]),
+        "email": user_data["email"],
+        "role": user_data["role"],
+        "organization_id": user_data.get("organization_id"),
+        "full_name": user_data.get("full_name") or user_data.get("name") or "User",
+        "department": user_data.get("department", "General"),
+        "aud": "authenticated",
+        "iat": int(now.timestamp()),
+        "exp": int(exp.timestamp())
+    }
+    return jwt.encode(payload, APP_JWT_SECRET, algorithm="HS256")
 
 # Thread-safe JWKS Client singleton with caching & cooldown
 _jwks_client: Optional[PyJWKClient] = None
@@ -39,10 +60,10 @@ def set_jwks_client(client: Optional[PyJWKClient]):
 
 class AuthenticatedUser(BaseModel):
     id: str
-    organization_id: str
+    organization_id: Optional[str] = None
     email: str
     full_name: str
-    role: str  # 'Admin' | 'Creator' | 'Manager' | 'Reviewer'
+    role: str  # 'Super Admin' | 'Admin' | 'Creator' | 'Manager' | 'Reviewer'
     department: Optional[str] = None
 
 def verify_supabase_jwt(token: str) -> Dict[str, Any]:
@@ -171,23 +192,33 @@ def verify_supabase_jwt(token: str) -> Dict[str, Any]:
             )
 
     # -------------------------------------------------------------------------
-    # Route 2: Legacy HS256 Verification via Separately Configured Secret
+    # Route 2: HS256 Verification via Configured Secret
     # -------------------------------------------------------------------------
     elif alg == "HS256":
-        legacy_secret = settings.SUPABASE_LEGACY_HS256_SECRET or settings.SUPABASE_JWT_SECRET
+        legacy_secret = APP_JWT_SECRET
         if not legacy_secret or len(legacy_secret) < 16:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Legacy HS256 tokens are disabled or legacy secret not configured.",
+                detail="HS256 tokens are disabled or secret not configured.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+
+        hs256_kwargs = {
+            "audience": expected_audience,
+            "options": {
+                "verify_signature": True,
+                "verify_exp": True,
+                "verify_aud": True,
+                "verify_iss": False,
+            }
+        }
 
         try:
             payload = jwt.decode(
                 token,
                 legacy_secret,
                 algorithms=["HS256"],  # Strictly HS256
-                **decode_kwargs
+                **hs256_kwargs
             )
             return payload
         except jwt.ExpiredSignatureError:
@@ -267,28 +298,60 @@ async def get_current_user(
         )
 
     # Fetch verified profile from database (never trust client-supplied org_id or role)
-    profile = await supabase_admin.get_user_profile(user_id)
-    if not profile:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User profile not registered in an active organization."
+    if supabase_admin.is_live():
+        profile = await supabase_admin.get_user_profile(user_id)
+        if profile:
+            return AuthenticatedUser(
+                id=profile["id"],
+                organization_id=profile.get("organization_id"),
+                email=profile.get("email", ""),
+                full_name=profile.get("full_name", ""),
+                role=profile.get("role", "Creator"),
+                department=profile.get("department")
+            )
+
+    # Persistent relational database lookup
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, email, full_name, role, organization_id, department FROM users WHERE id = ?", (user_id,))
+    row = cur.fetchone()
+    conn.close()
+
+    if row:
+        return AuthenticatedUser(
+            id=row["id"],
+            organization_id=row["organization_id"],
+            email=row["email"],
+            full_name=row["full_name"],
+            role=row["role"],
+            department=row["department"]
         )
 
-    return AuthenticatedUser(
-        id=profile["id"],
-        organization_id=profile["organization_id"],
-        email=profile.get("email", ""),
-        full_name=profile.get("full_name", ""),
-        role=profile.get("role", "Creator"),
-        department=profile.get("department")
+    # Use verified claims from JWT payload if user exists in token
+    if payload.get("email") and payload.get("role"):
+        return AuthenticatedUser(
+            id=user_id,
+            organization_id=payload.get("organization_id"),
+            email=payload.get("email"),
+            full_name=payload.get("full_name") or payload.get("email", "").split("@")[0],
+            role=payload.get("role", "Creator"),
+            department=payload.get("department", "General")
+        )
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="User profile not registered in persistent system records."
     )
 
 def require_role(allowed_roles: List[str]):
     """
     Dependency factory to enforce strict Role-Based Access Control (RBAC).
-    Supported roles: 'Admin', 'Creator', 'Manager', 'Reviewer'
+    Supported roles: 'Super Admin', 'Admin', 'Creator', 'Manager', 'Reviewer'
     """
     async def role_checker(user: AuthenticatedUser = Depends(get_current_user)) -> AuthenticatedUser:
+        # Super Admin has overarching platform governance permissions
+        if user.role == "Super Admin":
+            return user
         if user.role not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
