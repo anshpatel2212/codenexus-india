@@ -47,30 +47,20 @@ const config: Config = {
         },
         text: {
           DEFAULT: "#263B4D",
-<<<<<<< HEAD
-          muted: "#718494",
-=======
           primary: "#20364A",
           muted: "#4F6576",
           subtle: "#5A7182",
           light: "#D5E3EC",
           "light-muted": "#B9CDDC",
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
         },
         line: {
           DEFAULT: "rgba(196,213,224,.75)",
           solid: "#C4D5E0",
         },
         status: {
-<<<<<<< HEAD
-          success: "#258A70",
-          warning: "#B77938",
-          danger: "#C65E57",
-=======
           success: "#1F7560",
           warning: "#9A682D",
           danger: "#A94842",
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
         },
       },
       fontFamily: {
@@ -78,12 +68,6 @@ const config: Config = {
         heading: ["'DM Sans'", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
       },
       borderRadius: {
-<<<<<<< HEAD
-        theme: "14px",
-        card: "14px",
-        control: "9px",
-        pill: "999px",
-=======
         sm: "4px",
         md: "8px",
         lg: "8px",
@@ -93,18 +77,13 @@ const config: Config = {
         card: "12px",
         control: "8px",
         pill: "9999px",
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
       },
       boxShadow: {
         subtle: "0 1px 2px rgba(32,54,74,.04), 0 4px 14px rgba(32,54,74,.05)",
         card: "0 2px 6px rgba(32,54,74,.04), 0 12px 32px rgba(32,54,74,.06)",
         elevated: "0 20px 50px rgba(32,54,74,.14)",
         dropdown: "0 18px 45px rgba(32,54,74,.14)",
-<<<<<<< HEAD
-        focus: "0 0 0 3px rgba(65,111,137,.18)",
-=======
         focus: "0 0 0 3px rgba(65,111,137,.25)",
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
       },
       transitionDuration: {
         DEFAULT: "180ms",
@@ -113,4 +92,5 @@ const config: Config = {
   },
   plugins: [],
 };
+
 export default config;

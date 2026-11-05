@@ -95,13 +95,8 @@ export default function SignupPage() {
       </div>
 
       {error && (
-<<<<<<< HEAD
-        <div className={styles.errorBanner} role="alert">
-          <AlertCircle className="w-3.5 h-3.5" />
-=======
         <div className={styles.errorBanner} role="alert" id="register-error-banner">
           <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
           <span>{error}</span>
         </div>
       )}
@@ -119,12 +114,6 @@ export default function SignupPage() {
               onChange={(e) => setFullName(e.target.value)}
               className={fieldErrors.fullName ? styles.inputError : undefined}
               aria-invalid={Boolean(fieldErrors.fullName)}
-<<<<<<< HEAD
-              required
-            />
-          </div>
-          {fieldErrors.fullName && <p className={styles.fieldError}>{fieldErrors.fullName}</p>}
-=======
               aria-describedby={fieldErrors.fullName ? 'fullName-error' : undefined}
               required
             />
@@ -134,7 +123,6 @@ export default function SignupPage() {
               {fieldErrors.fullName}
             </p>
           )}
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
         </div>
 
         <div className={styles.formGroup}>
@@ -149,12 +137,6 @@ export default function SignupPage() {
               onChange={(e) => setEmail(e.target.value)}
               className={fieldErrors.email ? styles.inputError : undefined}
               aria-invalid={Boolean(fieldErrors.email)}
-<<<<<<< HEAD
-              required
-            />
-          </div>
-          {fieldErrors.email && <p className={styles.fieldError}>{fieldErrors.email}</p>}
-=======
               aria-describedby={fieldErrors.email ? 'email-error' : undefined}
               required
             />
@@ -164,7 +146,6 @@ export default function SignupPage() {
               {fieldErrors.email}
             </p>
           )}
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
         </div>
 
         <div className={styles.formGroup}>
@@ -181,10 +162,7 @@ export default function SignupPage() {
               data-has-toggle="true"
               className={fieldErrors.password ? styles.inputError : undefined}
               aria-invalid={Boolean(fieldErrors.password)}
-<<<<<<< HEAD
-=======
               aria-describedby={fieldErrors.password ? 'password-error' : undefined}
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               required
             />
             <button
@@ -196,15 +174,11 @@ export default function SignupPage() {
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
-<<<<<<< HEAD
-          {fieldErrors.password && <p className={styles.fieldError}>{fieldErrors.password}</p>}
-=======
           {fieldErrors.password && (
             <p id="password-error" className={styles.fieldError} role="alert">
               {fieldErrors.password}
             </p>
           )}
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
         </div>
 
         <div className={styles.formGroup}>
@@ -221,10 +195,7 @@ export default function SignupPage() {
               data-has-toggle="true"
               className={fieldErrors.confirmPassword ? styles.inputError : undefined}
               aria-invalid={Boolean(fieldErrors.confirmPassword)}
-<<<<<<< HEAD
-=======
               aria-describedby={fieldErrors.confirmPassword ? 'confirmPassword-error' : undefined}
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               required
             />
             <button
@@ -237,13 +208,6 @@ export default function SignupPage() {
             </button>
           </div>
           {fieldErrors.confirmPassword && (
-<<<<<<< HEAD
-            <p className={styles.fieldError}>{fieldErrors.confirmPassword}</p>
-          )}
-        </div>
-
-        <label className={styles.terms}>
-=======
             <p id="confirmPassword-error" className={styles.fieldError} role="alert">
               {fieldErrors.confirmPassword}
             </p>
@@ -251,33 +215,25 @@ export default function SignupPage() {
         </div>
 
         <label className={styles.terms} htmlFor="terms">
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
           <input
             type="checkbox"
             id="terms"
             checked={termsAccepted}
             onChange={(e) => setTermsAccepted(e.target.checked)}
             aria-invalid={Boolean(fieldErrors.terms)}
-<<<<<<< HEAD
-=======
             aria-describedby={fieldErrors.terms ? 'terms-error' : undefined}
             required
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
           />
           <span>
             I agree to the <Link href="/terms">Terms of Service</Link> and{' '}
             <Link href="/privacy">Privacy Policy</Link>.
           </span>
         </label>
-<<<<<<< HEAD
-        {fieldErrors.terms && <p className={styles.fieldError}>{fieldErrors.terms}</p>}
-=======
         {fieldErrors.terms && (
           <p id="terms-error" className={styles.fieldError} role="alert">
             {fieldErrors.terms}
           </p>
         )}
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 
         <button type="submit" className={styles.primaryBtn} disabled={loading} aria-busy={loading}>
           {loading ? 'Creating account...' : 'Create Account →'}
