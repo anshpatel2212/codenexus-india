@@ -166,14 +166,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <RequireAuth>
-      {/* Skip to Main Content */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#20364A] focus:text-white focus:rounded-md focus:shadow-elevated focus:outline-none focus:ring-2 focus:ring-[#416F89]"
-      >
-        Skip to main content
-      </a>
-
       <div className="bs-app-shell min-h-screen text-[#20364A] flex flex-col font-sans antialiased">
         <div className="flex flex-1 min-h-screen">
           {sidebarOpen && (

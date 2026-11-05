@@ -3,12 +3,12 @@ import { sampleFindings } from './mock-findings';
 
 export const currentUser: UserProfile = {
   id: 'usr-1',
-  name: 'Elena Rostova',
-  email: 'elena.rostova@acmebrand.com',
-  role: 'Manager',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  name: 'BrandSense Admin',
+  email: 'admin@brandsense.ai',
+  role: 'Admin',
+  avatar: '',
   department: 'Brand & Global Marketing',
-  organisation: 'Acme Enterprise Holdings',
+  organisation: 'BrandSense Workspace',
 };
 
 export const sampleOrganizations = [
