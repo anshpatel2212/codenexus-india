@@ -1,20 +1,95 @@
+import os
 import re
 import uuid
-from typing import Dict, Any, List, Tuple
+import json
+import urllib.request
+from typing import Dict, Any, List, Tuple, Optional
 from datetime import datetime
 from backend.services.supabase_admin import supabase_admin
 
 class AIReviewEngine:
     """
     BrandSense AI Governance Review Engine
-    Performs deterministic multi-vector brand compliance audits:
-    1. Terminology & Trademark casing (e.g. "BrandSense", "Content Hub™")
-    2. Promotional Claims & Prohibited Absolute Warranties (e.g. "guarantees 100%")
-    3. Hyperbolic & Banned Buzzwords (e.g. "miracle", "disruptive")
-    4. Facts & Quantified ROI Claims (checks for cohort footnote citations)
-    5. Tone & Voice spectrum (eliminates aggressive or informal phrasing)
-    6. Digital Accessibility (WCAG 2.2 directional cue checks)
+    Supports:
+    1. Autonomous Google Gemini Flash LLM Audit (General language reasoning across any text)
+    2. Deterministic multi-vector heuristic fallback engine
     """
+
+    async def _analyze_with_gemini(
+        self,
+        content: str,
+        content_type: str,
+        brand_profile_name: str,
+        knowledge_items: List[Dict[str, Any]],
+        api_key: str
+    ) -> Optional[Tuple[int, Dict[str, int], List[Dict[str, Any]], str]]:
+        system_prompt = """
+You are BrandSense AI, an autonomous enterprise brand governance engine.
+Audit submitted creative copy across:
+1. Facts and Claims: Flag unverified absolute guarantees or false statistics.
+2. Terminology: Enforce brand lexicon and registered marks (BrandSense).
+3. Tone and Voice: Enforce respectful, authoritative, professional B2B tone.
+4. Accessibility: Flag directional cues (e.g. 'green button on the right').
+CITE OR STAY SILENT: Cite verified policy documents.
+INTENT-PRESERVING: Provide drop-in replacement fixes that keep creator intent.
+
+Output strict JSON with:
+{
+  "overallScore": number (0-100),
+  "categoryScores": {"Tone and Voice": int, "Terminology": int, "Facts and Claims": int, "Promotional Claims": int, "Visual Consistency": int, "Accessibility": int},
+  "suggestedContent": "full revised text",
+  "findings": [
+    {
+      "id": "string",
+      "category": "Tone and Voice" | "Terminology" | "Facts and Claims" | "Promotional Claims" | "Visual Consistency" | "Accessibility",
+      "severity": "Critical" | "High" | "Medium" | "Low" | "Needs Human Review",
+      "reason": "explanation",
+      "evidence": "problematic sentence",
+      "highlightedText": "exact substring to highlight",
+      "sourceDocument": "policy name",
+      "sourceSection": "section",
+      "confidence": int (80-99),
+      "suggestedFix": "fix text",
+      "explanation": "rationale",
+      "status": "pending"
+    }
+  ]
+}
+"""
+        models = ["gemini-flash-lite-latest", "gemini-flash-latest", "gemini-3.8-flash"]
+        for model in models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            user_content = f"Content Type: {content_type}\nBrand Profile: {brand_profile_name}\n\nDRAFT CONTENT:\n\"\"\"{content}\"\"\""
+            payload = {
+                "contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_content}"}]}],
+                "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}
+            }
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    res = json.loads(resp.read().decode("utf-8"))
+                    raw = res["candidates"][0]["content"]["parts"][0]["text"]
+                    parsed = json.loads(raw)
+                    
+                    findings = parsed.get("findings", [])
+                    for idx, f in enumerate(findings):
+                        if "id" not in f or not f["id"]:
+                            f["id"] = f"f-{uuid.uuid4().hex[:8]}"
+                        if "status" not in f:
+                            f["status"] = "pending"
+                    
+                    return (
+                        parsed.get("overallScore", 78),
+                        parsed.get("categoryScores", {
+                            "Tone and Voice": 80, "Terminology": 85, "Facts and Claims": 70,
+                            "Promotional Claims": 70, "Visual Consistency": 95, "Accessibility": 90
+                        }),
+                        findings,
+                        parsed.get("suggestedContent", content)
+                    )
+            except Exception as e:
+                continue
+        return None
 
     async def analyze_content(
         self,
@@ -26,12 +101,21 @@ class AIReviewEngine:
         # Fetch organization knowledge items for active RAG rule retrieval
         knowledge_items = await supabase_admin.get_brand_knowledge(org_id)
         
+        # 1. Attempt Autonomous Gemini Flash LLM Audit first if API key configured
+        gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("NEXT_PUBLIC_GEMINI_API_KEY")
+        if gemini_key:
+            try:
+                llm_res = await self._analyze_with_gemini(content, content_type, brand_profile_name, knowledge_items, gemini_key)
+                if llm_res:
+                    return llm_res
+            except Exception as e:
+                print(f"Gemini backend analysis fallback to deterministic rules: {e}")
+        
+        # 2. Deterministic Fallback Engine
         findings: List[Dict[str, Any]] = []
         suggested_text = content
 
-        # ----------------------------------------------------------------------
         # 1. Promotional Claims Check (Absolute performance warranties)
-        # ----------------------------------------------------------------------
         warranty_pattern = re.compile(r'(guarantees?\s+(?:a\s+)?100%[^.]*|100%\s+elimination[^.]*)', re.IGNORECASE)
         match = warranty_pattern.search(content)
         if match:
@@ -53,9 +137,7 @@ class AIReviewEngine:
             })
             suggested_text = warranty_pattern.sub(fix, suggested_text)
 
-        # ----------------------------------------------------------------------
         # 2. Terminology & Hyperbolic Buzzwords Check
-        # ----------------------------------------------------------------------
         buzzword_pattern = re.compile(r'(disruptive\s+miracle\s+platform|miracle\s+platform|magic\s+platform)', re.IGNORECASE)
         match = buzzword_pattern.search(content)
         if match:
@@ -77,9 +159,7 @@ class AIReviewEngine:
             })
             suggested_text = buzzword_pattern.sub(fix, suggested_text)
 
-        # ----------------------------------------------------------------------
         # 3. Trademark Integrity (CamelCase rules)
-        # ----------------------------------------------------------------------
         tm_pattern = re.compile(r'(brand\s+sense\s+Cloud\s+Sync|brand\s+sense|Brand\s+Sense)', re.IGNORECASE)
         match = tm_pattern.search(content)
         if match:
@@ -101,9 +181,7 @@ class AIReviewEngine:
             })
             suggested_text = tm_pattern.sub(fix, suggested_text)
 
-        # ----------------------------------------------------------------------
         # 4. Facts & Quantified ROI Claims
-        # ----------------------------------------------------------------------
         roi_pattern = re.compile(r'(instant\s+450%\s+ROI[^.]*|450%\s+ROI)', re.IGNORECASE)
         match = roi_pattern.search(content)
         if match:
@@ -125,9 +203,7 @@ class AIReviewEngine:
             })
             suggested_text = roi_pattern.sub(fix, suggested_text)
 
-        # ----------------------------------------------------------------------
         # 5. Tone & Voice (Aggressive / Fear Tactics)
-        # ----------------------------------------------------------------------
         fear_pattern = re.compile(r'(Don’t\s+be\s+a\s+dinosaur![^.!]*|leave\s+you\s+in\s+the\s+dust!)', re.IGNORECASE)
         match = fear_pattern.search(content)
         if match:
@@ -149,9 +225,7 @@ class AIReviewEngine:
             })
             suggested_text = fear_pattern.sub(fix, suggested_text)
 
-        # ----------------------------------------------------------------------
         # 6. Digital Accessibility (Directional / Visual cues)
-        # ----------------------------------------------------------------------
         access_pattern = re.compile(r'(Click\s+the\s+green\s+button\s+on\s+the\s+right\s+side\s+of\s+the\s+screen\s+to\s+download)', re.IGNORECASE)
         match = access_pattern.search(content)
         if match:
@@ -194,4 +268,3 @@ class AIReviewEngine:
         return overall_score, category_scores, findings, suggested_text
 
 ai_review_engine = AIReviewEngine()
-
