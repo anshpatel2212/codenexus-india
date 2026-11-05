@@ -30,7 +30,7 @@ class SupabaseDataService {
   // ---------------------------------------------------------------------------
   async getReviews(orgId?: string): Promise<ReviewItem[]> {
     if (!this.isConnected()) {
-      return this.getLocalReviews();
+      return this.getLocalReviews(orgId);
     }
 
     try {
@@ -50,12 +50,12 @@ class SupabaseDataService {
 
       const { data, error } = await query;
       if (error || !data || data.length === 0) {
-        return this.getLocalReviews();
+        return this.getLocalReviews(orgId);
       }
 
       return data.map((r: any) => this.mapReviewRecord(r));
     } catch {
-      return this.getLocalReviews();
+      return this.getLocalReviews(orgId);
     }
   }
 
@@ -375,7 +375,7 @@ class SupabaseDataService {
   // ---------------------------------------------------------------------------
   async getKnowledgeBase(orgId?: string): Promise<KnowledgeItem[]> {
     if (!this.isConnected()) {
-      return this.getLocalKnowledgeBase();
+      return this.getLocalKnowledgeBase(orgId);
     }
 
     try {
@@ -390,7 +390,7 @@ class SupabaseDataService {
 
       const { data, error } = await query;
       if (error || !data || data.length === 0) {
-        return this.getLocalKnowledgeBase();
+        return this.getLocalKnowledgeBase(orgId);
       }
 
       return data.map((item: any) => ({
@@ -415,7 +415,7 @@ class SupabaseDataService {
         replacement: item.replacement || undefined,
       }));
     } catch {
-      return this.getLocalKnowledgeBase();
+      return this.getLocalKnowledgeBase(orgId);
     }
   }
 
@@ -577,7 +577,7 @@ class SupabaseDataService {
   // ---------------------------------------------------------------------------
   async getApprovals(orgId?: string): Promise<ApprovalItem[]> {
     if (!this.isConnected()) {
-      return this.getLocalApprovals();
+      return this.getLocalApprovals(orgId);
     }
 
     try {
@@ -598,7 +598,7 @@ class SupabaseDataService {
 
       const { data, error } = await query;
       if (error || !data || data.length === 0) {
-        return this.getLocalApprovals();
+        return this.getLocalApprovals(orgId);
       }
 
       return data.map((a: any) => ({
@@ -628,7 +628,7 @@ class SupabaseDataService {
         criticalIssuesCount: 1,
       }));
     } catch {
-      return this.getLocalApprovals();
+      return this.getLocalApprovals(orgId);
     }
   }
 
@@ -974,61 +974,90 @@ class SupabaseDataService {
   // ---------------------------------------------------------------------------
   // Local Storage Cache Helpers
   // ---------------------------------------------------------------------------
-  private getLocalReviews(): ReviewItem[] {
-    if (typeof window === 'undefined') return sampleReviews;
+  private getLocalReviews(orgId?: string): ReviewItem[] {
+    if (typeof window === 'undefined') return [];
     try {
+      if (orgId && orgId !== 'org-1') {
+        const stored = localStorage.getItem(`brandsense_reviews_${orgId}`);
+        if (stored) return JSON.parse(stored);
+        return [];
+      }
       const stored = localStorage.getItem('brandsense_reviews');
-      return stored ? JSON.parse(stored) : sampleReviews;
+      if (stored) return JSON.parse(stored);
+      if (orgId === 'org-1' || !orgId) {
+        return sampleReviews;
+      }
+      return [];
     } catch {
-      return sampleReviews;
+      return [];
     }
   }
 
-  private saveLocalReview(review: ReviewItem) {
+  private saveLocalReview(review: ReviewItem, orgId?: string) {
     if (typeof window === 'undefined') return;
     try {
-      const current = this.getLocalReviews();
-      localStorage.setItem('brandsense_reviews', JSON.stringify([review, ...current]));
+      const targetOrg = orgId || (review as any).orgId || (review as any).organizationId || 'org-1';
+      const key = targetOrg !== 'org-1' ? `brandsense_reviews_${targetOrg}` : 'brandsense_reviews';
+      const current = this.getLocalReviews(targetOrg);
+      const updated = [review, ...current.filter((r) => r.id !== review.id)];
+      localStorage.setItem(key, JSON.stringify(updated));
+      localStorage.setItem('brandsense_reviews', JSON.stringify(updated));
+      localStorage.setItem('brandsense_current_review', JSON.stringify(review));
     } catch {
       // Ignore
     }
   }
 
-  private writeLocalReviews(reviews: ReviewItem[]) {
+  private writeLocalReviews(reviews: ReviewItem[], orgId?: string) {
     if (typeof window === 'undefined') return;
     try {
+      const key = orgId && orgId !== 'org-1' ? `brandsense_reviews_${orgId}` : 'brandsense_reviews';
+      localStorage.setItem(key, JSON.stringify(reviews));
       localStorage.setItem('brandsense_reviews', JSON.stringify(reviews));
     } catch {
       // Ignore
     }
   }
 
-  private getLocalKnowledgeBase(): KnowledgeItem[] {
+  private getLocalKnowledgeBase(orgId?: string): KnowledgeItem[] {
     if (typeof window === 'undefined') return sampleKnowledgeBase;
     try {
-      const stored = localStorage.getItem('brandsense_kb');
-      return stored ? JSON.parse(stored) : sampleKnowledgeBase;
+      const key = orgId && orgId !== 'org-1' ? `brandsense_kb_${orgId}` : 'brandsense_kb';
+      const stored = localStorage.getItem(key);
+      if (stored) return JSON.parse(stored);
+      localStorage.setItem(key, JSON.stringify(sampleKnowledgeBase));
+      return sampleKnowledgeBase;
     } catch {
       return sampleKnowledgeBase;
     }
   }
 
-  private writeLocalKnowledgeBase(items: KnowledgeItem[]) {
+  private writeLocalKnowledgeBase(items: KnowledgeItem[], orgId?: string) {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem('brandsense_kb', JSON.stringify(items));
+      const key = orgId && orgId !== 'org-1' ? `brandsense_kb_${orgId}` : 'brandsense_kb';
+      localStorage.setItem(key, JSON.stringify(items));
     } catch {
       // Ignore
     }
   }
 
-  private getLocalApprovals(): ApprovalItem[] {
-    if (typeof window === 'undefined') return sampleApprovals;
+  private getLocalApprovals(orgId?: string): ApprovalItem[] {
+    if (typeof window === 'undefined') return [];
     try {
+      if (orgId && orgId !== 'org-1') {
+        const stored = localStorage.getItem(`brandsense_approvals_${orgId}`);
+        if (stored) return JSON.parse(stored);
+        return [];
+      }
       const stored = localStorage.getItem('brandsense_approvals');
-      return stored ? JSON.parse(stored) : sampleApprovals;
+      if (stored) return JSON.parse(stored);
+      if (orgId === 'org-1' || !orgId) {
+        return sampleApprovals;
+      }
+      return [];
     } catch {
-      return sampleApprovals;
+      return [];
     }
   }
 
