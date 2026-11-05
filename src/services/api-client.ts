@@ -28,8 +28,8 @@ class BrandSenseApiClient {
     return supabaseDataService.getReviews(orgId);
   }
 
-  async getReviewById(id: string): Promise<ReviewItem | undefined> {
-    return supabaseDataService.getReviewById(id);
+  async getReviewById(id: string, orgId?: string): Promise<ReviewItem | undefined> {
+    return supabaseDataService.getReviewById(id, orgId);
   }
 
   async submitReview(data: {
@@ -154,12 +154,12 @@ class BrandSenseApiClient {
     return supabaseDataService.addKnowledgeItem(item, orgId, userId);
   }
 
-  async deleteKnowledgeItem(id: string): Promise<{ success: boolean; error?: string }> {
-    return supabaseDataService.deleteKnowledgeItem(id);
+  async deleteKnowledgeItem(id: string, orgId?: string): Promise<{ success: boolean; error?: string }> {
+    return supabaseDataService.deleteKnowledgeItem(id, orgId);
   }
 
-  async deleteReview(id: string): Promise<{ success: boolean; error?: string }> {
-    return supabaseDataService.deleteReview(id);
+  async deleteReview(id: string, orgId?: string): Promise<{ success: boolean; error?: string }> {
+    return supabaseDataService.deleteReview(id, orgId);
   }
 
   // ---------------------------------------------------------------------------
