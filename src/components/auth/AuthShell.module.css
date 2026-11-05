@@ -296,11 +296,7 @@
 
 .fieldError {
   margin-top: 6px;
-<<<<<<< HEAD
-  font-size: 11px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   font-weight: 600;
   color: #a94842;
 }
@@ -461,13 +457,8 @@
   justify-content: center;
   gap: 7px;
   margin-top: 25px;
-<<<<<<< HEAD
-  font-size: 11px;
-  color: #9aa7b1;
-=======
   font-size: 12px;
   color: #4F6576;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 }
 
 .formPanelLogin .securityNote {
@@ -486,13 +477,8 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-<<<<<<< HEAD
-  font-size: 11px;
-  color: #9aa7b1;
-=======
   font-size: 12px;
   color: #4F6576;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 }
 
 .demoButton {
@@ -500,11 +486,7 @@
   background: none;
   padding: 0;
   font-family: inherit;
-<<<<<<< HEAD
-  font-size: 11px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   font-weight: 700;
   color: #416f89;
   cursor: pointer;
@@ -707,11 +689,7 @@
   .pageLogin .welcomeBadge {
     margin-bottom: 14px;
     padding: 7px 12px;
-<<<<<<< HEAD
-    font-size: 10px;
-=======
     font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   }
 
   .pageLogin .welcomeBottom {
@@ -923,11 +901,7 @@
 
   .pageRegister .terms {
     margin: 0 0 10px;
-<<<<<<< HEAD
-    font-size: 11px;
-=======
     font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   }
 
   .pageLogin .formPanelLogin .primaryBtn,

@@ -2,14 +2,11 @@ node_modules/
 .next/
 .env*
 !.env.example
-<<<<<<< HEAD
 backend/.env*
 !backend/.env.example
 .venv/
 venv/
 __pycache__/
 *.pyc
-=======
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 .DS_Store
 tsconfig.tsbuildinfo

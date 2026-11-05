@@ -11,21 +11,12 @@
   --surface-glass-strong: rgba(255,255,255,.82);
 
   --text: #263B4D;
-<<<<<<< HEAD
-  --muted: #718494;
-  --line: rgba(196,213,224,.75);
-
-  --success: #258A70;
-  --warning: #B77938;
-  --danger: #C65E57;
-=======
   --muted: #4F6576;
   --line: rgba(196,213,224,.75);
 
   --success: #1F7560;
   --warning: #9A682D;
   --danger: #A94842;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 
   --shadow: 0 20px 60px rgba(32,54,74,.09);
   --glass-shadow: 0 15px 45px rgba(32,54,74,.07);
@@ -73,8 +64,6 @@ button {
   font: inherit;
 }
 
-<<<<<<< HEAD
-=======
 a:focus-visible,
 button:focus-visible,
 .btn:focus-visible {
@@ -82,7 +71,6 @@ button:focus-visible,
   outline-offset: 2px;
 }
 
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 .container {
   width: min(1160px, calc(100% - 48px));
   margin: auto;
@@ -335,11 +323,7 @@ button:focus-visible,
   backdrop-filter: var(--glass-blur);
   padding: 10px 15px;
   border-radius: 100px;
-<<<<<<< HEAD
-  font-size: 11px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   font-weight: 700;
   color: var(--primary-dark);
   margin-bottom: 25px;
@@ -448,11 +432,7 @@ button:focus-visible,
 }
 
 .window-label {
-<<<<<<< HEAD
-  font-size: 10px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   color: #8B9894;
   font-weight: 700;
 }
@@ -469,11 +449,7 @@ button:focus-visible,
   margin-bottom: 21px;
 }
 
-<<<<<<< HEAD
-.review-header h3 {
-=======
 .review-header h2, .review-header h3 {
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   font-weight: 700;
   font-size: 14px;
   color: var(--navy);
@@ -481,20 +457,12 @@ button:focus-visible,
 }
 
 .review-header p {
-<<<<<<< HEAD
-  font-size: 10px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   color: var(--muted);
 }
 
 .review-status {
-<<<<<<< HEAD
-  font-size: 9px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   font-weight: 800;
   padding: 7px 9px;
   border-radius: 6px;
@@ -514,22 +482,14 @@ button:focus-visible,
 
 .content-tag {
   color: var(--primary-dark);
-<<<<<<< HEAD
-  font-size: 9px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-bottom: 12px;
 }
 
-<<<<<<< HEAD
-.content-preview h4 {
-=======
 .content-preview h3, .content-preview h4 {
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   font-family: "DM Sans", sans-serif;
   font-weight: 700;
   font-size: 19px;
@@ -539,15 +499,9 @@ button:focus-visible,
 }
 
 .content-preview p {
-<<<<<<< HEAD
-  font-size: 10px;
-  line-height: 1.7;
-  color: #75828B;
-=======
   font-size: 12px;
   line-height: 1.7;
   color: var(--text);
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 }
 
 .issue-list {
@@ -599,21 +553,13 @@ button:focus-visible,
 .issue-text strong {
   display: block;
   color: var(--navy);
-<<<<<<< HEAD
-  font-size: 10px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   margin-bottom: 4px;
 }
 
 .issue-text small {
   color: var(--muted);
-<<<<<<< HEAD
-  font-size: 9px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   line-height: 1.5;
 }
 
@@ -634,11 +580,7 @@ button:focus-visible,
 }
 
 .preview-footer span {
-<<<<<<< HEAD
-  font-size: 9px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   color: var(--muted);
 }
 
@@ -662,20 +604,12 @@ button:focus-visible,
 
 .floating-note strong {
   display: block;
-<<<<<<< HEAD
-  font-size: 11px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   margin-bottom: 4px;
 }
 
 .floating-note span {
-<<<<<<< HEAD
-  font-size: 9px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   color: var(--yellow);
 }
 
@@ -698,11 +632,7 @@ button:focus-visible,
 }
 
 .brand-strip p {
-<<<<<<< HEAD
-  font-size: 11px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   color: var(--muted);
   font-weight: 600;
 }
@@ -716,11 +646,7 @@ button:focus-visible,
 .brand-values span {
   font-size: 12px;
   font-weight: 800;
-<<<<<<< HEAD
-  color: #718494;
-=======
   color: #4F6576;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   letter-spacing: .5px;
 }
 
@@ -764,11 +690,7 @@ button:focus-visible,
 }
 
 .card-number {
-<<<<<<< HEAD
-  font-size: 11px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   font-weight: 800;
   letter-spacing: 1.5px;
   opacity: .6;
@@ -818,11 +740,7 @@ button:focus-visible,
   background: rgba(255,255,255,.09);
   border: 1px solid rgba(255,255,255,.13);
   border-radius: 6px;
-<<<<<<< HEAD
-  font-size: 10px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   color: #D5E3EC;
 }
 
@@ -910,11 +828,7 @@ button:focus-visible,
 
 .feature-card p {
   color: var(--muted);
-<<<<<<< HEAD
-  font-size: 11px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   line-height: 1.7;
 }
 
@@ -994,11 +908,7 @@ button:focus-visible,
 }
 
 .step p {
-<<<<<<< HEAD
-  font-size: 11px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   line-height: 1.7;
   color: var(--muted);
   max-width: 200px;
@@ -1111,11 +1021,7 @@ button:focus-visible,
 }
 
 .trust-item p {
-<<<<<<< HEAD
-  font-size: 11px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   color: #B7C9D2;
   line-height: 1.65;
 }
@@ -1225,11 +1131,7 @@ footer {
   gap: 75px;
 }
 
-<<<<<<< HEAD
-.footer-column h4 {
-=======
 .footer-column h3, .footer-column h4 {
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   font-weight: 700;
   font-size: 12px;
   margin-bottom: 18px;
@@ -1238,11 +1140,7 @@ footer {
 .footer-column a {
   display: block;
   color: #B7C9D2;
-<<<<<<< HEAD
-  font-size: 11px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   margin-bottom: 13px;
   transition: .2s;
 }
@@ -1257,11 +1155,7 @@ footer {
   gap: 15px;
   padding-top: 22px;
   color: #9CB0BD;
-<<<<<<< HEAD
-  font-size: 10px;
-=======
   font-size: 12px;
->>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 }
 
 /* SCROLL ANIMATIONS */
