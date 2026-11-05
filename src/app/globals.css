@@ -1,0 +1,237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* BrandSense final palette — do not change */
+  --brand-primary: #416f89;
+  --brand-primary-dark: #315c74;
+  --brand-navy: #20364a;
+  --brand-navy-dark: #172b3d;
+  --brand-light: #d5e3ec;
+  --brand-highlight: #f4d77b;
+  --brand-white: #ffffff;
+
+  --background: #edf3f6;
+  --surface: #ffffff;
+  --surface-muted: #f4f8fa;
+
+  --text-primary: #263b4d;
+  --text-muted: #718494;
+  --border-default: #c4d5e0;
+
+  --success: #258a70;
+  --warning: #b77938;
+  --danger: #c65e57;
+
+  --shadow-subtle: 0 1px 2px rgba(32, 54, 74, 0.04), 0 4px 14px rgba(32, 54, 74, 0.05);
+  --shadow-card: 0 2px 6px rgba(32, 54, 74, 0.04), 0 12px 32px rgba(32, 54, 74, 0.06);
+  --shadow-elevated: 0 20px 50px rgba(32, 54, 74, 0.14);
+
+  --radius-card: 14px;
+  --radius-control: 9px;
+}
+
+@layer base {
+  * {
+    border-color: var(--border-default);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    color: var(--text-primary);
+    background: var(--background);
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-heading {
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  h1 {
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
+
+  h2 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  h3,
+  h4 {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: rgba(65, 111, 137, 0.18);
+    color: var(--brand-navy);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand-primary);
+    outline-offset: 2px;
+  }
+
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+  }
+}
+
+@layer components {
+  /* Standard enterprise card */
+  .bs-card {
+    @apply rounded-xl border border-[#C4D5E0] bg-white shadow-subtle;
+  }
+
+  .bs-card-hover {
+    @apply transition-all duration-200 hover:border-[#8FB3C6] hover:shadow-card;
+  }
+
+  /* Form controls */
+  .bs-input {
+    @apply w-full rounded-lg border border-[#C4D5E0] bg-white px-3 py-2 text-xs text-[#263B4D] transition-colors placeholder:text-[#94A3AF] focus:border-[#416F89] focus:outline-none focus:ring-2 focus:ring-[#416F89]/20;
+  }
+
+  .bs-label {
+    @apply mb-1.5 block text-xs font-bold text-[#20364A];
+  }
+
+  /* Section label */
+  .bs-eyebrow {
+    @apply text-[10px] font-extrabold uppercase tracking-wider text-[#718494];
+  }
+}
+
+/* App shell — matches the landing page atmosphere */
+.bs-glass {
+  background-color: rgba(255, 255, 255, 0.68);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 15px 45px rgba(32, 54, 74, 0.07);
+}
+
+.bs-app-shell {
+  background:
+    radial-gradient(circle at 10% 15%, rgba(65, 111, 137, 0.12), transparent 30%),
+    radial-gradient(circle at 90% 35%, rgba(244, 215, 123, 0.13), transparent 28%),
+    radial-gradient(circle at 50% 90%, rgba(65, 111, 137, 0.08), transparent 35%),
+    #edf3f6;
+  background-attachment: fixed;
+}
+
+.bs-app-shell main .bg-white.rounded-xl {
+  background-color: rgba(255, 255, 255, 0.68);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 15px 45px rgba(32, 54, 74, 0.07);
+}
+
+.bs-app-shell main .fixed .bg-white.rounded-xl {
+  background-color: #ffffff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.bs-app-shell main h1 {
+  font-family: "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(24px, 2.5vw, 34px);
+  font-weight: 800;
+  line-height: 1.14;
+  letter-spacing: -1.2px;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c4d5e0;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a9bdca;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Restrained entrance animations used by modals/drawers */
+@keyframes bs-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bs-scale-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes bs-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-in {
+  animation: bs-fade-in 160ms ease-out both;
+}
+.animate-in.zoom-in-95 {
+  animation-name: bs-scale-in;
+  animation-duration: 200ms;
+}
+.animate-in.slide-in-from-right {
+  animation-name: bs-slide-in-right;
+  animation-duration: 220ms;
+}
+.animate-in.slide-in-from-bottom-2 {
+  animation-name: bs-scale-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
