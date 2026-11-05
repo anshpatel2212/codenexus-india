@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { UserProfile } from '@/types';
@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (env.isConfigured) {
       try {
         const supabase = getSupabaseBrowserClient();
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
           if (!active) return;
           if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
             if (session?.user) {

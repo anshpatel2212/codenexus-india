@@ -59,14 +59,14 @@ class SupabaseDataService {
     }
   }
 
-  async getReviewById(id: string): Promise<ReviewItem | undefined> {
+  async getReviewById(id: string, orgId?: string): Promise<ReviewItem | undefined> {
     if (!this.isConnected()) {
-      const local = this.getLocalReviews();
-      return local.find((r) => r.id === id) || local[0];
+      const local = this.getLocalReviews(orgId);
+      return local.find((r) => r.id === id);
     }
 
     try {
-      const { data, error } = await this.client
+      let query = this.client
         .from('reviews')
         .select(`
           *,
@@ -74,18 +74,23 @@ class SupabaseDataService {
           reviewer:profiles!reviews_reviewer_id_fkey(full_name, email, avatar_url, role),
           findings(*)
         `)
-        .eq('id', id)
-        .single();
+        .eq('id', id);
+
+      if (orgId) {
+        query = query.eq('organization_id', orgId);
+      }
+
+      const { data, error } = await query.single();
 
       if (error || !data) {
-        const local = this.getLocalReviews();
-        return local.find((r) => r.id === id) || local[0];
+        const local = this.getLocalReviews(orgId);
+        return local.find((r) => r.id === id);
       }
 
       return this.mapReviewRecord(data);
     } catch {
-      const local = this.getLocalReviews();
-      return local.find((r) => r.id === id) || local[0];
+      const local = this.getLocalReviews(orgId);
+      return local.find((r) => r.id === id);
     }
   }
 
@@ -322,8 +327,33 @@ class SupabaseDataService {
     }
 
     // Development / demo cache persistence only
-    if (process.env.NODE_ENV !== 'production') {
-      this.saveLocalReview(newReview);
+    if (process.env.NODE_ENV !== 'production' || !this.isConnected()) {
+      this.saveLocalReview(newReview, data.orgId, data.authorId);
+
+      // Register an approval workflow item in the isolated organization store
+      const approvalItem: ApprovalItem = {
+        id: `appr-${Date.now()}`,
+        reviewId: newReview.id,
+        title: newReview.title,
+        submittedBy: {
+          name: newReview.author.name,
+          avatar: newReview.author.avatar,
+          department: 'Brand & Marketing',
+        },
+        contentType: newReview.contentType,
+        submittedDate: 'Just now',
+        urgency: newReview.overallScore < 75 ? 'High' : 'Medium',
+        complianceScore: newReview.overallScore,
+        status: 'Pending',
+        assignedReviewer: {
+          name: 'Sarah Chen, Esq.',
+          avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80',
+        },
+        commentsCount: 0,
+        criticalIssuesCount: newReview.findings.filter((f) => f.severity === 'Critical').length,
+      };
+      const existingApprovals = this.getLocalApprovals(data.orgId);
+      this.writeLocalApprovals([approvalItem, ...existingApprovals.filter(a => a.reviewId !== newReview.id)], data.orgId);
     }
     return newReview;
   }
@@ -479,7 +509,7 @@ class SupabaseDataService {
     return newItem;
   }
 
-  async deleteKnowledgeItem(id: string): Promise<{ success: boolean; error?: string }> {
+  async deleteKnowledgeItem(id: string, orgId?: string): Promise<{ success: boolean; error?: string }> {
     if (this.isConnected()) {
       try {
         // Step 1: Query stored file_path and item type
@@ -523,12 +553,12 @@ class SupabaseDataService {
       }
     }
 
-    const current = this.getLocalKnowledgeBase();
-    this.writeLocalKnowledgeBase(current.filter((k) => k.id !== id));
+    const current = this.getLocalKnowledgeBase(orgId);
+    this.writeLocalKnowledgeBase(current.filter((k) => k.id !== id), orgId);
     return { success: true };
   }
 
-  async deleteReview(id: string): Promise<{ success: boolean; error?: string }> {
+  async deleteReview(id: string, orgId?: string): Promise<{ success: boolean; error?: string }> {
     if (this.isConnected()) {
       try {
         // Step 1: Query stored file_path
@@ -567,8 +597,8 @@ class SupabaseDataService {
       }
     }
 
-    const current = this.getLocalReviews();
-    this.writeLocalReviews(current.filter((r) => r.id !== id));
+    const current = this.getLocalReviews(orgId);
+    this.writeLocalReviews(current.filter((r) => r.id !== id), orgId);
     return { success: true };
   }
 
@@ -972,19 +1002,19 @@ class SupabaseDataService {
   }
 
   // ---------------------------------------------------------------------------
-  // Local Storage Cache Helpers
+  // Local Storage Cache Helpers (Strict User & Organization Isolation)
   // ---------------------------------------------------------------------------
-  private getLocalReviews(orgId?: string): ReviewItem[] {
+  public getLocalReviews(orgId?: string): ReviewItem[] {
     if (typeof window === 'undefined') return [];
     try {
-      if (orgId && orgId !== 'org-1') {
-        const stored = localStorage.getItem(`brandsense_reviews_${orgId}`);
-        if (stored) return JSON.parse(stored);
-        return [];
-      }
-      const stored = localStorage.getItem('brandsense_reviews');
+      const isDemoOrg = !orgId || orgId === 'org-demo-brandsense' || orgId === 'org-1';
+      const key = isDemoOrg ? 'brandsense_reviews_org-demo-brandsense' : `brandsense_reviews_${orgId}`;
+      const stored = localStorage.getItem(key);
       if (stored) return JSON.parse(stored);
-      if (orgId === 'org-1' || !orgId) {
+      
+      // Seed initial sample reviews ONLY for demo accounts
+      if (isDemoOrg) {
+        localStorage.setItem(key, JSON.stringify(sampleReviews));
         return sampleReviews;
       }
       return [];
@@ -993,66 +1023,82 @@ class SupabaseDataService {
     }
   }
 
-  private saveLocalReview(review: ReviewItem, orgId?: string) {
+  public saveLocalReview(review: ReviewItem, orgId?: string, authorId?: string) {
     if (typeof window === 'undefined') return;
     try {
-      const targetOrg = orgId || (review as any).orgId || (review as any).organizationId || 'org-1';
-      const key = targetOrg !== 'org-1' ? `brandsense_reviews_${targetOrg}` : 'brandsense_reviews';
+      const isDemoOrg = !orgId || orgId === 'org-demo-brandsense' || orgId === 'org-1';
+      const targetOrg = isDemoOrg ? 'org-demo-brandsense' : (orgId || 'org-demo-brandsense');
+      const key = `brandsense_reviews_${targetOrg}`;
+      
       const current = this.getLocalReviews(targetOrg);
       const updated = [review, ...current.filter((r) => r.id !== review.id)];
       localStorage.setItem(key, JSON.stringify(updated));
-      localStorage.setItem('brandsense_reviews', JSON.stringify(updated));
+
+      // User-scoped current review key to prevent cross-account preview leakage
+      const userKey = authorId 
+        ? `brandsense_current_review_${authorId}` 
+        : `brandsense_current_review_${targetOrg}`;
+      localStorage.setItem(userKey, JSON.stringify(review));
       localStorage.setItem('brandsense_current_review', JSON.stringify(review));
     } catch {
       // Ignore
     }
   }
 
-  private writeLocalReviews(reviews: ReviewItem[], orgId?: string) {
+  public writeLocalReviews(reviews: ReviewItem[], orgId?: string) {
     if (typeof window === 'undefined') return;
     try {
-      const key = orgId && orgId !== 'org-1' ? `brandsense_reviews_${orgId}` : 'brandsense_reviews';
+      const isDemoOrg = !orgId || orgId === 'org-demo-brandsense' || orgId === 'org-1';
+      const targetOrg = isDemoOrg ? 'org-demo-brandsense' : (orgId || 'org-demo-brandsense');
+      const key = `brandsense_reviews_${targetOrg}`;
       localStorage.setItem(key, JSON.stringify(reviews));
-      localStorage.setItem('brandsense_reviews', JSON.stringify(reviews));
     } catch {
       // Ignore
     }
   }
 
-  private getLocalKnowledgeBase(orgId?: string): KnowledgeItem[] {
-    if (typeof window === 'undefined') return sampleKnowledgeBase;
+  public getLocalKnowledgeBase(orgId?: string): KnowledgeItem[] {
+    if (typeof window === 'undefined') return [];
     try {
-      const key = orgId && orgId !== 'org-1' ? `brandsense_kb_${orgId}` : 'brandsense_kb';
+      const isDemoOrg = !orgId || orgId === 'org-demo-brandsense' || orgId === 'org-1';
+      const key = isDemoOrg ? 'brandsense_kb_org-demo-brandsense' : `brandsense_kb_${orgId}`;
       const stored = localStorage.getItem(key);
       if (stored) return JSON.parse(stored);
-      localStorage.setItem(key, JSON.stringify(sampleKnowledgeBase));
-      return sampleKnowledgeBase;
+
+      // Seed initial sample knowledge base ONLY for demo accounts
+      if (isDemoOrg) {
+        localStorage.setItem(key, JSON.stringify(sampleKnowledgeBase));
+        return sampleKnowledgeBase;
+      }
+      return [];
     } catch {
-      return sampleKnowledgeBase;
+      return [];
     }
   }
 
-  private writeLocalKnowledgeBase(items: KnowledgeItem[], orgId?: string) {
+  public writeLocalKnowledgeBase(items: KnowledgeItem[], orgId?: string) {
     if (typeof window === 'undefined') return;
     try {
-      const key = orgId && orgId !== 'org-1' ? `brandsense_kb_${orgId}` : 'brandsense_kb';
+      const isDemoOrg = !orgId || orgId === 'org-demo-brandsense' || orgId === 'org-1';
+      const targetOrg = isDemoOrg ? 'org-demo-brandsense' : (orgId || 'org-demo-brandsense');
+      const key = `brandsense_kb_${targetOrg}`;
       localStorage.setItem(key, JSON.stringify(items));
     } catch {
       // Ignore
     }
   }
 
-  private getLocalApprovals(orgId?: string): ApprovalItem[] {
+  public getLocalApprovals(orgId?: string): ApprovalItem[] {
     if (typeof window === 'undefined') return [];
     try {
-      if (orgId && orgId !== 'org-1') {
-        const stored = localStorage.getItem(`brandsense_approvals_${orgId}`);
-        if (stored) return JSON.parse(stored);
-        return [];
-      }
-      const stored = localStorage.getItem('brandsense_approvals');
+      const isDemoOrg = !orgId || orgId === 'org-demo-brandsense' || orgId === 'org-1';
+      const key = isDemoOrg ? 'brandsense_approvals_org-demo-brandsense' : `brandsense_approvals_${orgId}`;
+      const stored = localStorage.getItem(key);
       if (stored) return JSON.parse(stored);
-      if (orgId === 'org-1' || !orgId) {
+
+      // Seed initial sample approvals ONLY for demo accounts
+      if (isDemoOrg) {
+        localStorage.setItem(key, JSON.stringify(sampleApprovals));
         return sampleApprovals;
       }
       return [];
@@ -1061,10 +1107,13 @@ class SupabaseDataService {
     }
   }
 
-  private writeLocalApprovals(approvals: ApprovalItem[]) {
+  public writeLocalApprovals(approvals: ApprovalItem[], orgId?: string) {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem('brandsense_approvals', JSON.stringify(approvals));
+      const isDemoOrg = !orgId || orgId === 'org-demo-brandsense' || orgId === 'org-1';
+      const targetOrg = isDemoOrg ? 'org-demo-brandsense' : (orgId || 'org-demo-brandsense');
+      const key = `brandsense_approvals_${targetOrg}`;
+      localStorage.setItem(key, JSON.stringify(approvals));
     } catch {
       // Ignore
     }

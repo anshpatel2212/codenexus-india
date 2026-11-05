@@ -152,4 +152,5 @@ export interface UserProfile {
   department: string;
   organisation: string;
   organizationId?: string;
+  isDemo?: boolean;
 }
