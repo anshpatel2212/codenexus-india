@@ -10,9 +10,10 @@ import {
   X,
 } from 'lucide-react';
 import { SensaMessage } from '@/types';
-import { initialSensaMessages, sensaPromptSuggestions } from '@/data/mock-conversations';
+import { sensaPromptSuggestions } from '@/data/mock-conversations';
 import { SensaMessageBubble } from './SensaMessageBubble';
 import { useToast } from '@/components/ui/Toast';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { apiClient } from '@/services/api-client';
 
 interface SensaChatDrawerProps {
@@ -20,19 +21,20 @@ interface SensaChatDrawerProps {
   onClose: () => void;
 }
 
-const createGreeting = (): SensaMessage => ({
+const createGreeting = (userName?: string): SensaMessage => ({
   id: `sm-drawer-${Date.now()}`,
   sender: 'sensa',
   timestamp: 'Just now',
-  content: `Hello. I'm SENSA, your brand assistant. I can help you check tone, claims, approved facts and brand guidance.
+  content: `Hello${userName ? ` ${userName.split(' ')[0]}` : ''}. I'm SENSA, your BrandSense AI copilot.
+
+I can help you check tone, claims, approved facts and brand guidance.
 
 What would you like to review today?`,
 });
 
 export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClose }) => {
-  const [messages, setMessages] = useState<SensaMessage[]>(() =>
-    initialSensaMessages.map((message) => ({ ...message }))
-  );
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<SensaMessage[]>([createGreeting(user?.name)]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);

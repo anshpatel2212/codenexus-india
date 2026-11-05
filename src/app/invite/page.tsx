@@ -1,17 +1,23 @@
-﻿'use client';
+'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { BrandSenseLogo } from '@/components/ui/BrandSenseLogo';
 import { Button } from '@/components/ui/Button';
-import { Building2, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Building2, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 
-export default function InvitePage() {
+function InviteContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
+  const token = searchParams.get('token');
+  const invitedEmail = searchParams.get('email') || (token ? 'colleague@enterprise.com' : 'elena.rostova@acmebrand.com');
+  const invitedOrg = searchParams.get('org') || 'BrandSense Enterprise Workspace';
+  const invitedRole = searchParams.get('role') || 'Brand Reviewer';
 
   const handleAccept = () => {
     setLoading(true);
@@ -36,23 +42,21 @@ export default function InvitePage() {
         </span>
 
         <h1 className="text-xl sm:text-2xl font-heading font-extrabold text-[#20364A] mt-3 tracking-tight">
-          Join Acme Enterprise Holdings
+          Join {invitedOrg}
         </h1>
 
         <p className="mt-2 text-xs sm:text-sm text-[#4F6576] leading-relaxed">
-          <strong className="text-[#20364A]">Julian Thorne</strong> (Chief Compliance Officer) has
-          invited you to collaborate as an authorized{' '}
-          <strong className="text-[#20364A]">Content Reviewer</strong> on BrandSense.
+          You have been invited to collaborate as an authorized <strong className="text-[#20364A]">{invitedRole}</strong> on the BrandSense platform.
         </p>
 
         <div className="my-6 p-4 rounded-lg bg-[#F4F8FA] border border-[#C4D5E0] text-left space-y-2.5 text-xs">
           <div className="flex justify-between items-center gap-3">
             <span className="text-[#4F6576]">Invited email</span>
-            <span className="font-semibold text-[#20364A] truncate">elena.rostova@acmebrand.com</span>
+            <span className="font-semibold text-[#20364A] truncate">{invitedEmail}</span>
           </div>
           <div className="flex justify-between items-center gap-3">
             <span className="text-[#4F6576]">Assigned role</span>
-            <span className="font-semibold text-[#20364A]">Brand Manager / Reviewer</span>
+            <span className="font-semibold text-[#20364A]">{invitedRole}</span>
           </div>
           <div className="flex justify-between items-center gap-3">
             <span className="text-[#4F6576]">Clearance</span>
@@ -80,5 +84,17 @@ export default function InvitePage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function InvitePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-[#EDF3F6]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#416F89]" />
+      </div>
+    }>
+      <InviteContent />
+    </Suspense>
   );
 }

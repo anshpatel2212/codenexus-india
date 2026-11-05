@@ -179,7 +179,7 @@ export default function LoginPage() {
       </form>
 
       <div className={styles.switchText}>
-        Don&apos;t have an account? <Link href="/register">Create an account</Link>
+        Don&apos;t have an account? <Link href="/signup">Create an account</Link>
       </div>
 
       <div className={styles.securityNote}>

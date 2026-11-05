@@ -34,7 +34,7 @@ export default function KnowledgeBasePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<TabType>('guideline');
-  const [items, setItems] = useState<KnowledgeItem[]>(sampleKnowledgeBase);
+  const [items, setItems] = useState<KnowledgeItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -206,7 +206,19 @@ export default function KnowledgeBasePage() {
 
           {/* Items Grid */}
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredItems.map((item) => (
+            {filteredItems.length === 0 ? (
+              <div className="col-span-full py-12 text-center bg-white rounded-lg border border-[#C4D5E0]">
+                <BookMarked className="w-10 h-10 text-[#416F89]/40 mx-auto mb-3" aria-hidden="true" />
+                <p className="text-sm font-bold text-[#20364A]">No {activeTab} rules or assets found</p>
+                <p className="text-xs text-[#4F6576] mt-1 mb-4">
+                  Add brand guidelines, verified claims, and required vocabulary to enforce policy compliance.
+                </p>
+                <Button variant="primary" size="sm" onClick={() => setIsAddModalOpen(true)}>
+                  Add New {activeTab} +
+                </Button>
+              </div>
+            ) : (
+              filteredItems.map((item) => (
               <div
                 key={item.id}
                 className="p-5 rounded-lg border border-[#C4D5E0] bg-white hover:border-[#416F89]/50 transition-all shadow-subtle flex flex-col justify-between"
@@ -260,7 +272,7 @@ export default function KnowledgeBasePage() {
                   </button>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       </div>

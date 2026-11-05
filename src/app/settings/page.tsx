@@ -18,6 +18,7 @@ import { currentUser } from '@/data/mock-data';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { apiClient } from '@/services/api-client';
+import { authClient } from '@/services/auth-client';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getClientEnv } from '@/lib/env';
 
@@ -30,45 +31,141 @@ type SettingsSection =
   | 'transparency' 
   | 'security';
 
+interface TeamMember {
+  name: string;
+  email: string;
+  role: string;
+  dept: string;
+  status: string;
+}
+
+const INITIAL_TEAM_MEMBERS: TeamMember[] = [
+  { name: 'Elena Rostova', email: 'elena.rostova@brandsense.ai', role: 'Manager', dept: 'Brand & Global Marketing', status: 'Active' },
+  { name: 'Marcus Vance', email: 'm.vance@brandsense.ai', role: 'Reviewer', dept: 'Legal & Regulatory Compliance', status: 'Active' },
+  { name: 'Chloe Dubois', email: 'c.dubois@brandsense.ai', role: 'Creator', dept: 'Creative & Social Media', status: 'Active' },
+  { name: 'Devon Hayes', email: 'd.hayes@brandsense.ai', role: 'Admin', dept: 'Information Security & IT', status: 'Active' },
+];
+
 export default function SettingsPage() {
   const { toast } = useToast();
   const { user, refreshUser } = useAuth();
   const [activeSection, setActiveSection] = useState<SettingsSection>('profile');
 
-  const [name, setName] = useState(user?.name || currentUser.name);
-  const [email, setEmail] = useState(user?.email || currentUser.email);
-  const [orgName, setOrgName] = useState(user?.organisation || 'Acme Enterprise Holdings');
-  const [avatarUrl, setAvatarUrl] = useState<string>(user?.avatar || currentUser.avatar);
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [orgName, setOrgName] = useState(user?.organisation || 'BrandSense Workspace');
+  const [avatarUrl, setAvatarUrl] = useState<string>(user?.avatar || '');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [emailNotifs, setEmailNotifs] = useState(true);
   const [slackAlerts, setSlackAlerts] = useState(true);
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
+
+  const [stats, setStats] = useState({ reviewsCount: 0, knowledgeCount: 0 });
 
   React.useEffect(() => {
     if (user) {
       setName(user.name);
       setEmail(user.email);
       setOrgName(user.organisation);
-      if (user.avatar) setAvatarUrl(user.avatar);
+      setAvatarUrl(user.avatar || '');
     }
   }, [user]);
 
-  const teamMembers = [
-    { name: 'Elena Rostova', email: 'elena.rostova@acmebrand.com', role: 'Manager', dept: 'Brand & Global Marketing', status: 'Active' },
-    { name: 'Sarah Chen, Esq.', email: 's.chen@acmebrand.com', role: 'Reviewer', dept: 'Legal & Regulatory', status: 'Active' },
-    { name: 'Julian Thorne', email: 'j.thorne@acmebrand.com', role: 'Admin', dept: 'Executive Governance', status: 'Active' },
-    { name: 'Marcus Vance', email: 'm.vance@acmebrand.com', role: 'Creator', dept: 'Growth Copywriting', status: 'Active' },
-    { name: 'David Miller', email: 'd.miller@acmebrand.com', role: 'Creator', dept: 'Partner Marketing', status: 'Active' },
-  ];
+  React.useEffect(() => {
+    if (user?.organizationId) {
+      Promise.all([
+        apiClient.getReviews(user.organizationId),
+        apiClient.getKnowledgeBase(user.organizationId),
+      ]).then(([revs, kb]) => {
+        setStats({
+          reviewsCount: revs.length,
+          knowledgeCount: kb.length,
+        });
+      });
+    }
+  }, [user?.organizationId]);
+
+  const userInitials = (name || user?.name || 'User')
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<'Creator' | 'Manager' | 'Reviewer' | 'Admin'>('Reviewer');
+  const [inviteLink, setInviteLink] = useState('');
+  
+  const [members, setMembers] = useState<TeamMember[]>(() => {
+    if (typeof window !== 'undefined' && user?.organizationId) {
+      const saved = localStorage.getItem(`brandsense_team_${user.organizationId}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {}
+      }
+    }
+    if (user && !user.isDemo) {
+      return [
+        {
+          name: user.name,
+          email: user.email,
+          role: user.role || 'Brand Manager',
+          dept: user.department || 'Brand & Marketing',
+          status: 'Active (You)',
+        },
+      ];
+    }
+    return INITIAL_TEAM_MEMBERS;
+  });
+
+  const handleSendInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim() || !inviteEmail.includes('@')) {
+      toast('Please enter a valid email address.', 'error');
+      return;
+    }
+
+    const token = Math.random().toString(36).substring(2, 12);
+    const link = `${window.location.origin}/invite?token=${token}&email=${encodeURIComponent(inviteEmail)}&role=${encodeURIComponent(inviteRole)}&org=${encodeURIComponent(orgName)}`;
+    setInviteLink(link);
+    navigator.clipboard?.writeText(link);
+
+    const updatedMembers = [
+      {
+        name: inviteEmail.split('@')[0],
+        email: inviteEmail,
+        role: inviteRole,
+        dept: inviteRole === 'Reviewer' ? 'Legal & Regulatory' : 'Brand & Marketing',
+        status: 'Pending Invite',
+      },
+      ...members,
+    ];
+    setMembers(updatedMembers);
+
+    if (user?.organizationId) {
+      localStorage.setItem(`brandsense_team_${user.organizationId}`, JSON.stringify(updatedMembers));
+    }
+
+    toast(`Invitation link generated and copied to clipboard!`);
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (user) {
+      authClient.updateUserProfile(user.id, {
+        name,
+        email,
+        organisation: orgName,
+        avatar: avatarUrl,
+      });
+
       const env = getClientEnv();
       if (env.isConfigured) {
         try {
           const supabase = getSupabaseBrowserClient();
-          await (supabase as any).from('profiles').update({ full_name: name }).eq('id', user.id);
+          await (supabase as any).from('profiles').update({ full_name: name, avatar_url: avatarUrl }).eq('id', user.id);
         } catch (err) {
           console.warn('Failed to update profile name:', err);
         }
@@ -92,45 +189,45 @@ export default function SettingsPage() {
       return;
     }
 
-    if (!user || !user.organizationId) {
-      toast('Active organization required to upload profile avatar.', 'error');
-      return;
-    }
-
     setIsUploadingAvatar(true);
-    const orgId = user.organizationId;
-    const ext = file.name.split('.').pop() || 'png';
-    const sanitizedName = `${user.id}-avatar.${ext}`;
-    const path = `${orgId}/${sanitizedName}`;
-
     try {
-      const uploadRes = await apiClient.uploadAsset('avatars', path, file, orgId);
-      if (!uploadRes) {
-        toast('Failed to upload avatar to secure storage', 'error');
-        return;
-      }
-
-      const env = getClientEnv();
-      if (env.isConfigured) {
-        const supabase = getSupabaseBrowserClient();
-        await (supabase as any).from('profiles').update({ avatar_url: uploadRes.path }).eq('id', user.id);
-      }
-
-      setAvatarUrl(uploadRes.signedUrl || URL.createObjectURL(file));
-      if (refreshUser) await refreshUser();
-      toast('Profile photo updated successfully');
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataUrl = reader.result as string;
+        setAvatarUrl(dataUrl);
+        if (user) {
+          authClient.updateUserProfile(user.id, { avatar: dataUrl });
+          if (refreshUser) await refreshUser();
+        }
+        toast('Profile photo updated successfully!');
+        setIsUploadingAvatar(false);
+      };
+      reader.onerror = () => {
+        toast('Failed to process image file.', 'error');
+        setIsUploadingAvatar(false);
+      };
+      reader.readAsDataURL(file);
     } catch (err: any) {
       toast(err?.message || 'Error updating avatar', 'error');
-    } finally {
       setIsUploadingAvatar(false);
+    } finally {
       if (avatarInputRef.current) avatarInputRef.current.value = '';
     }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setAvatarUrl('');
+    if (user) {
+      authClient.updateUserProfile(user.id, { avatar: '' });
+      if (refreshUser) await refreshUser();
+    }
+    toast('Profile photo removed.');
   };
 
   const navItems = [
     { id: 'profile', label: 'Personal Profile', icon: User },
     { id: 'organization', label: 'Organisation Settings', icon: Building2 },
-    { id: 'team', label: 'Team Members', icon: Users, badge: '5' },
+    { id: 'team', label: 'Team Members', icon: Users, badge: members.length > 0 ? String(members.length) : undefined },
     { id: 'roles', label: 'Roles & Permissions', icon: Shield },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'transparency', label: 'AI Transparency', icon: Eye },
@@ -202,16 +299,48 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex items-center gap-4 pb-4 border-b border-[#C4D5E0]">
-                  <img
-                    src={avatarUrl || currentUser.avatar}
-                    alt={name}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-[#416F89]"
-                  />
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={name}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-[#416F89] shadow-sm flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-[#20364A] text-white font-heading font-extrabold text-xl flex items-center justify-center border-2 border-[#416F89] shadow-sm flex-shrink-0" aria-hidden="true">
+                      {userInitials}
+                    </div>
+                  )}
                   <div>
-                    <Button size="sm" variant="outline" type="button" onClick={() => toast('Avatar update dialog')}>
-                      Change Photo
-                    </Button>
-                    <p className="text-xs text-[#4F6576] mt-1">JPG, GIF or PNG. Max size 2MB</p>
+                    <input
+                      type="file"
+                      ref={avatarInputRef}
+                      accept="image/png, image/jpeg, image/webp"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        type="button"
+                        isLoading={isUploadingAvatar}
+                        onClick={() => avatarInputRef.current?.click()}
+                      >
+                        {avatarUrl ? 'Change Photo' : 'Upload Photo'}
+                      </Button>
+                      {avatarUrl && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          type="button"
+                          onClick={handleRemoveAvatar}
+                          className="text-[#A94842] hover:bg-[#A94842]/10"
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-[#4F6576] mt-1.5">JPG, PNG or WebP. Max size 2MB</p>
                   </div>
                 </div>
 
@@ -270,15 +399,21 @@ export default function SettingsPage() {
                   <div className="p-4 bg-[#EDF3F6]/60 rounded-lg border border-[#C4D5E0] text-xs space-y-2">
                     <div className="flex justify-between">
                       <span className="text-[#4F6576]">Subscription Tier:</span>
-                      <span className="font-bold text-[#1F7560]">Enterprise Unlimited Plan</span>
+                      <span className="font-bold text-[#1F7560]">
+                        {user?.isDemo ? 'Enterprise Unlimited Plan' : 'Workspace Standard Plan'}
+                      </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[#4F6576]">Reviews Processed (MTD):</span>
-                      <span className="font-mono font-bold text-[#20364A]">1,420 / Unlimited</span>
+                      <span className="text-[#4F6576]">Reviews Processed:</span>
+                      <span className="font-mono font-bold text-[#20364A]">
+                        {stats.reviewsCount} {stats.reviewsCount === 1 ? 'review' : 'reviews'} logged
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[#4F6576]">Active Brand Policies:</span>
-                      <span className="font-mono font-bold text-[#20364A]">5 Active Profiles</span>
+                      <span className="font-mono font-bold text-[#20364A]">
+                        {stats.knowledgeCount} {stats.knowledgeCount === 1 ? 'rule / fact' : 'rules & facts'} loaded
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -293,7 +428,7 @@ export default function SettingsPage() {
                     <h2 className="font-heading text-base font-bold text-[#20364A]">Team Members</h2>
                     <p className="text-xs text-[#4F6576] mt-0.5">Authorised creators, managers, and legal reviewers.</p>
                   </div>
-                  <Button size="sm" variant="primary" onClick={() => toast('Invite team member modal')}>
+                  <Button size="sm" variant="primary" onClick={() => setIsInviteModalOpen(true)}>
                     Invite Member
                   </Button>
                 </div>
@@ -309,7 +444,7 @@ export default function SettingsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#C4D5E0] text-[#263B4D]">
-                      {teamMembers.map((m, idx) => (
+                      {members.map((m, idx) => (
                         <tr key={idx} className="hover:bg-[#F4F8FA]/60">
                           <td className="px-4 py-3">
                             <p className="font-bold text-[#20364A]">{m.name}</p>
@@ -322,8 +457,12 @@ export default function SettingsPage() {
                           </td>
                           <td className="px-4 py-3 text-[#4F6576]">{m.dept}</td>
                           <td className="px-4 py-3">
-                            <span className="text-[#1F7560] font-bold flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#1F7560]" aria-hidden="true" />
+                            <span className={`font-bold flex items-center gap-1.5 ${
+                              m.status === 'Active' ? 'text-[#1F7560]' : 'text-[#B77938]'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                m.status === 'Active' ? 'bg-[#1F7560]' : 'bg-[#B77938]'
+                              }`} aria-hidden="true" />
                               {m.status}
                             </span>
                           </td>
@@ -332,6 +471,95 @@ export default function SettingsPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Interactive Invite Modal */}
+                {isInviteModalOpen && (
+                  <div
+                    className="fixed inset-0 bg-[#20364A]/60 z-50 flex items-center justify-center p-4 animate-in fade-in"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="invite-modal-title"
+                  >
+                    <div className="bg-white rounded-xl max-w-md w-full shadow-elevated border border-[#C4D5E0] p-6 space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-[#C4D5E0]">
+                        <h2 id="invite-modal-title" className="font-heading text-base font-bold text-[#20364A]">
+                          Invite Workspace Colleague
+                        </h2>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsInviteModalOpen(false);
+                            setInviteLink('');
+                          }}
+                          className="p-1 rounded text-[#4F6576] hover:text-[#20364A]"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <form onSubmit={handleSendInvite} className="space-y-4 text-xs">
+                        <div>
+                          <label htmlFor="inv-email" className="block font-bold text-[#20364A] mb-1">
+                            Colleague's Work Email
+                          </label>
+                          <input
+                            id="inv-email"
+                            type="email"
+                            required
+                            value={inviteEmail}
+                            onChange={(e) => setInviteEmail(e.target.value)}
+                            placeholder="colleague@yourcompany.com"
+                            className="w-full px-3 py-2 bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg text-xs text-[#20364A]"
+                          />
+                        </div>
+
+                        <div>
+                          <label htmlFor="inv-role" className="block font-bold text-[#20364A] mb-1">
+                            Governance Role
+                          </label>
+                          <select
+                            id="inv-role"
+                            value={inviteRole}
+                            onChange={(e) => setInviteRole(e.target.value as any)}
+                            className="w-full px-3 py-2 bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg text-xs text-[#20364A]"
+                          >
+                            <option value="Creator">Creator (Submit copy, apply suggestions)</option>
+                            <option value="Manager">Manager (Edit policies, manage reviews)</option>
+                            <option value="Reviewer">Reviewer (Legal & compliance sign-off)</option>
+                            <option value="Admin">Admin (Workspace & team administration)</option>
+                          </select>
+                        </div>
+
+                        {inviteLink && (
+                          <div className="p-3 bg-[#1F7560]/10 border border-[#1F7560]/20 rounded-lg space-y-1">
+                            <span className="font-bold text-[#1F7560] block">Invitation Link Generated:</span>
+                            <p className="font-mono text-[11px] text-[#20364A] break-all select-all">
+                              {inviteLink}
+                            </p>
+                            <span className="text-[10px] text-[#4F6576] block mt-1">Copied to clipboard. Send this link to your colleague.</span>
+                          </div>
+                        )}
+
+                        <div className="flex justify-end gap-2 pt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setIsInviteModalOpen(false);
+                              setInviteLink('');
+                            }}
+                          >
+                            Close
+                          </Button>
+                          <Button type="submit" variant="primary" size="sm">
+                            Generate &amp; Copy Link
+                          </Button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

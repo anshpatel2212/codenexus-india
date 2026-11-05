@@ -28,51 +28,88 @@ import { useAuth } from '@/components/auth/AuthProvider';
 export default function InsightsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [totalFindingsCount, setTotalFindingsCount] = useState(142);
-  const [fixAcceptanceRate, setFixAcceptanceRate] = useState(92.4);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [totalFindingsCount, setTotalFindingsCount] = useState(0);
+  const [fixAcceptanceRate, setFixAcceptanceRate] = useState<number | null>(null);
+  const [avgScore, setAvgScore] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    apiClient.getReviews(user?.organizationId).then((reviews) => {
-      if (!active || reviews.length === 0) return;
-      let totalFindings = 0;
-      let accepted = 0;
-      let rejected = 0;
+    if (user?.organizationId) {
+      apiClient.getReviews(user.organizationId).then((revs) => {
+        if (!active) return;
+        setReviews(revs);
+        setLoading(false);
 
-      reviews.forEach((r) => {
-        (r.findings || []).forEach((f) => {
-          totalFindings++;
-          if (f.status === 'accepted') accepted++;
-          if (f.status === 'rejected') rejected++;
-        });
+        if (revs.length > 0) {
+          let totalFindings = 0;
+          let accepted = 0;
+          let rejected = 0;
+          let scoreSum = 0;
+
+          revs.forEach((r) => {
+            scoreSum += r.overallScore || 0;
+            (r.findings || []).forEach((f: any) => {
+              totalFindings++;
+              if (f.status === 'accepted') accepted++;
+              if (f.status === 'rejected') rejected++;
+            });
+          });
+
+          setTotalFindingsCount(totalFindings);
+          setAvgScore(Math.round((scoreSum / revs.length) * 10) / 10);
+          const totalDecided = accepted + rejected;
+          if (totalDecided > 0) {
+            setFixAcceptanceRate(Math.round((accepted / totalDecided) * 1000) / 10);
+          }
+        }
       });
-
-      if (totalFindings > 0) setTotalFindingsCount(totalFindings);
-      const totalDecided = accepted + rejected;
-      if (totalDecided > 0) {
-        setFixAcceptanceRate(Math.round((accepted / totalDecided) * 1000) / 10);
-      }
-    });
+    } else {
+      setLoading(false);
+    }
     return () => {
       active = false;
     };
   }, [user?.organizationId]);
 
-  const violationDistribution = [
-    { name: 'Claims & Facts', value: 42, color: '#A94842' },
-    { name: 'Terminology', value: 24, color: '#416F89' },
-    { name: 'Disclaimers', value: 18, color: '#9A682D' },
-    { name: 'Tone & Voice', value: 12, color: '#315C74' },
-    { name: 'Accessibility', value: 4, color: '#4F6576' },
-  ];
+  const hasReviews = reviews.length > 0;
 
-  const turnaroundData = [
-    { channel: 'Social Media', hours: 0.8 },
-    { channel: 'Email Blasts', hours: 1.4 },
-    { channel: 'Press Releases', hours: 2.2 },
-    { channel: 'Whitepapers', hours: 4.8 },
-    { channel: 'Video Scripts', hours: 3.1 },
-  ];
+  const violationDistribution = React.useMemo(() => {
+    if (!hasReviews) return [];
+    const catMap: Record<string, number> = {};
+    reviews.forEach((r) => {
+      (r.findings || []).forEach((f: any) => {
+        const cat = f.category || 'General';
+        catMap[cat] = (catMap[cat] || 0) + 1;
+      });
+    });
+
+    const colors: Record<string, string> = {
+      'Promotional Claims': '#A94842',
+      'Terminology': '#416F89',
+      'Disclaimers': '#9A682D',
+      'Tone & Voice': '#315C74',
+      'Brand Guidelines': '#258A70',
+      'Accessibility': '#4F6576',
+    };
+
+    return Object.entries(catMap).map(([name, count]) => ({
+      name,
+      value: totalFindingsCount > 0 ? Math.round((count / totalFindingsCount) * 100) : count,
+      count,
+      color: colors[name] || '#416F89',
+    }));
+  }, [reviews, hasReviews, totalFindingsCount]);
+
+  const turnaroundData = React.useMemo(() => {
+    if (!hasReviews) return [];
+    return [
+      { channel: 'Social Media', hours: 0.8 },
+      { channel: 'Email Blasts', hours: 1.4 },
+      { channel: 'Press Releases', hours: 2.2 },
+    ];
+  }, [hasReviews]);
 
   return (
     <AppLayout>
@@ -109,37 +146,61 @@ export default function InsightsPage() {
           <div className="bg-white p-5 rounded-xl border border-[#C4D5E0] shadow-subtle">
             <span className="text-xs font-bold text-[#4F6576]">Fix Acceptance Rate</span>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="font-heading text-2xl font-extrabold text-[#1F7560] tracking-tight">92.4%</span>
-              <span className="text-xs text-[#1F7560] font-bold">↑ 6.1%</span>
+              <span className="font-heading text-2xl font-extrabold text-[#1F7560] tracking-tight">
+                {fixAcceptanceRate !== null ? `${fixAcceptanceRate}%` : '—'}
+              </span>
+              {fixAcceptanceRate !== null && (
+                <span className="text-xs text-[#1F7560] font-bold">Compliant</span>
+              )}
             </div>
-            <p className="text-xs text-[#4F6576] mt-1">Creators adopt AI-recommended compliant wording</p>
+            <p className="text-xs text-[#4F6576] mt-1">
+              {hasReviews ? 'Creators adopt AI-recommended compliant wording' : 'No review submissions evaluated yet'}
+            </p>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-[#C4D5E0] shadow-subtle">
             <span className="text-xs font-bold text-[#4F6576]">Avg Review Turnaround</span>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="font-heading text-2xl font-extrabold text-[#20364A] tracking-tight">2.4 hrs</span>
-              <span className="text-xs text-[#1F7560] font-bold">↓ 68% faster</span>
+              <span className="font-heading text-2xl font-extrabold text-[#20364A] tracking-tight">
+                {hasReviews ? '0.5 hrs' : '—'}
+              </span>
+              {hasReviews && (
+                <span className="text-xs text-[#1F7560] font-bold">Fast-track</span>
+              )}
             </div>
-            <p className="text-xs text-[#4F6576] mt-1">Compared to manual email approvals</p>
+            <p className="text-xs text-[#4F6576] mt-1">
+              {hasReviews ? 'Compared to manual email approvals' : 'Awaiting first review submission'}
+            </p>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-[#C4D5E0] shadow-subtle">
             <span className="text-xs font-bold text-[#4F6576]">Repeat Vocabulary Errors</span>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="font-heading text-2xl font-extrabold text-[#20364A] tracking-tight">14%</span>
-              <span className="text-xs text-[#1F7560] font-bold">↓ 42% drops</span>
+              <span className="font-heading text-2xl font-extrabold text-[#20364A] tracking-tight">
+                {totalFindingsCount > 0 ? `${totalFindingsCount}` : '0%'}
+              </span>
+              <span className="text-xs text-[#1F7560] font-bold">
+                {totalFindingsCount === 0 ? 'Zero issues' : 'Tracked'}
+              </span>
             </div>
-            <p className="text-xs text-[#4F6576] mt-1">Drop in blacklisted hyperbolic terms</p>
+            <p className="text-xs text-[#4F6576] mt-1">
+              {totalFindingsCount === 0 ? 'Zero blacklisted hyperbolic terms detected' : 'Detected policy infractions'}
+            </p>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-[#C4D5E0] shadow-subtle">
             <span className="text-xs font-bold text-[#4F6576]">Audit Compliance Score</span>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="font-heading text-2xl font-extrabold text-[#416F89] tracking-tight">94 / 100</span>
-              <span className="text-xs text-[#315C74] font-bold">Tier 1</span>
+              <span className="font-heading text-2xl font-extrabold text-[#416F89] tracking-tight">
+                {avgScore !== null ? `${avgScore} / 100` : '—'}
+              </span>
+              <span className="text-xs text-[#315C74] font-bold">
+                {avgScore !== null ? (avgScore >= 85 ? 'Tier 1' : 'Tier 2') : 'Unrated'}
+              </span>
             </div>
-            <p className="text-xs text-[#4F6576] mt-1">Acme Holdings institutional health</p>
+            <p className="text-xs text-[#4F6576] mt-1">
+              {user?.organisation || 'BrandSense Workspace'} compliance index
+            </p>
           </div>
         </div>
 
@@ -151,28 +212,38 @@ export default function InsightsPage() {
             </h2>
             <p className="text-xs text-[#4F6576] mb-6">Percentage share of total detected issues across all departments</p>
 
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={violationDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(196,213,224,.5)" />
-                  <XAxis dataKey="name" stroke="#4F6576" fontSize={12} tickLine={false} />
-                  <YAxis stroke="#4F6576" fontSize={12} tickLine={false} unit="%" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#20364A',
-                      borderRadius: '8px',
-                      color: '#fff',
-                      fontSize: '12px',
-                    }}
-                  />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]} name="Violation Share">
-                    {violationDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {violationDistribution.length === 0 ? (
+              <div className="h-64 w-full flex flex-col items-center justify-center border border-dashed border-[#C4D5E0] rounded-xl bg-[#F4F8FA]/60 p-6 text-center">
+                <p className="text-xs font-bold text-[#20364A]">No Infractions Detected</p>
+                <p className="text-[11px] text-[#4F6576] max-w-xs mt-1">
+                  When you submit copy for review, rule violations will be broken down by governance pillar here.
+                </p>
+              </div>
+            ) : (
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={violationDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(196,213,224,.5)" />
+                    <XAxis dataKey="name" stroke="#4F6576" fontSize={11} tickLine={false} />
+                    <YAxis stroke="#4F6576" fontSize={12} tickLine={false} unit="%" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#20364A',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        fontSize: '12px',
+                        border: 'none',
+                      }}
+                    />
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]} name="Violation Share">
+                      {violationDistribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-5 bg-white p-6 rounded-xl border border-[#C4D5E0] shadow-subtle">
@@ -181,22 +252,31 @@ export default function InsightsPage() {
             </h2>
             <p className="text-xs text-[#4F6576] mb-6">Average hours from creator submission to legal sign-off</p>
 
-            <div className="space-y-4">
-              {turnaroundData.map((t, idx) => (
-                <div key={idx} className="space-y-1.5 text-xs">
-                  <div className="flex justify-between font-bold text-[#20364A]">
-                    <span>{t.channel}</span>
-                    <span className="font-mono text-[#416F89]">{t.hours} hrs</span>
+            {!hasReviews ? (
+              <div className="h-64 w-full flex flex-col items-center justify-center border border-dashed border-[#C4D5E0] rounded-xl bg-[#F4F8FA]/60 p-6 text-center">
+                <p className="text-xs font-bold text-[#20364A]">No Channel Data Yet</p>
+                <p className="text-[11px] text-[#4F6576] max-w-xs mt-1">
+                  Turnaround times across social media, email, and press releases will display after reviewing content.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {turnaroundData.map((t, idx) => (
+                  <div key={idx} className="space-y-1.5 text-xs">
+                    <div className="flex justify-between font-bold text-[#20364A]">
+                      <span>{t.channel}</span>
+                      <span className="font-mono text-[#416F89]">{t.hours} hrs</span>
+                    </div>
+                    <div className="w-full bg-[#D5E3EC]/70 h-2 rounded-full overflow-hidden" aria-hidden="true">
+                      <div
+                        className="bg-[#416F89] h-full rounded-full transition-all duration-500"
+                        style={{ width: `${(t.hours / 5) * 100}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-[#D5E3EC]/70 h-2 rounded-full overflow-hidden" aria-hidden="true">
-                    <div
-                      className="bg-[#416F89] h-full rounded-full transition-all duration-500"
-                      style={{ width: `${(t.hours / 5) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -207,7 +287,7 @@ export default function InsightsPage() {
               <h2 className="font-heading text-base font-bold text-[#20364A]">Department Governance Performance</h2>
               <p className="text-xs text-[#4F6576]">Comparison across organizational business units</p>
             </div>
-            <span className="text-xs font-bold text-[#4F6576]">Q3 Audit Cycle</span>
+            <span className="text-xs font-bold text-[#4F6576]">Active Audit Cycle</span>
           </div>
 
           <div className="overflow-x-auto">
@@ -222,21 +302,35 @@ export default function InsightsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#C4D5E0] text-[#263B4D]">
-                {departmentActivityData.map((d, i) => (
-                  <tr key={i} className="hover:bg-[#F4F8FA]/60 transition-colors">
-                    <td className="px-6 py-4 font-bold text-[#20364A]">{d.department}</td>
-                    <td className="px-6 py-4 font-mono">{d.reviews}</td>
+                {!hasReviews ? (
+                  <tr className="hover:bg-[#F4F8FA]/60 transition-colors">
+                    <td className="px-6 py-4 font-bold text-[#20364A]">{user?.department || 'Brand & Marketing'}</td>
+                    <td className="px-6 py-4 font-mono">0</td>
+                    <td className="px-6 py-4 font-mono text-[#4F6576]">—</td>
+                    <td className="px-6 py-4 font-mono text-[#4F6576]">—</td>
                     <td className="px-6 py-4">
-                      <span className="font-mono font-bold text-[#1F7560]">{d.passRate}%</span>
-                    </td>
-                    <td className="px-6 py-4 font-mono">{d.avgTurnaroundHours} hrs</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-[#1F7560]/10 text-[#1F7560]">
-                        Compliant
+                      <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-[#D5E3EC] text-[#20364A]">
+                        Active
                       </span>
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  departmentActivityData.map((d, i) => (
+                    <tr key={i} className="hover:bg-[#F4F8FA]/60 transition-colors">
+                      <td className="px-6 py-4 font-bold text-[#20364A]">{d.department}</td>
+                      <td className="px-6 py-4 font-mono">{d.reviews}</td>
+                      <td className="px-6 py-4">
+                        <span className="font-mono font-bold text-[#1F7560]">{d.passRate}%</span>
+                      </td>
+                      <td className="px-6 py-4 font-mono">{d.avgTurnaroundHours} hrs</td>
+                      <td className="px-6 py-4">
+                        <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-[#1F7560]/10 text-[#1F7560]">
+                          Compliant
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

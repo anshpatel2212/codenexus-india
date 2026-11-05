@@ -110,7 +110,7 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
           setSelectedVersion(1);
         }
         setLoading(false);
-      } else if (user?.organizationId === 'org-1' || !user?.organizationId) {
+      } else if (user?.isDemo || user?.organizationId === 'org-demo-brandsense' || !user?.organizationId) {
         // Fallback for demo org
         setReview(sampleReviews[0]);
         setVersions(defaultVersions);
