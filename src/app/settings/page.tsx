@@ -48,7 +48,7 @@ const INITIAL_TEAM_MEMBERS: TeamMember[] = [
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, updateUser } = useAuth();
   const [activeSection, setActiveSection] = useState<SettingsSection>('profile');
 
   const [name, setName] = useState(user?.name || '');
@@ -154,12 +154,21 @@ export default function SettingsPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (user) {
-      authClient.updateUserProfile(user.id, {
-        name,
-        email,
-        organisation: orgName,
-        avatar: avatarUrl,
-      });
+      if (updateUser) {
+        await updateUser({
+          name,
+          email,
+          organisation: orgName,
+          avatar: avatarUrl,
+        });
+      } else {
+        await authClient.updateUserProfile(user.id, {
+          name,
+          email,
+          organisation: orgName,
+          avatar: avatarUrl,
+        });
+      }
 
       const env = getClientEnv();
       if (env.isConfigured) {
@@ -196,7 +205,11 @@ export default function SettingsPage() {
         const dataUrl = reader.result as string;
         setAvatarUrl(dataUrl);
         if (user) {
-          authClient.updateUserProfile(user.id, { avatar: dataUrl });
+          if (updateUser) {
+            await updateUser({ avatar: dataUrl });
+          } else {
+            await authClient.updateUserProfile(user.id, { avatar: dataUrl });
+          }
           if (refreshUser) await refreshUser();
         }
         toast('Profile photo updated successfully!');
@@ -218,7 +231,11 @@ export default function SettingsPage() {
   const handleRemoveAvatar = async () => {
     setAvatarUrl('');
     if (user) {
-      authClient.updateUserProfile(user.id, { avatar: '' });
+      if (updateUser) {
+        await updateUser({ avatar: '' });
+      } else {
+        await authClient.updateUserProfile(user.id, { avatar: '' });
+      }
       if (refreshUser) await refreshUser();
     }
     toast('Profile photo removed.');

@@ -147,7 +147,7 @@ export interface UserProfile {
   id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'Creator' | 'Manager' | 'Reviewer';
+  role: 'Super Admin' | 'Admin' | 'Creator' | 'Manager' | 'Reviewer';
   avatar: string;
   department: string;
   organisation: string;
