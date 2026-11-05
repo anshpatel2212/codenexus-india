@@ -11,6 +11,12 @@
   flex-direction: column;
 }
 
+.pageLogin {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
 .page h1,
 .page h2 {
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -24,6 +30,12 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 8%;
+}
+
+.pageLogin .nav {
+  height: 56px;
+  padding: 0 4%;
+  flex-shrink: 0;
 }
 
 .logo {
@@ -62,7 +74,12 @@
 }
 
 .loginMain {
-  padding: 45px 20px 70px;
+  padding: 8px 20px 20px;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .wrapper {
@@ -84,7 +101,11 @@
 }
 
 .loginWrapper {
-  min-height: 610px;
+  max-width: 960px;
+  min-height: unset;
+  max-height: calc(100vh - 80px);
+  border-radius: 22px;
+  box-shadow: 0 20px 60px rgba(32, 54, 74, 0.08);
 }
 
 /* LEFT PANEL */
@@ -98,6 +119,10 @@
   justify-content: space-between;
   position: relative;
   overflow: hidden;
+}
+
+.pageLogin .welcomePanel {
+  padding: 34px 38px;
 }
 
 .welcomePanel::before,
@@ -143,6 +168,12 @@
   margin-bottom: 35px;
 }
 
+.pageLogin .welcomeBadge {
+  padding: 6px 12px;
+  margin-bottom: 22px;
+  font-size: 11.5px;
+}
+
 .badgeDot {
   width: 7px;
   height: 7px;
@@ -159,6 +190,13 @@
   font-weight: 800;
 }
 
+.pageLogin .welcomePanel h1 {
+  font-size: clamp(26px, 2.8vw, 36px);
+  line-height: 1.18;
+  letter-spacing: -1.2px;
+  margin-bottom: 14px;
+}
+
 .welcomePanel h1 span {
   color: #f4d77b;
 }
@@ -170,9 +208,19 @@
   max-width: 340px;
 }
 
+.pageLogin .welcomePanel p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  max-width: 310px;
+}
+
 .welcomeBottom {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.6);
+}
+
+.pageLogin .welcomeBottom {
+  font-size: 11px;
 }
 
 /* RIGHT PANEL */
@@ -185,7 +233,8 @@
 }
 
 .formPanelLogin {
-  padding: 65px 60px;
+  padding: 26px 38px;
+  justify-content: center;
 }
 
 .formHeading {
@@ -193,7 +242,7 @@
 }
 
 .formPanelLogin .formHeading {
-  margin-bottom: 35px;
+  margin-bottom: 14px;
 }
 
 .formHeading h2 {
@@ -204,9 +253,18 @@
   margin-bottom: 9px;
 }
 
+.formPanelLogin .formHeading h2 {
+  font-size: 22px;
+  margin-bottom: 3px;
+}
+
 .formHeading p {
   color: #81909c;
   font-size: 14px;
+}
+
+.formPanelLogin .formHeading p {
+  font-size: 12.5px;
 }
 
 .formGroup {
@@ -214,7 +272,7 @@
 }
 
 .formPanelLogin .formGroup {
-  margin-bottom: 21px;
+  margin-bottom: 11px;
 }
 
 .formGroup label {
@@ -226,7 +284,8 @@
 }
 
 .formPanelLogin .formGroup label {
-  margin-bottom: 9px;
+  font-size: 12px;
+  margin-bottom: 4px;
 }
 
 .inputWrapper {
@@ -248,8 +307,10 @@
 }
 
 .formPanelLogin .inputWrapper input {
-  height: 53px;
-  padding: 0 16px;
+  height: 41px;
+  padding: 0 14px;
+  font-size: 13.5px;
+  border-radius: 9px;
 }
 
 .inputWrapper input::placeholder {
@@ -328,6 +389,11 @@
   font-size: 12px;
 }
 
+.formPanelLogin .formOptions {
+  margin: 4px 0 14px;
+  font-size: 12px;
+}
+
 .remember {
   display: flex;
   align-items: center;
@@ -388,24 +454,32 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: 0.25s ease;
-  box-shadow: 0 8px 20px rgba(32, 54, 74, 0.15);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px rgba(32, 54, 74, 0.12);
+  transform: none !important;
 }
 
 .formPanelLogin .primaryBtn {
-  height: 53px;
+  height: 42px;
+  font-size: 13.5px;
+  border-radius: 9px;
 }
 
 .primaryBtn:hover:not(:disabled) {
   background: #416f89;
-  transform: translateY(-2px);
-  box-shadow: 0 12px 25px rgba(65, 111, 137, 0.22);
+  box-shadow: 0 6px 18px rgba(65, 111, 137, 0.2);
+  transform: none !important;
+}
+
+.primaryBtn:active:not(:disabled) {
+  background: #192a3a;
+  transform: none !important;
 }
 
 .primaryBtn:disabled {
   cursor: not-allowed;
   opacity: 0.72;
-  transform: none;
+  transform: none !important;
 }
 
 .primaryBtn:focus-visible {
@@ -416,14 +490,15 @@
 .divider {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin: 23px 0;
+  gap: 12px;
+  margin: 20px 0;
   color: #aab5be;
   font-size: 12px;
 }
 
 .formPanelLogin .divider {
-  margin: 27px 0;
+  margin: 12px 0 10px;
+  font-size: 11px;
 }
 
 .divider::before,
@@ -434,11 +509,41 @@
   background: #e6ebef;
 }
 
+.exploreDemoBtn {
+  width: 100%;
+  height: 40px;
+  border: 1px solid rgba(65, 111, 137, 0.25);
+  border-radius: 9px;
+  background: rgba(244, 248, 251, 0.9);
+  color: #20364a;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(32, 54, 74, 0.04);
+}
+
+.exploreDemoBtn:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: #416f89;
+  color: #315c74;
+  box-shadow: 0 4px 12px rgba(65, 111, 137, 0.12);
+}
+
+.exploreDemoBtn:active:not(:disabled) {
+  background: #e4edf2;
+}
+
 .switchText {
-  margin-top: 18px;
+  margin-top: 10px;
   text-align: center;
   color: #81909c;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .switchText a {
