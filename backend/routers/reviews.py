@@ -7,6 +7,7 @@ import uuid
 from backend.auth.jwt_guard import get_current_user, require_role, AuthenticatedUser
 from backend.services.ai_review_engine import ai_review_engine
 from backend.services.supabase_admin import supabase_admin
+from backend.services.db import get_db_connection
 
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
 
@@ -152,7 +153,41 @@ async def list_reviews(
                 return res.data
         except Exception:
             pass
-    return []
+
+    # SQLite fallback
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        org_id = current_user.organization_id or "org-demo-brandsense"
+        
+        cur.execute("SELECT * FROM reviews WHERE organization_id = ? ORDER BY created_at DESC", (org_id,))
+        rows = cur.fetchall()
+        reviews_list = []
+        for r in rows:
+            import json
+            cat_scores = {}
+            try:
+                cat_scores = json.loads(r["category_scores"]) if r["category_scores"] else {}
+            except Exception:
+                pass
+            reviews_list.append({
+                "id": r["id"],
+                "organization_id": r["organization_id"],
+                "title": r["title"],
+                "content_type": r["content_type"],
+                "original_content": r["original_content"],
+                "suggested_content": r["suggested_content"],
+                "overall_score": r["overall_score"],
+                "category_scores": cat_scores,
+                "status": r["status"],
+                "author_id": r["author_id"],
+                "created_at": r["created_at"],
+                "updated_at": r["updated_at"]
+            })
+        conn.close()
+        return reviews_list
+    except Exception:
+        return []
 
 @router.get("/{review_id}")
 async def get_review(
@@ -167,5 +202,44 @@ async def get_review(
                 return res.data
         except Exception:
             pass
+
+    # SQLite fallback
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM reviews WHERE id = ?", (review_id,))
+        r = cur.fetchone()
+        if r:
+            cur.execute("SELECT * FROM findings WHERE review_id = ?", (review_id,))
+            f_rows = cur.fetchall()
+            findings = [dict(f) for f in f_rows]
+            
+            import json
+            cat_scores = {}
+            try:
+                cat_scores = json.loads(r["category_scores"]) if r["category_scores"] else {}
+            except Exception:
+                pass
+            
+            conn.close()
+            return {
+                "id": r["id"],
+                "organization_id": r["organization_id"],
+                "title": r["title"],
+                "content_type": r["content_type"],
+                "original_content": r["original_content"],
+                "suggested_content": r["suggested_content"],
+                "overall_score": r["overall_score"],
+                "category_scores": cat_scores,
+                "status": r["status"],
+                "author_id": r["author_id"],
+                "created_at": r["created_at"],
+                "updated_at": r["updated_at"],
+                "findings": findings
+            }
+        conn.close()
+    except Exception:
+        pass
+
     raise HTTPException(status_code=404, detail="Review not found.")
 
