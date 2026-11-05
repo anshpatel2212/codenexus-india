@@ -6,12 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+<<<<<<< HEAD
     "lint": "next lint",
     "test": "node --test tests/storage-security.test.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
+=======
+    "lint": "next lint"
+  },
+  "dependencies": {
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.475.0",
@@ -31,3 +37,7 @@
     "typescript": "^5.7.3"
   }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc

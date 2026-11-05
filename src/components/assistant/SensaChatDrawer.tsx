@@ -47,6 +47,21 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
   useEffect(() => {
     if (!isOpen) return;
 
+<<<<<<< HEAD
+=======
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     const composer = composerRef.current;
     if (composer) {
       composer.style.height = '0px';
@@ -139,23 +154,46 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
   return (
     <>
       <div
+<<<<<<< HEAD
         className="fixed inset-0 z-40 bg-[#20364A]/30 backdrop-blur-[2px]"
+=======
+        className="fixed inset-0 z-40 bg-[#20364A]/40 backdrop-blur-[2px]"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
         onClick={onClose}
         aria-hidden="true"
       />
 
+<<<<<<< HEAD
       <div className="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-white/10 bg-[#172B3D] shadow-elevated sm:w-[480px]">
         <div className="flex items-center justify-between border-b border-[#31566D] bg-[#20364A] px-4 py-3.5 text-white">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#416F89] text-[#F4D77B]">
+=======
+      <div
+        className="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-white/10 bg-[#172B3D] shadow-elevated sm:w-[480px]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sensa-drawer-title"
+      >
+        <div className="flex items-center justify-between border-b border-[#31566D] bg-[#20364A] px-4 py-3.5 text-white">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#416F89] text-[#F4D77B]" aria-hidden="true">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               <Sparkles className="h-4 w-4" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
+<<<<<<< HEAD
                 <span className="font-heading text-sm font-extrabold tracking-tight">SENSA</span>
                 <span className="h-1.5 w-1.5 rounded-full bg-[#7FD4B8]" />
               </div>
               <p className="text-[10px] text-[#C0D0D9]">Brand assistant · ready</p>
+=======
+                <h2 id="sensa-drawer-title" className="font-heading text-sm font-extrabold tracking-tight">SENSA</h2>
+                <span className="h-2 w-2 rounded-full bg-[#7FD4B8]" aria-hidden="true" />
+              </div>
+              <p className="text-xs text-[#D5E3EC]">Brand assistant · Ready</p>
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
             </div>
           </div>
 
@@ -163,7 +201,11 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
             <Link
               href="/assistant"
               onClick={onClose}
+<<<<<<< HEAD
               className="rounded-md p-1.5 text-[#C0D0D9] transition-colors hover:bg-white/10 hover:text-white"
+=======
+              className="rounded-md p-2 text-[#D5E3EC] transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7FA8BF]"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               title="Open full assistant"
               aria-label="Open full assistant"
             >
@@ -172,7 +214,11 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
             <button
               type="button"
               onClick={handleReset}
+<<<<<<< HEAD
               className="rounded-md p-1.5 text-[#C0D0D9] transition-colors hover:bg-white/10 hover:text-white"
+=======
+              className="rounded-md p-2 text-[#D5E3EC] transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7FA8BF]"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               title="New conversation"
               aria-label="Start a new conversation"
             >
@@ -181,7 +227,11 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
             <button
               type="button"
               onClick={onClose}
+<<<<<<< HEAD
               className="rounded-md p-1.5 text-[#C0D0D9] transition-colors hover:bg-white/10 hover:text-white"
+=======
+              className="rounded-md p-2 text-[#D5E3EC] transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7FA8BF]"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               aria-label="Close assistant"
             >
               <X className="h-4 w-4" />
@@ -192,6 +242,10 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
         <div
           ref={scrollRef}
           className="flex-1 space-y-4 overflow-y-auto scroll-smooth px-3 py-4"
+<<<<<<< HEAD
+=======
+          aria-live="polite"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
         >
           {messages.map((message) => (
             <SensaMessageBubble
@@ -205,6 +259,7 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
 
           {isTyping && (
             <div className="flex gap-2.5" role="status" aria-label="SENSA is responding">
+<<<<<<< HEAD
               <div className="mt-5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[#416F89] text-[#F4D77B]">
                 <Sparkles className="h-3.5 w-3.5" />
               </div>
@@ -219,6 +274,22 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
                     />
                     <span
                       className="h-1 w-1 animate-bounce rounded-full bg-[#7FA8BF]"
+=======
+              <div className="mt-5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[#416F89] text-[#F4D77B]" aria-hidden="true">
+                <Sparkles className="h-3.5 w-3.5" />
+              </div>
+              <div className="rounded-2xl rounded-tl-md border border-white/10 bg-[#20364A] px-3.5 py-3 shadow-[0_12px_35px_rgba(8,20,30,.18)]">
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#D5E3EC]">
+                  <span>Checking brand guidance</span>
+                  <span className="flex items-center gap-0.5" aria-hidden="true">
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#7FA8BF]" />
+                    <span
+                      className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#7FA8BF]"
+                      style={{ animationDelay: '120ms' }}
+                    />
+                    <span
+                      className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#7FA8BF]"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                       style={{ animationDelay: '240ms' }}
                     />
                   </span>
@@ -229,15 +300,24 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
         </div>
 
         {error && (
+<<<<<<< HEAD
           <div className="mx-3 mt-2 rounded-lg border border-[#C65E57]/30 bg-[#C65E57]/10 px-3 py-2 text-[10px] text-[#F3B6B2]">
+=======
+          <div className="mx-3 mt-2 rounded-lg border border-[#A94842]/40 bg-[#A94842]/15 px-3 py-2 text-xs text-[#F3B6B2]" role="alert">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
             {error}
           </div>
         )}
 
         <div className="border-t border-white/10 bg-[#172B3D] px-3 py-2.5">
           <div className="mb-2 flex items-center gap-1.5 px-1">
+<<<<<<< HEAD
             <Sparkles className="h-3 w-3 text-[#7FA8BF]" />
             <span className="text-[9px] font-bold uppercase tracking-wide text-[#8A9BA7]">
+=======
+            <Sparkles className="h-3.5 w-3.5 text-[#8FB3C6]" aria-hidden="true" />
+            <span className="text-xs font-bold uppercase tracking-wider text-[#B9CDDC]">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               Try asking
             </span>
           </div>
@@ -248,7 +328,11 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
                 type="button"
                 onClick={() => handleSendMessage(item.prompt)}
                 disabled={isTyping}
+<<<<<<< HEAD
                 className="flex-shrink-0 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-semibold text-[#C0D0D9] transition-colors hover:border-[#416F89] hover:bg-[#416F89] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+=======
+                className="flex-shrink-0 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-[#D5E3EC] transition-colors hover:border-[#416F89] hover:bg-[#416F89] hover:text-white disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8FB3C6]"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               >
                 {item.label}
               </button>
@@ -277,18 +361,30 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
               rows={1}
               aria-label="Ask SENSA a question"
               placeholder="Ask about approved facts, banned terms, or voice..."
+<<<<<<< HEAD
               className="max-h-[108px] min-h-[40px] flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-[#E7EEF3] outline-none transition-colors placeholder:text-[#7F95A3] focus:border-[#7FA8BF] focus:bg-white/10 focus:ring-2 focus:ring-[#7FA8BF]/20"
+=======
+              className="max-h-[108px] min-h-[40px] flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs sm:text-sm text-[#E7EEF3] outline-none transition-colors placeholder:text-[#8FA7B8] focus:border-[#7FA8BF] focus:bg-white/10 focus:ring-2 focus:ring-[#7FA8BF]/25"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
             />
             <button
               type="submit"
               disabled={!inputText.trim() || isTyping}
+<<<<<<< HEAD
               className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#416F89] text-white transition-all hover:bg-[#315C74] disabled:cursor-not-allowed disabled:opacity-40"
+=======
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#416F89] text-white transition-all hover:bg-[#315C74] disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7FA8BF]"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               aria-label="Send message"
             >
               <Send className="h-4 w-4" />
             </button>
           </form>
+<<<<<<< HEAD
           <div className="mt-1.5 flex items-center justify-between gap-3 px-1 text-[9px] text-[#7F95A3]">
+=======
+          <div className="mt-1.5 flex items-center justify-between gap-3 px-1 text-xs text-[#B9CDDC]">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
             <span>Enter to send · Shift + Enter for a new line</span>
             <span>Human review required</span>
           </div>

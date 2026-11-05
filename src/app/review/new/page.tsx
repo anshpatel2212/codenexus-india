@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/Button';
 import { 
+<<<<<<< HEAD
   FileText, 
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   Upload, 
   Sparkles, 
   Check, 
@@ -13,18 +16,27 @@ import {
   Loader2, 
   X,
   ShieldCheck,
+<<<<<<< HEAD
   ChevronRight
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 } from 'lucide-react';
 import { ContentType } from '@/types';
 import { apiClient } from '@/services/api-client';
 import { useToast } from '@/components/ui/Toast';
+<<<<<<< HEAD
 import { useAuth } from '@/components/auth/AuthProvider';
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 
 export default function NewReviewPage() {
   const router = useRouter();
   const { toast } = useToast();
+<<<<<<< HEAD
   const { user, isLoading: isAuthLoading } = useAuth();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 
   const [inputMode, setInputMode] = useState<'text' | 'file'>('text');
   const [title, setTitle] = useState('Q3 Enterprise Product Launch — Global LinkedIn Campaign');
@@ -35,6 +47,7 @@ export default function NewReviewPage() {
 
 Clients typically see an instant 450% ROI on their enterprise license in quarter one. Don’t be a dinosaur! Grab your license today before your competitors leave you in the dust! Click the green button on the right side of the screen to download.`);
 
+<<<<<<< HEAD
   const [uploadedFile, setUploadedFile] = useState<{
     name: string;
     size: string;
@@ -42,6 +55,9 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
     path?: string;
     url?: string;
   } | null>(null);
+=======
+  const [uploadedFile, setUploadedFile] = useState<{ name: string; size: string; type: string } | null>(null);
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -61,6 +77,7 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
       return;
     }
 
+<<<<<<< HEAD
     if (isAuthLoading) {
       toast('User session is still loading. Please wait a moment...', 'error');
       return;
@@ -71,18 +88,25 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
       return;
     }
 
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     setIsProcessing(true);
     setCurrentStep(0);
 
     for (let i = 0; i < processingSteps.length; i++) {
       setCurrentStep(i);
+<<<<<<< HEAD
       await new Promise((r) => setTimeout(r, 450));
+=======
+      await new Promise((r) => setTimeout(r, 650));
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     }
 
     await apiClient.submitReview({
       title,
       contentType,
       brandProfile,
+<<<<<<< HEAD
       content: content || 'Document content extracted from ' + uploadedFile?.name,
       instructions,
       filePath: uploadedFile?.path,
@@ -147,6 +171,16 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
     }
   };
 
+=======
+      content: content || 'Simulated document content extracted from ' + uploadedFile?.name,
+      instructions,
+    });
+
+    toast('Brand review complete! 6 findings flagged for authorized decision.');
+    router.push('/review/results');
+  };
+
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   const handleSimulateFileUpload = (type: string, name: string) => {
     setUploadedFile({
       name,
@@ -167,11 +201,19 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
             <h1 className="font-heading text-xl sm:text-2xl font-extrabold text-[#20364A] tracking-tight">
               Submit Content for Pre-Publication Review
             </h1>
+<<<<<<< HEAD
             <span className="px-2.5 py-0.5 rounded bg-[#D5E3EC] text-[#31566D] text-xs font-bold">
               Deterministic Scan
             </span>
           </div>
           <p className="mt-1 text-xs sm:text-sm text-[#718494]">
+=======
+            <span className="px-2.5 py-0.5 rounded bg-[#D5E3EC] text-[#20364A] text-xs font-bold">
+              Deterministic Scan
+            </span>
+          </div>
+          <p className="mt-1 text-xs sm:text-sm text-[#4F6576]">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
             Submit social posts, ad copy, press releases, or campaign documents for instant multi-vector verification.
           </p>
         </div>
@@ -181,20 +223,34 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
           <div className="bg-white p-6 sm:p-7 rounded-xl border border-[#C4D5E0] shadow-subtle space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
+<<<<<<< HEAD
                 <label className="block text-xs font-bold text-[#20364A] mb-1.5">
                   Review Title
                 </label>
                 <input
                   type="text"
+=======
+                <label htmlFor="review-title" className="block text-xs font-bold text-[#20364A] mb-1.5">
+                  Review Title <span className="text-[#A94842]" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="review-title"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Q3 Global Product Announcement Post"
+<<<<<<< HEAD
                   className="w-full px-3 py-2 text-xs bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#416F89] text-[#263B4D]"
+=======
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#416F89]/25 focus:border-[#416F89] text-[#20364A]"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                 />
               </div>
 
               <div>
+<<<<<<< HEAD
                 <label className="block text-xs font-bold text-[#20364A] mb-1.5">
                   Content Type
                 </label>
@@ -202,6 +258,16 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
                   value={contentType}
                   onChange={(e) => setContentType(e.target.value as ContentType)}
                   className="w-full px-3 py-2 text-xs bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#416F89] text-[#263B4D]"
+=======
+                <label htmlFor="content-type" className="block text-xs font-bold text-[#20364A] mb-1.5">
+                  Content Type <span className="text-[#A94842]" aria-hidden="true">*</span>
+                </label>
+                <select
+                  id="content-type"
+                  value={contentType}
+                  onChange={(e) => setContentType(e.target.value as ContentType)}
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#416F89]/25 focus:border-[#416F89] text-[#20364A]"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                 >
                   <option>Social Media</option>
                   <option>Advertisement</option>
@@ -215,6 +281,7 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
+<<<<<<< HEAD
                 <label className="block text-xs font-bold text-[#20364A] mb-1.5">
                   Active Brand Profile & Policy
                 </label>
@@ -228,19 +295,47 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
                   <option>Investor Relations & ESG</option>
                   <option>Regional EMEA Compliant</option>
                   <option>Healthcare & Medical Regulated</option>
+=======
+                <label htmlFor="brand-profile" className="block text-xs font-bold text-[#20364A] mb-1.5">
+                  Active Brand Profile &amp; Policy <span className="text-[#A94842]" aria-hidden="true">*</span>
+                </label>
+                <select
+                  id="brand-profile"
+                  value={brandProfile}
+                  onChange={(e) => setBrandProfile(e.target.value)}
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#416F89]/25 focus:border-[#416F89] text-[#20364A]"
+                >
+                  <option>Corporate Core (Global English)</option>
+                  <option>B2B Commercial Sales</option>
+                  <option>Investor Relations &amp; ESG</option>
+                  <option>Regional EMEA Compliant</option>
+                  <option>Healthcare &amp; Medical Regulated</option>
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                 </select>
               </div>
 
               <div>
+<<<<<<< HEAD
                 <label className="block text-xs font-bold text-[#20364A] mb-1.5">
+=======
+                <label htmlFor="special-instructions" className="block text-xs font-bold text-[#20364A] mb-1.5">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                   Special Review Instructions (Optional)
                 </label>
                 <input
                   type="text"
+<<<<<<< HEAD
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
                   placeholder="e.g. Extra scrutiny on performance warranties"
                   className="w-full px-3 py-2 text-xs bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#416F89] text-[#263B4D]"
+=======
+                  id="special-instructions"
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  placeholder="e.g. Extra scrutiny on performance warranties"
+                  className="w-full px-3 py-2 text-xs sm:text-sm bg-[#EDF3F6]/50 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#416F89]/25 focus:border-[#416F89] text-[#20364A]"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                 />
               </div>
             </div>
@@ -248,6 +343,7 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
             {/* Input Toggle */}
             <div className="pt-2">
               <div className="flex items-center justify-between mb-2">
+<<<<<<< HEAD
                 <span className="text-xs font-bold text-[#20364A]">Content Input Mode</span>
                 <div className="flex gap-1 bg-[#D5E3EC]/50 p-1 rounded-lg text-xs">
                   <button
@@ -255,6 +351,16 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
                     onClick={() => setInputMode('text')}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                       inputMode === 'text' ? 'bg-white text-[#20364A] shadow-sm' : 'text-[#718494]'
+=======
+                <span className="text-xs font-bold text-[#20364A]" id="input-mode-label">Content Input Mode</span>
+                <div className="flex gap-1 bg-[#D5E3EC]/60 p-1 rounded-lg text-xs" role="toolbar" aria-labelledby="input-mode-label">
+                  <button
+                    type="button"
+                    onClick={() => setInputMode('text')}
+                    aria-pressed={inputMode === 'text'}
+                    className={`px-3 py-1 rounded-md text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] ${
+                      inputMode === 'text' ? 'bg-white text-[#20364A] shadow-sm' : 'text-[#4F6576] hover:text-[#20364A]'
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                     }`}
                   >
                     Direct Editor
@@ -262,8 +368,14 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
                   <button
                     type="button"
                     onClick={() => setInputMode('file')}
+<<<<<<< HEAD
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                       inputMode === 'file' ? 'bg-white text-[#20364A] shadow-sm' : 'text-[#718494]'
+=======
+                    aria-pressed={inputMode === 'file'}
+                    className={`px-3 py-1 rounded-md text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] ${
+                      inputMode === 'file' ? 'bg-white text-[#20364A] shadow-sm' : 'text-[#4F6576] hover:text-[#20364A]'
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                     }`}
                   >
                     Upload Document
@@ -273,15 +385,30 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
 
               {inputMode === 'text' ? (
                 <div>
+<<<<<<< HEAD
                   <textarea
+=======
+                  <label htmlFor="review-content" className="sr-only">
+                    Marketing content to review
+                  </label>
+                  <textarea
+                    id="review-content"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                     rows={8}
                     required
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Paste or write your marketing copy here..."
+<<<<<<< HEAD
                     className="w-full p-4 text-xs font-sans bg-[#EDF3F6]/40 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#416F89] text-[#263B4D] leading-relaxed"
                   />
                   <div className="mt-2 flex items-center justify-between text-[11px] text-[#718494]">
+=======
+                    aria-describedby="char-word-counter"
+                    className="w-full p-4 text-xs sm:text-sm font-sans bg-[#EDF3F6]/40 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#416F89]/25 focus:border-[#416F89] text-[#20364A] leading-relaxed"
+                  />
+                  <div id="char-word-counter" className="mt-2 flex items-center justify-between text-xs text-[#4F6576]">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                     <span>
                       {content.length} characters • {content.trim().split(/\s+/).filter(Boolean).length} words
                     </span>
@@ -291,24 +418,41 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
               ) : (
                 <div className="space-y-4">
                   {uploadedFile ? (
+<<<<<<< HEAD
                     <div className="p-4 bg-[rgba(65,111,137,.1)] rounded-lg border border-[rgba(65,111,137,.25)] flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <FileCheck className="w-8 h-8 text-[#416F89]" />
                         <div>
                           <p className="text-xs font-bold text-[#20364A]">{uploadedFile.name}</p>
                           <p className="text-[10px] text-[#718494]">{uploadedFile.type} • {uploadedFile.size}</p>
+=======
+                    <div className="p-4 bg-[#416F89]/10 rounded-lg border border-[#416F89]/25 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileCheck className="w-8 h-8 text-[#416F89]" aria-hidden="true" />
+                        <div>
+                          <p className="text-xs font-bold text-[#20364A]">{uploadedFile.name}</p>
+                          <p className="text-xs text-[#4F6576]">{uploadedFile.type} • {uploadedFile.size}</p>
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => setUploadedFile(null)}
+<<<<<<< HEAD
                         className="text-[#718494] hover:text-[#20364A] p-1"
                       >
                         <X className="w-4 h-4" />
+=======
+                        className="text-[#4F6576] hover:text-[#20364A] p-1.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89]"
+                        aria-label="Remove uploaded file"
+                      >
+                        <X className="w-5 h-5" />
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                       </button>
                     </div>
                   ) : (
                     <div className="p-8 border-2 border-dashed border-[#C4D5E0] rounded-xl bg-[#EDF3F6]/50 text-center">
+<<<<<<< HEAD
                       <Upload className="w-8 h-8 text-[#416F89] mx-auto mb-2" />
                       <h4 className="font-heading text-xs font-bold text-[#20364A]">
                         Drop campaign file here (PDF, DOCX, PNG, JPG)
@@ -345,6 +489,32 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
                         >
                           Attach Word Document
                         </button>
+=======
+                      <Upload className="w-8 h-8 text-[#416F89] mx-auto mb-2" aria-hidden="true" />
+                      <h2 className="font-heading text-xs sm:text-sm font-bold text-[#20364A]">
+                        Drop campaign file here (PDF, DOCX, PNG, JPG)
+                      </h2>
+                      <p className="text-xs text-[#4F6576] mt-1">
+                        Extracts text, checks image branding, and validates claims
+                      </p>
+                      <div className="mt-4 flex flex-wrap justify-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSimulateFileUpload('PDF Document', 'Global_Campaign_Draft.pdf')}
+                        >
+                          Attach PDF Sample
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSimulateFileUpload('DOCX File', 'Press_Release_Q3.docx')}
+                        >
+                          Attach Word Document
+                        </Button>
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                       </div>
                     </div>
                   )}
@@ -354,8 +524,13 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
 
             {/* Run Button */}
             <div className="pt-4 border-t border-[#C4D5E0] flex items-center justify-between">
+<<<<<<< HEAD
               <div className="flex items-center gap-2 text-xs text-[#718494]">
                 <ShieldCheck className="w-4 h-4 text-[#258A70]" />
+=======
+              <div className="flex items-center gap-2 text-xs text-[#4F6576]">
+                <ShieldCheck className="w-4 h-4 text-[#1F7560]" aria-hidden="true" />
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                 <span>Zero Training Guarantee: Your creative IP stays isolated.</span>
               </div>
 
@@ -363,7 +538,11 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
                 type="submit"
                 variant="primary"
                 size="md"
+<<<<<<< HEAD
                 leftIcon={<Sparkles className="w-4 h-4 text-[#F4D77B]" />}
+=======
+                leftIcon={<Sparkles className="w-4 h-4 text-[#F4D77B]" aria-hidden="true" />}
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               >
                 Run Brand Review
               </Button>
@@ -373,6 +552,7 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
 
         {/* Processing Modal Sequence */}
         {isProcessing && (
+<<<<<<< HEAD
           <div className="fixed inset-0 bg-[#20364A]/70  z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl max-w-lg w-full p-8 shadow-elevated border border-[#C4D5E0] text-center animate-in fade-in zoom-in-95">
               <div className="w-14 h-14 rounded-lg bg-[#20364A] text-white flex items-center justify-center mx-auto mb-5 shadow-lg">
@@ -387,6 +567,27 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
               </p>
 
               <div className="space-y-3 text-left">
+=======
+          <div
+            className="fixed inset-0 bg-[#20364A]/70 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="processing-modal-title"
+          >
+            <div className="bg-white rounded-xl max-w-lg w-full p-8 shadow-elevated border border-[#C4D5E0] text-center animate-in fade-in zoom-in-95">
+              <div className="w-14 h-14 rounded-lg bg-[#20364A] text-white flex items-center justify-center mx-auto mb-5 shadow-lg" aria-hidden="true">
+                <Sparkles className="w-7 h-7 animate-pulse text-[#F4D77B]" />
+              </div>
+
+              <h2 id="processing-modal-title" className="font-heading text-xl font-extrabold text-[#20364A] tracking-tight">
+                BrandSense Deep Review in Progress
+              </h2>
+              <p className="text-xs text-[#4F6576] mt-1 mb-6">
+                Executing multi-vector audit against Acme Core Brand Guardrails...
+              </p>
+
+              <div className="space-y-3 text-left" aria-live="polite">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                 {processingSteps.map((step, idx) => {
                   const isDone = idx < currentStep;
                   const isCurrent = idx === currentStep;
@@ -396,14 +597,22 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
                       key={idx}
                       className={`p-3 rounded-lg border transition-all text-xs flex items-center gap-3 ${
                         isDone
+<<<<<<< HEAD
                           ? 'bg-[#258A70]/10 border-[#258A70]/25 text-[#258A70]'
                           : isCurrent
                           ? 'bg-[#20364A] text-white border-[#31566D] shadow-md scale-[1.02]'
                           : 'bg-[#EDF3F6]/50 border-[#C4D5E0] text-[#718494] opacity-60'
+=======
+                          ? 'bg-[#1F7560]/10 border-[#1F7560]/25 text-[#1F7560]'
+                          : isCurrent
+                          ? 'bg-[#20364A] text-white border-[#31566D] shadow-md scale-[1.02]'
+                          : 'bg-[#EDF3F6]/50 border-[#C4D5E0] text-[#4F6576] opacity-60'
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                       }`}
                     >
                       <div className="flex-shrink-0">
                         {isDone ? (
+<<<<<<< HEAD
                           <div className="w-5 h-5 rounded-full bg-[#258A70] text-white flex items-center justify-center">
                             <Check className="w-3 h-3" />
                           </div>
@@ -411,6 +620,15 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
                           <Loader2 className="w-5 h-5 text-[#F4D77B] animate-spin" />
                         ) : (
                           <div className="w-5 h-5 rounded-full border border-[#C4D5E0] text-[#718494] flex items-center justify-center text-[10px]">
+=======
+                          <div className="w-5 h-5 rounded-full bg-[#1F7560] text-white flex items-center justify-center" aria-hidden="true">
+                            <Check className="w-3 h-3" />
+                          </div>
+                        ) : isCurrent ? (
+                          <Loader2 className="w-5 h-5 text-[#F4D77B] animate-spin" aria-hidden="true" />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full border border-[#C4D5E0] text-[#4F6576] flex items-center justify-center text-xs" aria-hidden="true">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                             {idx + 1}
                           </div>
                         )}
@@ -418,7 +636,11 @@ Clients typically see an instant 450% ROI on their enterprise license in quarter
 
                       <div className="truncate">
                         <p className="font-bold truncate">{step.title}</p>
+<<<<<<< HEAD
                         <p className={`text-[10px] truncate ${isCurrent ? 'text-[#B7C9D2]' : 'text-[#718494]'}`}>
+=======
+                        <p className={`text-xs truncate ${isCurrent ? 'text-[#D5E3EC]' : 'text-[#4F6576]'}`}>
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                           {step.sub}
                         </p>
                       </div>

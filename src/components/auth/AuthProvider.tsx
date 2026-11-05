@@ -9,8 +9,11 @@ import {
   RegisterInput,
   authClient,
 } from '@/services/auth-client';
+<<<<<<< HEAD
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getClientEnv } from '@/lib/env';
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 
 interface AuthContextValue {
   user: UserProfile | null;
@@ -18,9 +21,13 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<AuthResult>;
   register: (input: RegisterInput) => Promise<AuthResult>;
   signInDemo: (profile: DemoProfile) => Promise<AuthResult>;
+<<<<<<< HEAD
   resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+=======
+  logout: () => void;
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -29,11 +36,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+<<<<<<< HEAD
   const refreshUser = async () => {
     const sessionUser = await authClient.getSession();
     setUser(sessionUser);
   };
 
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   useEffect(() => {
     let active = true;
 
@@ -43,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
+<<<<<<< HEAD
     const env = getClientEnv();
     if (env.isConfigured) {
       try {
@@ -68,6 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     return () => {
       active = false;
     };
@@ -101,16 +114,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return result;
   };
 
+<<<<<<< HEAD
   const resetPassword = async (email: string) => {
     return authClient.resetPassword(email);
   };
 
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   const logout = () => {
     authClient.logout();
     setUser(null);
   };
 
   return (
+<<<<<<< HEAD
     <AuthContext.Provider
       value={{
         user,
@@ -123,6 +140,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshUser,
       }}
     >
+=======
+    <AuthContext.Provider value={{ user, isLoading, login, register, signInDemo, logout }}>
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
       {children}
     </AuthContext.Provider>
   );

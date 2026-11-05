@@ -105,8 +105,13 @@ export default function LoginPage() {
       </div>
 
       {error && (
+<<<<<<< HEAD
         <div className={styles.errorBanner} role="alert">
           <AlertCircle className="w-3.5 h-3.5" />
+=======
+        <div className={styles.errorBanner} role="alert" id="login-error-banner">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
           <span>{error}</span>
         </div>
       )}
@@ -124,6 +129,10 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className={errorField === 'email' ? styles.inputError : undefined}
               aria-invalid={errorField === 'email'}
+<<<<<<< HEAD
+=======
+              aria-describedby={errorField === 'email' ? 'login-error-banner' : undefined}
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               required
             />
           </div>
@@ -142,6 +151,10 @@ export default function LoginPage() {
               data-has-toggle="true"
               className={errorField === 'password' ? styles.inputError : undefined}
               aria-invalid={errorField === 'password'}
+<<<<<<< HEAD
+=======
+              aria-describedby={errorField === 'password' ? 'login-error-banner' : undefined}
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               required
             />
             <button
@@ -156,14 +169,22 @@ export default function LoginPage() {
         </div>
 
         <div className={styles.formOptions}>
+<<<<<<< HEAD
           <label className={styles.remember}>
+=======
+          <label className={styles.remember} htmlFor="remember">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
             <input
               type="checkbox"
               id="remember"
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
             />
+<<<<<<< HEAD
             Remember me
+=======
+            <span>Remember me</span>
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
           </label>
 
           <Link href="/forgot-password" className={styles.forgot}>
@@ -181,8 +202,13 @@ export default function LoginPage() {
       </div>
 
       <div className={styles.securityNote}>
+<<<<<<< HEAD
         <Lock />
         Your account and data are securely protected.
+=======
+        <Lock aria-hidden="true" />
+        <span>Your account and data are securely protected.</span>
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
       </div>
 
       <div className={styles.demoRow}>

@@ -67,8 +67,11 @@ export interface ReviewItem {
     avatar: string;
   };
   revisionCount: number;
+<<<<<<< HEAD
   filePath?: string;
   fileUrl?: string;
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 }
 
 export interface KnowledgeItem {
@@ -81,12 +84,19 @@ export interface KnowledgeItem {
   status: 'Active' | 'Under Review' | 'Archived';
   lastUpdated: string;
   updatedBy: string;
+<<<<<<< HEAD
   fileSize?: string | number;
   fileFormat?: 'PDF' | 'DOCX' | 'TXT' | 'PNG' | 'JPG';
   thumbnailUrl?: string;
   replacement?: string; // For banned terms
   filePath?: string;
   fileUrl?: string;
+=======
+  fileSize?: string;
+  fileFormat?: 'PDF' | 'DOCX' | 'TXT' | 'PNG' | 'JPG';
+  thumbnailUrl?: string;
+  replacement?: string; // For banned terms
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 }
 
 export interface ApprovalItem {
@@ -151,6 +161,9 @@ export interface UserProfile {
   avatar: string;
   department: string;
   organisation: string;
+<<<<<<< HEAD
   organizationId?: string;
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 }
 

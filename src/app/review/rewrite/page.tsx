@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+<<<<<<< HEAD
 import Link from 'next/link';
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/Button';
@@ -121,12 +124,21 @@ export default function RewriteStudioPage() {
               <h1 className="font-heading text-xl sm:text-2xl font-extrabold text-[#20364A] tracking-tight">
                 AI Rewrite Studio
               </h1>
+<<<<<<< HEAD
               <span className="px-2.5 py-0.5 rounded bg-[#D5E3EC] text-[#31566D] text-xs font-bold flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5 text-[#416F89]" />
                 Intent-Preserved
               </span>
             </div>
             <p className="mt-1 text-xs sm:text-sm text-[#718494]">
+=======
+              <span className="px-2.5 py-0.5 rounded bg-[#D5E3EC] text-[#20364A] text-xs font-bold flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-[#416F89]" aria-hidden="true" />
+                Intent-Preserved
+              </span>
+            </div>
+            <p className="mt-1 text-xs sm:text-sm text-[#4F6576]">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               Interactive side-by-side comparison. Accept individual suggestions or manually refine your draft.
             </p>
           </div>
@@ -135,7 +147,11 @@ export default function RewriteStudioPage() {
             <Button
               variant="outline"
               size="sm"
+<<<<<<< HEAD
               leftIcon={<Copy className="w-3.5 h-3.5" />}
+=======
+              leftIcon={<Copy className="w-3.5 h-3.5" aria-hidden="true" />}
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               onClick={handleCopyText}
             >
               {copied ? 'Copied!' : 'Copy Final Text'}
@@ -143,7 +159,11 @@ export default function RewriteStudioPage() {
             <Button
               variant="primary"
               size="sm"
+<<<<<<< HEAD
               leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+=======
+              leftIcon={<RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />}
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               onClick={handleReRunReview}
             >
               Re-Scan Content
@@ -157,6 +177,7 @@ export default function RewriteStudioPage() {
           <div className="bg-white rounded-xl border border-[#C4D5E0] shadow-subtle flex flex-col justify-between overflow-hidden">
             <div className="p-4 bg-[#EDF3F6]/70 border-b border-[#C4D5E0] flex items-center justify-between">
               <div className="flex items-center gap-2">
+<<<<<<< HEAD
                 <span className="w-2.5 h-2.5 rounded-full bg-[#718494]" />
                 <h3 className="text-xs font-bold text-[#20364A] uppercase tracking-wider">
                   Original Submitted Draft
@@ -199,11 +220,62 @@ export default function RewriteStudioPage() {
                 >
                   brand sense Cloud Sync
                 </span>{' '}
+=======
+                <span className="w-2.5 h-2.5 rounded-full bg-[#4F6576]" aria-hidden="true" />
+                <h2 className="text-xs font-bold text-[#20364A] uppercase tracking-wider">
+                  Original Submitted Draft
+                </h2>
+              </div>
+              <span className="text-xs text-[#4F6576] font-mono">Unmodified source</span>
+            </div>
+
+            <div className="p-6 text-xs sm:text-sm leading-relaxed text-[#20364A] space-y-4 font-sans flex-1">
+              <p>
+                <button
+                  type="button"
+                  onClick={() => setSelectedChangeId('c-1')}
+                  className={`text-left inline px-1 py-0.5 rounded transition-all border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] ${
+                    selectedChangeId === 'c-1'
+                      ? 'bg-[#A94842]/25 text-[#20364A] border-[#A94842] font-bold ring-2 ring-[#A94842]/30'
+                      : 'bg-[#A94842]/15 text-[#20364A] border-[#A94842]/50 hover:bg-[#A94842]/20'
+                  }`}
+                  aria-label="Inspect change: Guarantees 100% elimination of all regulatory compliance fines"
+                >
+                  BrandSense guarantees a 100% elimination of all regulatory compliance fines within 30 days.
+                </button>{' '}
+                Our{' '}
+                <button
+                  type="button"
+                  onClick={() => setSelectedChangeId('c-2')}
+                  className={`text-left inline px-1 py-0.5 rounded transition-all border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] ${
+                    selectedChangeId === 'c-2'
+                      ? 'bg-[#F4D77B]/40 text-[#20364A] border-[#9A682D] font-bold ring-2 ring-[#F4D77B]'
+                      : 'bg-[#F4D77B]/20 text-[#20364A] border-[#9A682D]/40 hover:bg-[#F4D77B]/30'
+                  }`}
+                  aria-label="Inspect change: Disruptive miracle platform"
+                >
+                  disruptive miracle platform
+                </button>{' '}
+                revolutionises how your team reviews content. Connect your repository with{' '}
+                <button
+                  type="button"
+                  onClick={() => setSelectedChangeId('c-3')}
+                  className={`text-left inline px-1 py-0.5 rounded transition-all border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] ${
+                    selectedChangeId === 'c-3'
+                      ? 'bg-[#D5E3EC] text-[#20364A] border-[#416F89] font-bold ring-2 ring-[#416F89]/30'
+                      : 'bg-[#EDF3F6] text-[#20364A] border-[#416F89]/30 hover:bg-[#D5E3EC]/50'
+                  }`}
+                  aria-label="Inspect change: brand sense Cloud Sync"
+                >
+                  brand sense Cloud Sync
+                </button>{' '}
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                 in one click.
               </p>
 
               <p>
                 Clients typically see an{' '}
+<<<<<<< HEAD
                 <span
                   onClick={() => setSelectedChangeId('c-4')}
                   className={`cursor-pointer px-1 py-0.5 rounded transition-all border-b-2 ${
@@ -234,11 +306,53 @@ export default function RewriteStudioPage() {
                 >
                   Click the green button on the right side of the screen
                 </span>{' '}
+=======
+                <button
+                  type="button"
+                  onClick={() => setSelectedChangeId('c-4')}
+                  className={`text-left inline px-1 py-0.5 rounded transition-all border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] ${
+                    selectedChangeId === 'c-4'
+                      ? 'bg-[#A94842]/25 text-[#20364A] border-[#A94842] font-bold ring-2 ring-[#A94842]/30'
+                      : 'bg-[#A94842]/15 text-[#20364A] border-[#A94842]/50 hover:bg-[#A94842]/20'
+                  }`}
+                  aria-label="Inspect change: Instant 450% ROI claim"
+                >
+                  instant 450% ROI on their enterprise license in quarter one.
+                </button>{' '}
+                <button
+                  type="button"
+                  onClick={() => setSelectedChangeId('c-5')}
+                  className={`text-left inline px-1 py-0.5 rounded transition-all border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] ${
+                    selectedChangeId === 'c-5'
+                      ? 'bg-[#F4D77B]/40 text-[#20364A] border-[#9A682D] font-bold ring-2 ring-[#F4D77B]'
+                      : 'bg-[#F4D77B]/20 text-[#20364A] border-[#9A682D]/40 hover:bg-[#F4D77B]/30'
+                  }`}
+                  aria-label="Inspect change: Aggressive brand voice dinosaur quote"
+                >
+                  Don’t be a dinosaur! Grab your license today before your competitors leave you in the dust!
+                </button>{' '}
+                <button
+                  type="button"
+                  onClick={() => setSelectedChangeId('c-6')}
+                  className={`text-left inline px-1 py-0.5 rounded transition-all border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] ${
+                    selectedChangeId === 'c-6'
+                      ? 'bg-[#D5E3EC] text-[#20364A] border-[#4F6576] font-bold ring-2 ring-[#4F6576]/30'
+                      : 'bg-[#EDF3F6] text-[#20364A] border-[#4F6576]/30 hover:bg-[#D5E3EC]/50'
+                  }`}
+                  aria-label="Inspect change: Directional visual cue green button"
+                >
+                  Click the green button on the right side of the screen
+                </button>{' '}
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                 to download.
               </p>
             </div>
 
+<<<<<<< HEAD
             <div className="p-4 bg-[#EDF3F6]/50 border-t border-[#C4D5E0] text-xs text-[#718494] flex items-center justify-between">
+=======
+            <div className="p-4 bg-[#EDF3F6]/50 border-t border-[#C4D5E0] text-xs text-[#4F6576] flex items-center justify-between">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               <span>Click highlighted section to view explanation</span>
               <span className="font-bold text-[#20364A]">6 items flagged</span>
             </div>
@@ -246,6 +360,7 @@ export default function RewriteStudioPage() {
 
           {/* Right Column: AI Compliant Suggested Version */}
           <div className="bg-white rounded-xl border border-[#416F89]/40 shadow-subtle flex flex-col justify-between overflow-hidden">
+<<<<<<< HEAD
             <div className="p-4 bg-[rgba(65,111,137,.1)] border-b border-[rgba(65,111,137,.2)] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#416F89]" />
@@ -254,11 +369,22 @@ export default function RewriteStudioPage() {
                 </h3>
               </div>
               <span className="text-[11px] font-bold text-[#315C74] bg-[#D5E3EC] px-2 py-0.5 rounded">
+=======
+            <div className="p-4 bg-[#416F89]/10 border-b border-[#416F89]/20 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#416F89]" aria-hidden="true" />
+                <h2 className="text-xs font-bold text-[#20364A] uppercase tracking-wider">
+                  Suggested Compliant Version (Editable)
+                </h2>
+              </div>
+              <span className="text-xs font-bold text-[#315C74] bg-[#D5E3EC] px-2.5 py-0.5 rounded">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                 Active Draft
               </span>
             </div>
 
             <div className="p-4 flex-1 flex flex-col">
+<<<<<<< HEAD
               <textarea
                 rows={11}
                 value={editableSuggestedText}
@@ -277,6 +403,31 @@ export default function RewriteStudioPage() {
                 className="text-xs text-[#416F89] hover:underline font-bold flex items-center gap-1"
               >
                 <Undo2 className="w-3 h-3" />
+=======
+              <label htmlFor="editable-suggested-text" className="sr-only">
+                Editable suggested compliant text
+              </label>
+              <textarea
+                id="editable-suggested-text"
+                rows={11}
+                value={editableSuggestedText}
+                onChange={(e) => setEditableSuggestedText(e.target.value)}
+                className="w-full flex-1 p-4 text-xs sm:text-sm font-sans bg-[#EDF3F6]/30 border border-[#C4D5E0] rounded-lg focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#416F89]/25 focus:border-[#416F89] text-[#20364A] leading-relaxed resize-none"
+              />
+            </div>
+
+            <div className="p-4 bg-[#416F89]/5 border-t border-[#416F89]/15 text-xs text-[#20364A] flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-[#1F7560]" aria-hidden="true" />
+                <span>You can directly type and edit any text in this workspace</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditableSuggestedText(review.suggestedContent)}
+                className="text-xs text-[#416F89] hover:underline font-bold flex items-center gap-1 p-1 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89]"
+              >
+                <Undo2 className="w-3.5 h-3.5" aria-hidden="true" />
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                 Reset
               </button>
             </div>
@@ -288,25 +439,41 @@ export default function RewriteStudioPage() {
           <div className="bg-white p-6 rounded-xl border border-[#C4D5E0] shadow-subtle">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#C4D5E0]">
               <div className="flex items-center gap-2">
+<<<<<<< HEAD
                 <span className="px-2.5 py-0.5 rounded bg-[#D5E3EC] text-[#31566D] text-xs font-bold">
                   {selectedChange.category}
                 </span>
                 <span className="text-xs text-[#718494]">Change #{selectedChange.id}</span>
+=======
+                <span className="px-2.5 py-0.5 rounded bg-[#D5E3EC] text-[#20364A] text-xs font-bold">
+                  {selectedChange.category}
+                </span>
+                <span className="text-xs text-[#4F6576]">Change #{selectedChange.id}</span>
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               </div>
 
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
                   variant={selectedChange.status === 'accepted' ? 'primary' : 'outline'}
+<<<<<<< HEAD
                   leftIcon={<Check className="w-3.5 h-3.5" />}
+=======
+                  leftIcon={<Check className="w-3.5 h-3.5" aria-hidden="true" />}
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                   onClick={() => handleAcceptChange(selectedChange.id)}
                 >
                   Accept Change
                 </Button>
                 <Button
                   size="sm"
+<<<<<<< HEAD
                   variant={selectedChange.status === 'rejected' ? 'danger' : 'outline'}
                   leftIcon={<Undo2 className="w-3.5 h-3.5" />}
+=======
+                  variant={selectedChange.status === 'rejected' ? 'destructive' : 'outline'}
+                  leftIcon={<Undo2 className="w-3.5 h-3.5" aria-hidden="true" />}
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                   onClick={() => handleRejectChange(selectedChange.id)}
                 >
                   Keep Original
@@ -316,25 +483,43 @@ export default function RewriteStudioPage() {
 
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
               <div>
+<<<<<<< HEAD
                 <span className="text-[10px] uppercase font-bold text-[#718494] block mb-1">
                   Original phrasing
                 </span>
                 <p className="p-3 bg-[#C65E57]/10 border border-[#C65E57]/25 rounded-lg text-[#20364A] font-mono">
+=======
+                <span className="text-xs uppercase font-bold text-[#4F6576] block mb-1">
+                  Original phrasing
+                </span>
+                <p className="p-3 bg-[#A94842]/10 border border-[#A94842]/25 rounded-lg text-[#20364A] font-mono">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                   “{selectedChange.original}”
                 </p>
               </div>
 
               <div>
+<<<<<<< HEAD
                 <span className="text-[10px] uppercase font-bold text-[#416F89] block mb-1">
                   Compliant replacement
                 </span>
                 <p className="p-3 bg-[rgba(65,111,137,.1)] border border-[rgba(65,111,137,.25)] rounded-lg text-[#20364A] font-mono font-semibold">
+=======
+                <span className="text-xs uppercase font-bold text-[#416F89] block mb-1">
+                  Compliant replacement
+                </span>
+                <p className="p-3 bg-[#416F89]/10 border border-[#416F89]/25 rounded-lg text-[#20364A] font-mono font-semibold">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
                   “{selectedChange.replacement}”
                 </p>
               </div>
             </div>
 
+<<<<<<< HEAD
             <div className="mt-4 pt-3 border-t border-[#C4D5E0] text-xs text-[#718494]">
+=======
+            <div className="mt-4 pt-3 border-t border-[#C4D5E0] text-xs text-[#4F6576]">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
               <span className="font-bold text-[#20364A]">Why this was updated: </span>
               <span>{selectedChange.reason}</span>
             </div>

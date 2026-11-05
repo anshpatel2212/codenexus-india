@@ -1,6 +1,9 @@
 import { UserProfile } from '@/types';
+<<<<<<< HEAD
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getClientEnv } from '@/lib/env';
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 
 const USERS_KEY = 'brandsense_auth_users';
 const SESSION_KEY = 'brandsense_auth_session';
@@ -10,7 +13,11 @@ export const AUTH_STORAGE_KEYS = [USERS_KEY, SESSION_KEY];
 export type AuthField = 'name' | 'email' | 'password';
 
 export type AuthResult =
+<<<<<<< HEAD
   | { success: true; user: UserProfile; message?: string }
+=======
+  | { success: true; user: UserProfile }
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   | { success: false; error: string; field?: AuthField };
 
 export interface RegisterInput {
@@ -19,7 +26,10 @@ export interface RegisterInput {
   password: string;
   organisation: string;
   role: string;
+<<<<<<< HEAD
   invitationToken?: string;
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 }
 
 export type DemoProfile = 'manager' | 'legal' | 'okta' | 'google';
@@ -43,7 +53,10 @@ const LEGAL_AVATAR =
 const DEMO_USERS: Array<Omit<StoredUser, 'passwordHash' | 'createdAt'> & { password: string }> = [
   {
     id: 'usr-1',
+<<<<<<< HEAD
     organizationId: 'org-1',
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     name: 'Elena Rostova',
     email: 'elena.rostova@acmebrand.com',
     role: 'Manager',
@@ -54,7 +67,10 @@ const DEMO_USERS: Array<Omit<StoredUser, 'passwordHash' | 'createdAt'> & { passw
   },
   {
     id: 'usr-2',
+<<<<<<< HEAD
     organizationId: 'org-1',
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     name: 'Sarah Chen, Esq.',
     email: 'sarah.chen@acmebrand.com',
     role: 'Reviewer',
@@ -72,6 +88,23 @@ const DEMO_PROFILE_MAP: Record<DemoProfile, string> = {
   google: 'elena.rostova@acmebrand.com',
 };
 
+<<<<<<< HEAD
+=======
+const ROLE_MAP: Record<string, UserProfile['role']> = {
+  'Brand Manager': 'Manager',
+  'Legal & Compliance': 'Reviewer',
+  'Content Creator': 'Creator',
+  'Marketing Director': 'Admin',
+};
+
+const DEPARTMENT_MAP: Record<string, string> = {
+  'Brand Manager': 'Brand & Global Marketing',
+  'Legal & Compliance': 'Legal & Compliance',
+  'Content Creator': 'Content & Creative',
+  'Marketing Director': 'Marketing Leadership',
+};
+
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 const hashPassword = async (password: string): Promise<string> => {
@@ -82,6 +115,10 @@ const hashPassword = async (password: string): Promise<string> => {
       .map((byte) => byte.toString(16).padStart(2, '0'))
       .join('');
   }
+<<<<<<< HEAD
+=======
+
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   let hash = 0;
   const value = `brandsense:${password}`;
   for (let i = 0; i < value.length; i += 1) {
@@ -96,7 +133,11 @@ const writeJSON = (key: string, value: unknown) => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
+<<<<<<< HEAD
     // Ignore storage issues
+=======
+    // Storage can be unavailable in private browsing; fail gracefully.
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   }
 };
 
@@ -120,6 +161,7 @@ export const toPublicUser = (user: StoredUser): UserProfile => {
 class BrandSenseAuthClient {
   private seedPromise: Promise<void> | null = null;
 
+<<<<<<< HEAD
   private get supabase() {
     return getSupabaseBrowserClient();
   }
@@ -133,6 +175,8 @@ class BrandSenseAuthClient {
     return process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ALLOW_DEMO === 'true';
   }
 
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
   private readUsers(): StoredUser[] {
     return readJSON<StoredUser[]>(USERS_KEY) ?? [];
   }
@@ -183,6 +227,7 @@ class BrandSenseAuthClient {
     return { success: true, user: toPublicUser(user) };
   }
 
+<<<<<<< HEAD
   // ---------------------------------------------------------------------------
   // Profile Fetcher
   // ---------------------------------------------------------------------------
@@ -253,6 +298,9 @@ class BrandSenseAuthClient {
       return null;
     }
 
+=======
+  async getSession(): Promise<UserProfile | null> {
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     await this.ensureSeeded();
     const session = readJSON<StoredSession>(SESSION_KEY);
     if (!session) return null;
@@ -263,7 +311,11 @@ class BrandSenseAuthClient {
         try {
           localStorage.removeItem(SESSION_KEY);
         } catch {
+<<<<<<< HEAD
           // Ignore
+=======
+          // Ignore storage errors.
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
         }
       }
       return null;
@@ -272,15 +324,22 @@ class BrandSenseAuthClient {
     return toPublicUser(user);
   }
 
+<<<<<<< HEAD
   // ---------------------------------------------------------------------------
   // Login
   // ---------------------------------------------------------------------------
   async login(email: string, password: string): Promise<AuthResult> {
+=======
+  async login(email: string, password: string): Promise<AuthResult> {
+    await this.ensureSeeded();
+
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     const normalized = normalizeEmail(email);
     if (!normalized || !password) {
       return { success: false, error: 'Enter your email address and password.', field: 'email' };
     }
 
+<<<<<<< HEAD
     if (this.isSupabaseLive()) {
       try {
         const { data, error } = await this.supabase.auth.signInWithPassword({
@@ -330,6 +389,8 @@ class BrandSenseAuthClient {
     }
 
     await this.ensureSeeded();
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     const user = this.readUsers().find((candidate) => candidate.email === normalized);
     if (!user) {
       return { success: false, error: 'No account was found for this email address.', field: 'email' };
@@ -343,10 +404,16 @@ class BrandSenseAuthClient {
     return this.createSession(user);
   }
 
+<<<<<<< HEAD
   // ---------------------------------------------------------------------------
   // Register / Onboarding
   // ---------------------------------------------------------------------------
   async register(input: RegisterInput): Promise<AuthResult> {
+=======
+  async register(input: RegisterInput): Promise<AuthResult> {
+    await this.ensureSeeded();
+
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     const name = input.name.trim();
     const email = normalizeEmail(input.email);
     const password = input.password;
@@ -355,13 +422,22 @@ class BrandSenseAuthClient {
     if (name.length < 2) {
       return { success: false, error: 'Enter your full name.', field: 'name' };
     }
+<<<<<<< HEAD
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return { success: false, error: 'Enter a valid email address.', field: 'email' };
     }
+=======
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return { success: false, error: 'Enter a valid email address.', field: 'email' };
+    }
+
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     if (password.length < 8) {
       return { success: false, error: 'Password must be at least 8 characters.', field: 'password' };
     }
 
+<<<<<<< HEAD
     if (this.isSupabaseLive()) {
       try {
         const { data, error } = await this.supabase.auth.signUp({
@@ -421,6 +497,8 @@ class BrandSenseAuthClient {
     }
 
     await this.ensureSeeded();
+=======
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     const users = this.readUsers();
     if (users.some((user) => user.email === email)) {
       return {
@@ -432,12 +510,20 @@ class BrandSenseAuthClient {
 
     const newUser: StoredUser = {
       id: `usr-${Date.now()}`,
+<<<<<<< HEAD
       organizationId: `org-${Date.now()}`,
       name,
       email,
       role: 'Creator',
       avatar: '',
       department: 'Brand & Global Marketing',
+=======
+      name,
+      email,
+      role: ROLE_MAP[input.role] ?? 'Manager',
+      avatar: '',
+      department: DEPARTMENT_MAP[input.role] ?? 'Brand & Global Marketing',
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
       organisation,
       passwordHash: await hashPassword(password),
       createdAt: new Date().toISOString(),
@@ -445,6 +531,7 @@ class BrandSenseAuthClient {
 
     users.push(newUser);
     this.writeUsers(users);
+<<<<<<< HEAD
     return this.createSession(newUser);
   }
 
@@ -460,12 +547,22 @@ class BrandSenseAuthClient {
     }
 
     await this.ensureSeeded();
+=======
+
+    return this.createSession(newUser);
+  }
+
+  async signInDemo(profile: DemoProfile): Promise<AuthResult> {
+    await this.ensureSeeded();
+
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     const email = DEMO_PROFILE_MAP[profile];
     const demo = DEMO_USERS.find((user) => user.email === email);
     if (!demo) {
       return { success: false, error: 'Demo access is unavailable. Please sign in manually.' };
     }
 
+<<<<<<< HEAD
     const user = this.readUsers().find((candidate) => candidate.email === email);
     if (user) {
       return this.createSession(user);
@@ -525,6 +622,17 @@ class BrandSenseAuthClient {
       } catch {
         // Ignore
       }
+=======
+    return this.login(demo.email, demo.password);
+  }
+
+  logout(): void {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.removeItem(SESSION_KEY);
+    } catch {
+      // Ignore storage errors.
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     }
   }
 }

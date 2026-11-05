@@ -24,6 +24,7 @@ export default function InvitePage() {
 
   return (
     <div className="bs-app-shell min-h-screen flex items-center justify-center p-6 antialiased font-sans">
+<<<<<<< HEAD
       <div className="bs-glass max-w-md w-full rounded-xl border border-[#C4D5E0] p-8 sm:p-10 text-center">
         <BrandSenseLogo className="justify-center mb-6" />
 
@@ -32,6 +33,16 @@ export default function InvitePage() {
         </div>
 
         <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#D5E3EC]/60 text-[#31566D] text-[10px] font-bold uppercase tracking-wider">
+=======
+      <main className="bs-glass max-w-md w-full rounded-xl border border-[#C4D5E0] p-8 sm:p-10 text-center shadow-card">
+        <BrandSenseLogo className="justify-center mb-6" />
+
+        <div className="w-12 h-12 rounded-lg bg-[#D5E3EC]/70 text-[#416F89] border border-[#C4D5E0] flex items-center justify-center mx-auto mb-4" aria-hidden="true">
+          <Building2 className="w-6 h-6" />
+        </div>
+
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#D5E3EC]/80 text-[#20364A] text-xs font-bold uppercase tracking-wider">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
           Workspace Invitation
         </span>
 
@@ -39,7 +50,11 @@ export default function InvitePage() {
           Join Acme Enterprise Holdings
         </h1>
 
+<<<<<<< HEAD
         <p className="mt-2 text-xs text-[#718494] leading-relaxed">
+=======
+        <p className="mt-2 text-xs sm:text-sm text-[#4F6576] leading-relaxed">
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
           <strong className="text-[#20364A]">Julian Thorne</strong> (Chief Compliance Officer) has
           invited you to collaborate as an authorized{' '}
           <strong className="text-[#20364A]">Content Reviewer</strong> on BrandSense.
@@ -47,6 +62,7 @@ export default function InvitePage() {
 
         <div className="my-6 p-4 rounded-lg bg-[#F4F8FA] border border-[#C4D5E0] text-left space-y-2.5 text-xs">
           <div className="flex justify-between items-center gap-3">
+<<<<<<< HEAD
             <span className="text-[#718494]">Invited email</span>
             <span className="font-semibold text-[#20364A] truncate">elena.rostova@acmebrand.com</span>
           </div>
@@ -56,6 +72,17 @@ export default function InvitePage() {
           </div>
           <div className="flex justify-between items-center gap-3">
             <span className="text-[#718494]">Clearance</span>
+=======
+            <span className="text-[#4F6576]">Invited email</span>
+            <span className="font-semibold text-[#20364A] truncate">elena.rostova@acmebrand.com</span>
+          </div>
+          <div className="flex justify-between items-center gap-3">
+            <span className="text-[#4F6576]">Assigned role</span>
+            <span className="font-semibold text-[#20364A]">Brand Manager / Reviewer</span>
+          </div>
+          <div className="flex justify-between items-center gap-3">
+            <span className="text-[#4F6576]">Clearance</span>
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
             <span className="font-semibold text-[#20364A]">Level 3 (Pre-publication)</span>
           </div>
         </div>
@@ -63,22 +90,38 @@ export default function InvitePage() {
         <div className="space-y-3">
           <Button onClick={handleAccept} isLoading={loading} className="w-full" size="lg">
             Accept Invitation &amp; Launch Workspace
+<<<<<<< HEAD
             <ArrowRight className="w-4 h-4" />
+=======
+            <ArrowRight className="w-4 h-4 ml-1.5" aria-hidden="true" />
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
           </Button>
 
           <Link
             href="/login"
+<<<<<<< HEAD
             className="block w-full py-2 text-xs text-[#718494] hover:text-[#20364A] font-medium transition-colors"
+=======
+            className="block w-full py-2 text-xs text-[#4F6576] hover:text-[#20364A] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89]"
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
           >
             Sign in with a different account
           </Link>
         </div>
 
+<<<<<<< HEAD
         <div className="mt-6 pt-5 border-t border-[#C4D5E0] flex items-center justify-center gap-2 text-[11px] text-[#718494]">
           <ShieldCheck className="w-3.5 h-3.5 text-[#258A70]" />
           <span>Protected by Enterprise SAML 2.0 &amp; SOC 2</span>
         </div>
       </div>
+=======
+        <div className="mt-6 pt-5 border-t border-[#C4D5E0] flex items-center justify-center gap-2 text-xs text-[#4F6576]">
+          <ShieldCheck className="w-4 h-4 text-[#1F7560]" aria-hidden="true" />
+          <span>Protected by Enterprise SAML 2.0 &amp; SOC 2</span>
+        </div>
+      </main>
+>>>>>>> df8cea0f65c4bd85d419b1f00a95a836e7cd6efc
     </div>
   );
 }
