@@ -18,11 +18,16 @@ export default function LandingPage() {
       return;
     }
 
-    const closeMenu = () => {
+    menuToggle.setAttribute('aria-controls', 'navLinks');
+
+    const closeMenu = (restoreFocus = false) => {
       navLinks.classList.remove('active');
       menuToggle.innerHTML = '&#9776;';
       menuToggle.setAttribute('aria-label', 'Open menu');
       menuToggle.setAttribute('aria-expanded', 'false');
+      if (restoreFocus) {
+        menuToggle.focus();
+      }
     };
 
     const toggleMenu = () => {
@@ -33,21 +38,24 @@ export default function LandingPage() {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        closeMenu();
+      if (event.key === 'Escape' && navLinks.classList.contains('active')) {
+        closeMenu(true);
       }
     };
 
     const links = navLinks.querySelectorAll('a');
 
     menuToggle.addEventListener('click', toggleMenu);
-    links.forEach((link) => link.addEventListener('click', closeMenu));
+    links.forEach((link) => link.addEventListener('click', () => closeMenu(false)));
     document.addEventListener('keydown', handleKeyDown);
 
     const revealElements = document.querySelectorAll('.reveal');
     let observer: IntersectionObserver | null = null;
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    if ('IntersectionObserver' in window) {
+    if (!prefersReducedMotion && 'IntersectionObserver' in window) {
       observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -67,7 +75,7 @@ export default function LandingPage() {
 
     return () => {
       menuToggle.removeEventListener('click', toggleMenu);
-      links.forEach((link) => link.removeEventListener('click', closeMenu));
+      links.forEach((link) => link.removeEventListener('click', () => closeMenu(false)));
       document.removeEventListener('keydown', handleKeyDown);
       observer?.disconnect();
     };
