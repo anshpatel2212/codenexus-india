@@ -255,42 +255,36 @@ class BrandSenseApiClient {
   // SENSA Assistant Chat (Autonomous Neural RAG Copilot)
   // ---------------------------------------------------------------------------
   async querySensa(prompt: string, context?: any): Promise<SensaMessage> {
-    // 1. Primary: Autonomous Google Gemini Sensa Copilot
+    // 1. Primary: Server-side Next.js route (works reliably across all devices, mobile & cloud)
+    try {
+      const res = await fetch('/api/sensa/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, context }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.content) {
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('Server-side SENSA route unreachable, trying client fallback:', err);
+    }
+
+    // 2. Secondary: Direct client-side Gemini fallback
     if (isGeminiConfigured()) {
       try {
         return await chatWithSensaGemini(prompt);
       } catch (err) {
-        console.warn('Gemini Sensa live call timed out or encountered high demand, activating instant brand engine:', err);
+        console.warn('Client Gemini call failed:', err);
       }
     }
 
-    // 2. Secondary: Fast check for Ansh's FastAPI Backend (short 1.5s timeout)
-    const env = getClientEnv();
-    if (env.apiUrl && !env.apiUrl.includes('placeholder')) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1500);
-
-        const res = await fetch(`${API_BASE_URL}/sensa/chat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, context }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (res.ok) {
-          return await res.json();
-        }
-      } catch {
-        // Continue to instant local brand knowledge engine
-      }
-    }
-
-    // 3. Fallback: Instant deterministic brand governance analysis
+    // 3. Fallback: Instant deterministic brand governance analysis (offline protection)
     const lower = prompt.toLowerCase().trim();
-    const isGreeting = /^(hi|hello|hey|hhii|heyy|greetings|hola)/i.test(lower);
+    const isGreeting = /^(hi|hello|hey|hhii|heyy|greetings|hola)\b/i.test(lower);
     const hasGuarantee = lower.includes('guarantee') || lower.includes('100%') || lower.includes('zero fine') || lower.includes('cures') || lower.includes('miracle');
     const hasFomo = lower.includes('dinosaur') || lower.includes('idiot') || lower.includes('stupid') || lower.includes('hurry') || lower.includes('dust');
     const hasDirectional = lower.includes('green button') || lower.includes('right side') || lower.includes('click here');
