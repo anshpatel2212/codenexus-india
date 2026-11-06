@@ -353,6 +353,7 @@ class BrandSenseAuthClient {
             avatar: profile.avatar || '',
             department: profile.department || 'General',
             isDemo: Boolean(profile.isDemo),
+            supabaseUserId: profile.supabaseUserId || '',
           };
           this.writeSession(userProfile);
           return userProfile;
