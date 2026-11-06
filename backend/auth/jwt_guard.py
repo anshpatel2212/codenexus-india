@@ -65,6 +65,7 @@ class AuthenticatedUser(BaseModel):
     full_name: str
     role: str  # 'Super Admin' | 'Admin' | 'Creator' | 'Manager' | 'Reviewer'
     department: Optional[str] = None
+    supabase_user_id: Optional[str] = None
 
 def verify_supabase_jwt(token: str) -> Dict[str, Any]:
     """
@@ -297,37 +298,29 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Fetch verified profile from database (never trust client-supplied org_id or role)
-    if supabase_admin.is_live():
-        profile = await supabase_admin.get_user_profile(user_id)
-        if profile:
-            return AuthenticatedUser(
-                id=profile["id"],
-                organization_id=profile.get("organization_id"),
-                email=profile.get("email", ""),
-                full_name=profile.get("full_name", ""),
-                role=profile.get("role", "Creator"),
-                department=profile.get("department")
-            )
-
-    # Persistent relational database lookup
+    # 1. Primary: Authoritative relational database lookup (by SQLite ID or Supabase UID)
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, email, full_name, role, organization_id, department FROM users WHERE id = ?", (user_id,))
+    cur.execute(
+        "SELECT id, email, full_name, role, organization_id, department, supabase_user_id FROM users WHERE id = ? OR supabase_user_id = ?",
+        (user_id, user_id)
+    )
     row = cur.fetchone()
     conn.close()
 
     if row:
+        sb_uid = row["supabase_user_id"] if "supabase_user_id" in row.keys() else None
         return AuthenticatedUser(
             id=row["id"],
             organization_id=row["organization_id"],
             email=row["email"],
             full_name=row["full_name"],
             role=row["role"],
-            department=row["department"]
+            department=row["department"],
+            supabase_user_id=sb_uid
         )
 
-    # Use verified claims from JWT payload if user exists in token
+    # 2. Use verified claims from JWT payload if user exists in token
     if payload.get("email") and payload.get("role"):
         return AuthenticatedUser(
             id=user_id,
@@ -335,7 +328,8 @@ async def get_current_user(
             email=payload.get("email"),
             full_name=payload.get("full_name") or payload.get("email", "").split("@")[0],
             role=payload.get("role", "Creator"),
-            department=payload.get("department", "General")
+            department=payload.get("department", "General"),
+            supabase_user_id=payload.get("supabase_user_id")
         )
 
     raise HTTPException(

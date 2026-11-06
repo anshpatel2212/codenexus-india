@@ -2,19 +2,21 @@ import os
 from pathlib import Path
 from typing import List, Union, Optional
 
-# Automatically load environment variables from backend/.env or root .env
+# Automatically load environment variables from backend/.env, root .env.local, or root .env
 _backend_dir = Path(__file__).resolve().parent
 _backend_env = _backend_dir / ".env"
+_root_env_local = _backend_dir.parent / ".env.local"
 _root_env = _backend_dir.parent / ".env"
 
 try:
     from dotenv import load_dotenv
     if _backend_env.exists():
         load_dotenv(dotenv_path=_backend_env)
-    elif _root_env.exists():
+    if _root_env_local.exists():
+        load_dotenv(dotenv_path=_root_env_local)
+    if _root_env.exists():
         load_dotenv(dotenv_path=_root_env)
-    else:
-        load_dotenv()
+    load_dotenv()
 except ImportError:
     pass
 
@@ -62,7 +64,7 @@ class Settings(BaseSettings):
     AI_MODEL_NAME: str = os.getenv("AI_MODEL_NAME", "nvidia/nemotron-4-340b-instruct")
 
     class Config:
-        env_file = str(_backend_env) if _backend_env.exists() else ".env"
+        env_file = str(_backend_env) if _backend_env.exists() else (str(_root_env_local) if _root_env_local.exists() else ".env")
         extra = "allow"
 
     if _has_pydantic_validator:

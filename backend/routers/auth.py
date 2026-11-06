@@ -105,32 +105,63 @@ async def signup(req: SignupRequest):
         VALUES (?, ?, ?, 'Standard Plan', 'active', ?, ?)
         """, (target_org_id, org_name, f"org-{uuid.uuid4().hex[:6]}", now, now))
 
-    # 3. Secure password hashing
+    # 3. Synchronize with Supabase Auth (Identity Provider)
+    supabase_uid = None
+    if supabase_admin.is_live():
+        sb_uid, sb_err = supabase_admin.create_auth_user(
+            email=normalized_email,
+            password=req.password,
+            full_name=req.name.strip(),
+            role=target_role,
+            organization_id=target_org_id
+        )
+        if sb_uid:
+            supabase_uid = sb_uid
+        elif sb_err:
+            logger.warning(f"Supabase Auth sync notice: {sb_err}")
+
+    # 4. Secure password hashing & atomic persistence in SQLite
     p_hash, salt = hash_password(req.password)
     user_id = f"usr-{uuid.uuid4().hex[:10]}"
 
-    cur.execute("""
-    INSERT INTO users (id, email, password_hash, salt, full_name, role, organization_id, department, avatar_url, status, is_demo, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'Brand Management', '', 'active', 0, ?, ?)
-    """, (user_id, normalized_email, p_hash, salt, req.name.strip(), target_role, target_org_id, now, now))
+    try:
+        cur.execute("""
+        INSERT INTO users (id, email, password_hash, salt, full_name, role, organization_id, department, avatar_url, status, is_demo, supabase_user_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'Brand Management', '', 'active', 0, ?, ?, ?)
+        """, (user_id, normalized_email, p_hash, salt, req.name.strip(), target_role, target_org_id, supabase_uid, now, now))
 
-    # Log registration in activity logs
-    cur.execute("""
-    INSERT INTO activity_logs (id, organization_id, user_id, user_name, action, details, timestamp)
-    VALUES (?, ?, ?, ?, 'User Registered', ?, ?)
-    """, (f"act-{uuid.uuid4().hex[:8]}", target_org_id, user_id, req.name.strip(), f"User registered as {target_role} for {org_name}", now))
+        # Log registration in activity logs
+        cur.execute("""
+        INSERT INTO activity_logs (id, organization_id, user_id, user_name, action, details, timestamp)
+        VALUES (?, ?, ?, ?, 'User Registered', ?, ?)
+        """, (f"act-{uuid.uuid4().hex[:8]}", target_org_id, user_id, req.name.strip(), f"User registered as {target_role} for {org_name}", now))
 
-    conn.commit()
-    conn.close()
+        conn.commit()
+    except Exception as db_err:
+        conn.rollback()
+        # Compensating rollback: delete created Supabase Auth user if SQLite insertion fails
+        if supabase_uid:
+            supabase_admin.delete_auth_user(supabase_uid)
+        conn.close()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error during account registration: {str(db_err)}"
+        )
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
-    # 4. Generate signed JWT session
+    # 5. Generate signed JWT session
     user_payload = {
         "id": user_id,
         "email": normalized_email,
         "full_name": req.name.strip(),
         "role": target_role,
         "organization_id": target_org_id,
-        "department": "Brand Management"
+        "department": "Brand Management",
+        "supabase_user_id": supabase_uid or ""
     }
     token = create_access_token(user_payload)
 
@@ -146,7 +177,8 @@ async def signup(req: SignupRequest):
             "organisation": org_name,
             "avatar": "",
             "department": "Brand Management",
-            "isDemo": False
+            "isDemo": False,
+            "supabaseUserId": supabase_uid or ""
         }
     }
 
@@ -219,6 +251,29 @@ async def login(req: LoginRequest):
     VALUES (?, ?, ?, ?, 'User Login', 'Successful authentication session established', ?)
     """, (f"act-{uuid.uuid4().hex[:8]}", user["organization_id"], user["id"], user["full_name"], now))
 
+    # Lazy synchronization of existing users with Supabase Auth
+    supabase_uid = user["supabase_user_id"] if "supabase_user_id" in user.keys() else None
+    if not supabase_uid and supabase_admin.is_live() and not user["is_demo"]:
+        try:
+            existing_sb = supabase_admin.get_user_by_email(normalized_email)
+            if existing_sb and existing_sb.get("id"):
+                supabase_uid = existing_sb["id"]
+            else:
+                sb_uid, _ = supabase_admin.create_auth_user(
+                    email=normalized_email,
+                    password=req.password,
+                    full_name=user["full_name"],
+                    role=user["role"],
+                    organization_id=user["organization_id"]
+                )
+                if sb_uid:
+                    supabase_uid = sb_uid
+
+            if supabase_uid:
+                cur.execute("UPDATE users SET supabase_user_id = ? WHERE id = ?", (supabase_uid, user["id"]))
+        except Exception as sync_err:
+            logger.warning(f"Background Supabase Auth sync notice during login: {sync_err}")
+
     conn.commit()
     conn.close()
 
@@ -228,7 +283,8 @@ async def login(req: LoginRequest):
         "full_name": user["full_name"],
         "role": user["role"],
         "organization_id": user["organization_id"],
-        "department": user["department"] or "General"
+        "department": user["department"] or "General",
+        "supabase_user_id": supabase_uid or ""
     }
     token = create_access_token(user_payload)
 
@@ -244,7 +300,8 @@ async def login(req: LoginRequest):
             "organisation": user["org_name"] or "BrandSense Platform",
             "avatar": user["avatar_url"] or "",
             "department": user["department"] or "General",
-            "isDemo": bool(user["is_demo"])
+            "isDemo": bool(user["is_demo"]),
+            "supabaseUserId": supabase_uid or ""
         }
     }
 
@@ -265,6 +322,7 @@ async def get_current_user_profile(
     conn.close()
 
     if user:
+        sb_uid = user["supabase_user_id"] if "supabase_user_id" in user.keys() else ""
         return {
             "id": user["id"],
             "name": user["full_name"],
@@ -274,7 +332,8 @@ async def get_current_user_profile(
             "organisation": user["org_name"] or "BrandSense Platform",
             "avatar": user["avatar_url"] or "",
             "department": user["department"] or "General",
-            "isDemo": bool(user["is_demo"])
+            "isDemo": bool(user["is_demo"]),
+            "supabaseUserId": sb_uid or ""
         }
 
     return {
@@ -286,7 +345,8 @@ async def get_current_user_profile(
         "organisation": "BrandSense Workspace",
         "avatar": "",
         "department": current_user.department or "General",
-        "isDemo": False
+        "isDemo": False,
+        "supabaseUserId": ""
     }
 
 @router.post("/demo/{role_slug}")
