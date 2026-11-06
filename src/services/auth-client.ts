@@ -260,6 +260,8 @@ class BrandSenseAuthClient {
   }
 
   private writeSession(user: UserProfile) {
+    // Clear any previous session state to avoid cross-session contamination
+    this.clearSession();
     const session: StoredSession = {
       userId: user.id,
       email: user.email,
@@ -267,7 +269,7 @@ class BrandSenseAuthClient {
       isDemo: Boolean(user.isDemo),
     };
     writeJSON(SESSION_KEY, session);
-    writeJSON('brandsense_active_user', user);
+    writeJSON(ACTIVE_USER_KEY, user);
   }
 
   // ---------------------------------------------------------------------------
@@ -319,6 +321,7 @@ class BrandSenseAuthClient {
       localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(ACTIVE_USER_KEY);
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('brandsense_active_user');
     } catch {
       // Ignore
     }
@@ -360,11 +363,9 @@ class BrandSenseAuthClient {
           return null;
         }
       } catch (e) {
-        // Backend temporarily unreachable (offline mode), fallback to verified cache
-        const cachedUser = readJSON<UserProfile>(ACTIVE_USER_KEY);
-        if (cachedUser) {
-          return cachedUser;
-        }
+        // Backend temporarily unreachable: fail safely rather than displaying another user's cached identity!
+        console.warn('Backend /auth/me unreachable, failing safely:', e);
+        return null;
       }
     }
 
