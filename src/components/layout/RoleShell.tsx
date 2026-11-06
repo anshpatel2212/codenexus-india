@@ -39,6 +39,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
 import { authClient, getDashboardRouteForRole } from '@/services/auth-client';
 import { SensaChatDrawer } from '@/components/assistant/SensaChatDrawer';
+import { TeamCredit } from '@/components/ui/TeamCredit';
 
 export type UserRoleType = 'Super Admin' | 'Admin' | 'Creator' | 'Reviewer' | 'Manager';
 
@@ -476,9 +477,14 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
             </div>
           </header>
 
-          {/* Child Page Content */}
-          <main className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto">
-            {children}
+          {/* Child Page Content with Integrated Product Team Credit */}
+          <main className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto flex flex-col justify-between">
+            <div className="flex-1">
+              {children}
+            </div>
+            <div className="pt-8 pb-4 border-t border-[#D5E3EC]/60 mt-10">
+              <TeamCredit />
+            </div>
           </main>
         </div>
       </div>
