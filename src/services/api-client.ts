@@ -289,50 +289,36 @@ class BrandSenseApiClient {
     }
 
     // 3. Fallback: Instant deterministic brand governance analysis
-    const lower = prompt.toLowerCase();
+    const lower = prompt.toLowerCase().trim();
+    const isGreeting = /^(hi|hello|hey|hhii|heyy|greetings|hola)/i.test(lower);
     const hasGuarantee = lower.includes('guarantee') || lower.includes('100%') || lower.includes('zero fine') || lower.includes('cures') || lower.includes('miracle');
     const hasFomo = lower.includes('dinosaur') || lower.includes('idiot') || lower.includes('stupid') || lower.includes('hurry') || lower.includes('dust');
     const hasDirectional = lower.includes('green button') || lower.includes('right side') || lower.includes('click here');
 
     let content = '';
-    let fix: string | undefined = undefined;
-    let citations = [
-      {
-        title: 'Master Brand Voice & Global Lexicon Guide (v4.2)',
-        document: 'Acme Brand Core',
-        section: 'Section 4.1 — Prohibited Performance Warranties',
-        confidence: 96,
-      },
-    ];
 
-    if (hasGuarantee) {
-      content = `**Policy Review Result: Non-Compliant Claim Flagged**\n\nYour drafted copy contains absolute performance warranties ("guarantee", "100%", "miracle"). Under corporate legal guardrails, absolute guarantees expose the brand to regulatory penalties unless supported by registered, audited third-party validation.\n\n**Guidance:** Pivot from absolute promises to quantifiable risk-mitigation messaging.`;
-      fix = '“Designed to significantly reduce compliance overhead and accelerate marketing editorial sign-offs.”';
+    if (isGreeting) {
+      content = 'Hello! I am SENSA, your BrandSense copilot. How can I assist you with your brand guidelines and content today?';
+    } else if (hasGuarantee) {
+      content = `**Policy Review Result: Non-Compliant Claim Flagged**
+
+Your drafted copy contains absolute performance warranties ("guarantee", "100%", "miracle"). Under corporate legal guardrails, absolute guarantees expose the brand to regulatory penalties unless supported by registered, audited third-party validation.
+
+**Guidance:** Pivot from absolute promises to quantifiable risk-mitigation messaging.`;
     } else if (hasFomo) {
-      content = `**Policy Review Result: Aggressive Tone Flagged**\n\nBrandSense voice guidelines require an empowering, authoritative, and respectful tone. Aggressive urgency or demeaning phrases ("don't be a dinosaur", fear-of-missing-out pressure) undermine enterprise trust.\n\n**Guidance:** Frame the value proposition around operational efficiency and strategic enablement.`;
-      fix = '“Modernize your compliance workflow to keep your teams aligned and ahead of regulatory shifts.”';
-      citations = [
-        {
-          title: 'Brand Tone & Inclusivity Standards (2026)',
-          document: 'Acme Voice Handbook',
-          section: 'Section 2.3 — Respectful Professional Discourse',
-          confidence: 98,
-        },
-      ];
+      content = `**Policy Review Result: Aggressive Tone Flagged**
+
+BrandSense voice guidelines require an empowering, authoritative, and respectful tone. Aggressive urgency or demeaning phrases ("don't be a dinosaur", fear-of-missing-out pressure) undermine enterprise trust.
+
+**Guidance:** Frame the value proposition around operational efficiency and strategic enablement.`;
     } else if (hasDirectional) {
-      content = `**Policy Review Result: Accessibility Issue (WCAG 2.2)**\n\nDirectional or sensory-only cues (e.g. "click the green button on the right") violate accessibility standards for vision-impaired users utilizing screen readers.\n\n**Guidance:** Use clear, non-spatial action verbs such as "Download the compliance report" or "Select Continue".`;
-      fix = '“Download your compliance guide below to get started.”';
-      citations = [
-        {
-          title: 'Digital Accessibility Design Standards',
-          document: 'WCAG 2.2 AA Compliance',
-          section: 'Guideline 1.3.3 — Sensory Characteristics',
-          confidence: 99,
-        },
-      ];
+      content = `**Policy Review Result: Accessibility Issue (WCAG 2.2)**
+
+Directional or sensory-only cues (e.g. "click the green button on the right") violate accessibility standards for vision-impaired users utilizing screen readers.
+
+**Guidance:** Use clear, non-spatial action verbs such as "Download the compliance report" or "Select Continue".`;
     } else {
-      content = `**Policy Review Result: In Compliance**\n\nYour query aligns well with BrandSense institutional brand governance principles. The tone is constructive, professional, and clear.\n\n**Best Practice Reminder:** Always verify that any future specific ROI percentages or product benchmark metrics cite a published case study or cohort footnote before publication.`;
-      fix = '“BrandSense empowers marketing and legal teams with real-time pre-publication brand governance.”';
+      content = `Your query aligns well with BrandSense institutional brand governance principles. The tone is constructive, professional, and clear. Let me know if you need specific guidance on brand voice, terminology, or compliance!`;
     }
 
     return {
@@ -340,10 +326,6 @@ class BrandSenseApiClient {
       sender: 'sensa',
       timestamp: 'Just now',
       content,
-      confidence: 95,
-      requiresHumanReview: hasGuarantee || hasFomo,
-      citations,
-      suggestedFix: fix,
     };
   }
 }
