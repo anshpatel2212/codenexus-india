@@ -1,32 +1,37 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, PenTool, ShieldCheck, Check } from 'lucide-react';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
+import { getDashboardRouteForRole } from '@/services/auth-client';
 import styles from '@/components/auth/AuthShell.module.css';
 
-type FieldName = 'fullName' | 'email' | 'password' | 'confirmPassword' | 'terms';
-
+type FieldName = 'fullName' | 'email' | 'password' | 'confirmPassword' | 'role' | 'terms';
 type FieldErrors = Partial<Record<FieldName, string>>;
+type SelectableRole = 'Creator' | 'Manager';
 
 export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { register } = useAuth();
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState<SelectableRole>('Creator');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const isSubmittingRef = useRef(false);
 
   const validate = (): FieldErrors => {
     const errors: FieldErrors = {};
@@ -47,6 +52,10 @@ export default function SignupPage() {
       errors.confirmPassword = 'Passwords do not match.';
     }
 
+    if (selectedRole !== 'Creator' && selectedRole !== 'Manager') {
+      errors.role = 'Please select a valid role (Creator or Manager).';
+    }
+
     if (!termsAccepted) {
       errors.terms = 'Please accept the Terms of Service and Privacy Policy.';
     }
@@ -56,35 +65,49 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    if (isSubmittingRef.current || loading) return;
 
+    setError('');
     const errors = validate();
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
+    isSubmittingRef.current = true;
     setLoading(true);
-    const result = await register({
-      name: fullName,
-      email,
-      password,
-      organisation: 'BrandSense Workspace',
-      role: 'Brand Manager',
-    });
-    setLoading(false);
 
-    if (!result.success) {
-      setError(result.error);
-      if (result.field === 'name') {
-        setFieldErrors((current) => ({ ...current, fullName: result.error }));
-      } else if (result.field === 'email' || result.field === 'password') {
-        setFieldErrors((current) => ({ ...current, [result.field as FieldName]: result.error }));
+    try {
+      const result = await register({
+        name: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        organisation: 'BrandSense Workspace',
+        role: selectedRole,
+      });
+
+      if (!result.success) {
+        setLoading(false);
+        isSubmittingRef.current = false;
+        setError(result.error);
+        if (result.field === 'name') {
+          setFieldErrors((current) => ({ ...current, fullName: result.error }));
+        } else if (result.field === 'email' || result.field === 'password') {
+          setFieldErrors((current) => ({ ...current, [result.field as FieldName]: result.error }));
+        }
+        toast(result.error, 'error');
+        return;
       }
-      toast(result.error, 'error');
-      return;
-    }
 
-    toast(`Account created. Welcome to BrandSense, ${result.user.name.split(' ')[0]}.`);
-    router.replace('/dashboard');
+      toast(`Account created as ${result.user.role}. Welcome to BrandSense, ${result.user.name.split(' ')[0]}.`);
+      // Consistent, single source of truth role redirect
+      const destination = getDashboardRouteForRole(result.user.role);
+      router.replace(destination);
+    } catch (err: any) {
+      setLoading(false);
+      isSubmittingRef.current = false;
+      const msg = err?.message || 'Registration failed. Please check your details.';
+      setError(msg);
+      toast(msg, 'error');
+    }
   };
 
   return (
@@ -102,6 +125,7 @@ export default function SignupPage() {
       )}
 
       <form onSubmit={handleSubmit} noValidate>
+        {/* Full Name */}
         <div className={styles.formGroup}>
           <label htmlFor="fullName">Full Name</label>
           <div className={styles.inputWrapper}>
@@ -125,6 +149,7 @@ export default function SignupPage() {
           )}
         </div>
 
+        {/* Email */}
         <div className={styles.formGroup}>
           <label htmlFor="email">Email Address</label>
           <div className={styles.inputWrapper}>
@@ -148,13 +173,69 @@ export default function SignupPage() {
           )}
         </div>
 
+        {/* Role Selector: ONLY Creator and Manager */}
+        <div className={styles.formGroup}>
+          <label id="role-selector-label">Account Role</label>
+          <div className={styles.roleSelectorGrid} role="radiogroup" aria-labelledby="role-selector-label">
+            {/* Creator Option */}
+            <button
+              type="button"
+              role="radio"
+              aria-checked={selectedRole === 'Creator'}
+              onClick={() => setSelectedRole('Creator')}
+              className={`${styles.roleCard} ${selectedRole === 'Creator' ? styles.roleCardSelected : ''}`}
+            >
+              <div className={styles.roleCardHeader}>
+                <span className={styles.roleCardTitle}>
+                  <PenTool className="w-3.5 h-3.5 text-[#416F89]" aria-hidden="true" />
+                  Creator
+                </span>
+                {selectedRole === 'Creator' && (
+                  <Check className="w-3.5 h-3.5 text-[#20364A]" aria-hidden="true" />
+                )}
+              </div>
+              <span className={styles.roleCardDesc}>
+                Draft &amp; review content with AI checks
+              </span>
+            </button>
+
+            {/* Manager Option */}
+            <button
+              type="button"
+              role="radio"
+              aria-checked={selectedRole === 'Manager'}
+              onClick={() => setSelectedRole('Manager')}
+              className={`${styles.roleCard} ${selectedRole === 'Manager' ? styles.roleCardSelected : ''}`}
+            >
+              <div className={styles.roleCardHeader}>
+                <span className={styles.roleCardTitle}>
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#258A70]" aria-hidden="true" />
+                  Manager
+                </span>
+                {selectedRole === 'Manager' && (
+                  <Check className="w-3.5 h-3.5 text-[#20364A]" aria-hidden="true" />
+                )}
+              </div>
+              <span className={styles.roleCardDesc}>
+                Review queue, approvals &amp; governance
+              </span>
+            </button>
+          </div>
+          {fieldErrors.role && (
+            <p className={styles.fieldError} role="alert">
+              {fieldErrors.role}
+            </p>
+          )}
+        </div>
+
+        {/* Password */}
         <div className={styles.formGroup}>
           <label htmlFor="password">Password</label>
           <div className={styles.inputWrapper}>
             <input
               type={showPassword ? 'text' : 'password'}
               id="password"
-              placeholder="Create a password"
+              placeholder="Create a password (min 8 chars)"
               autoComplete="new-password"
               minLength={8}
               value={password}
@@ -181,6 +262,7 @@ export default function SignupPage() {
           )}
         </div>
 
+        {/* Confirm Password */}
         <div className={styles.formGroup}>
           <label htmlFor="confirmPassword">Confirm Password</label>
           <div className={styles.inputWrapper}>
@@ -214,6 +296,7 @@ export default function SignupPage() {
           )}
         </div>
 
+        {/* Terms */}
         <label className={styles.terms} htmlFor="terms">
           <input
             type="checkbox"
@@ -235,12 +318,27 @@ export default function SignupPage() {
           </p>
         )}
 
-        <button type="submit" className={styles.primaryBtn} disabled={loading} aria-busy={loading}>
-          {loading ? 'Creating account...' : 'Create Account →'}
+        <button
+          type="submit"
+          className={styles.primaryBtn}
+          disabled={loading}
+          aria-busy={loading}
+        >
+          {loading ? (
+            <span className="inline-flex items-center justify-center gap-2">
+              <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Creating account...
+            </span>
+          ) : (
+            `Create ${selectedRole} Account →`
+          )}
         </button>
       </form>
 
-      <div className={`${styles.switchText}`}>
+      <div className={styles.switchText}>
         Already have an account? <Link href="/login">Sign in</Link>
       </div>
     </AuthShell>

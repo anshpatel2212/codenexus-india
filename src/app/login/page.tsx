@@ -7,6 +7,7 @@ import { AlertCircle, Lock, X, ArrowRight, ShieldCheck, Sparkles, Building2, Pen
 import { AuthShell } from '@/components/auth/AuthShell';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
+import { getDashboardRouteForRole } from '@/services/auth-client';
 import styles from '@/components/auth/AuthShell.module.css';
 
 const REMEMBERED_EMAIL_KEY = 'brandsense_remembered_email';
@@ -112,17 +113,7 @@ export default function LoginPage() {
   };
 
   const routeByRole = (role: string) => {
-    if (role === 'Super Admin') {
-      router.replace('/super-admin/dashboard');
-    } else if (role === 'Admin') {
-      router.replace('/admin/dashboard');
-    } else if (role === 'Creator') {
-      router.replace('/creator/dashboard');
-    } else if (role === 'Reviewer' || role === 'Manager') {
-      router.replace('/reviewer/dashboard');
-    } else {
-      router.replace('/dashboard');
-    }
+    router.replace(getDashboardRouteForRole(role));
   };
 
   // Immediate single-click login execution

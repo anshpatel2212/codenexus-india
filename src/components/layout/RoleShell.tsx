@@ -37,7 +37,7 @@ import { BrandSenseLogo } from '@/components/ui/BrandSenseLogo';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
-import { authClient } from '@/services/auth-client';
+import { authClient, getDashboardRouteForRole } from '@/services/auth-client';
 import { SensaChatDrawer } from '@/components/assistant/SensaChatDrawer';
 
 export type UserRoleType = 'Super Admin' | 'Admin' | 'Creator' | 'Reviewer' | 'Manager';
@@ -113,11 +113,7 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
   }, [user, isLoading, role, router]);
 
   const redirectToRoleDashboard = (userRole: string) => {
-    if (userRole === 'Super Admin') router.replace('/super-admin/dashboard');
-    else if (userRole === 'Admin') router.replace('/admin/dashboard');
-    else if (userRole === 'Creator') router.replace('/creator/dashboard');
-    else if (userRole === 'Reviewer' || userRole === 'Manager') router.replace('/reviewer/dashboard');
-    else router.replace('/dashboard');
+    router.replace(getDashboardRouteForRole(userRole));
   };
 
   // Close menus on outside click or escape

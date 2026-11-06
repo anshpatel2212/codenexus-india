@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ScoreMeter } from '@/components/ui/ScoreMeter';
 import { StatusBadge } from '@/components/ui/Badge';
@@ -35,14 +36,26 @@ import { useToast } from '@/components/ui/Toast';
 import { apiClient } from '@/services/api-client';
 import { ReviewItem } from '@/types';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { getDashboardRouteForRole } from '@/services/auth-client';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [filterType, setFilterType] = useState<string>('All');
   const [loading, setLoading] = useState(true);
   const [kbCount, setKbCount] = useState({ rules: 0, facts: 0 });
+
+  // Automatic routing to dedicated role workspace
+  useEffect(() => {
+    if (!isLoading && user?.role) {
+      const destination = getDashboardRouteForRole(user.role);
+      if (destination !== '/dashboard') {
+        router.replace(destination);
+      }
+    }
+  }, [user, isLoading, router]);
 
   useEffect(() => {
     let active = true;
