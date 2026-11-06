@@ -20,7 +20,7 @@ class SignupRequest(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
     organisation: Optional[str] = "BrandSense Workspace"
-    role: Optional[str] = "Admin"
+    role: Optional[str] = "Creator"
     invitationToken: Optional[str] = None
 
 class LoginRequest(BaseModel):
@@ -63,7 +63,7 @@ async def signup(req: SignupRequest):
 
     now = datetime.utcnow().isoformat() + "Z"
     target_org_id = None
-    target_role = req.role or "Admin"
+    target_role = "Creator"
     org_name = req.organisation or "BrandSense Workspace"
 
     # 2. Check Invitation Token if provided
@@ -88,13 +88,22 @@ async def signup(req: SignupRequest):
         # Mark invite accepted
         cur.execute("UPDATE invitations SET status = 'accepted' WHERE token = ?", (req.invitationToken,))
     else:
+        # Enforce BUG 2 & BUG 3: Public registration only permits 'Creator' or 'Manager'
+        requested_role = (req.role or "Creator").strip()
+        if requested_role not in ["Creator", "Manager"]:
+            conn.close()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Public account creation only allows 'Creator' or 'Manager' roles. 'Admin' and 'Super Admin' privileges require authorization from an existing administrator."
+            )
+        target_role = requested_role
+
         # Create brand-new isolated organization for this user
         target_org_id = f"org-{uuid.uuid4().hex[:8]}"
         cur.execute("""
         INSERT INTO organizations (id, name, slug, tier, status, created_at, updated_at)
         VALUES (?, ?, ?, 'Standard Plan', 'active', ?, ?)
         """, (target_org_id, org_name, f"org-{uuid.uuid4().hex[:6]}", now, now))
-        target_role = "Admin"  # Org creator is always Organisation Admin
 
     # 3. Secure password hashing
     p_hash, salt = hash_password(req.password)

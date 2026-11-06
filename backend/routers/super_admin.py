@@ -25,6 +25,9 @@ class UpdateOrgStatusRequest(BaseModel):
 class UpdateUserStatusRequest(BaseModel):
     status: str = Field(..., pattern="^(active|suspended|pending)$")
 
+class UpdateUserRoleRequest(BaseModel):
+    role: str = Field(..., description="'Admin' | 'Manager' | 'Creator' | 'Reviewer' | 'Super Admin'")
+
 class UpdateAiConfigRequest(BaseModel):
     provider: Optional[str] = None
     model_name: Optional[str] = None
@@ -287,6 +290,58 @@ async def update_user_status(
     conn.close()
 
     return {"success": True, "message": f"User status updated to '{req.status}'."}
+
+@router.put("/users/{user_id}/role")
+async def update_user_role(
+    user_id: str,
+    req: UpdateUserRoleRequest,
+    user: AuthenticatedUser = Depends(require_role(["Super Admin"]))
+):
+    """
+    Secure Super Admin role assignment.
+    Only Super Admin can promote/assign Admin, Manager, Creator, Reviewer, or Super Admin roles.
+    """
+    allowed_roles = ["Admin", "Manager", "Creator", "Reviewer", "Super Admin"]
+    if req.role not in allowed_roles:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid role. Allowed roles: {', '.join(allowed_roles)}"
+        )
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT id, email, role, organization_id FROM users WHERE id = ?", (user_id,))
+    target = cur.fetchone()
+    if not target:
+        conn.close()
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    old_role = target["role"]
+    now = datetime.utcnow().isoformat() + "Z"
+    cur.execute("UPDATE users SET role = ?, updated_at = ? WHERE id = ?", (req.role, now, user_id))
+
+    cur.execute("""
+    INSERT INTO activity_logs (id, organization_id, user_id, user_name, action, details, timestamp)
+    VALUES (?, ?, ?, ?, 'User Role Changed', ?, ?)
+    """, (
+        f"act-{uuid.uuid4().hex[:8]}",
+        target["organization_id"],
+        user.id,
+        user.full_name,
+        f"Super Admin changed {target['email']} role from '{old_role}' to '{req.role}'",
+        now
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return {
+        "success": True,
+        "message": f"User role updated to '{req.role}'.",
+        "userId": user_id,
+        "newRole": req.role
+    }
 
 @router.get("/ai-config")
 async def get_ai_configuration(
