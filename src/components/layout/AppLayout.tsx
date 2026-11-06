@@ -31,6 +31,7 @@ import { RequireAuth } from '@/components/auth/RequireAuth';
 import { authClient } from '@/services/auth-client';
 import { apiClient } from '@/services/api-client';
 import { ApprovalItem } from '@/types';
+import { TeamCredit } from '@/components/ui/TeamCredit';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -514,8 +515,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </div>
             </header>
 
-            <main id="main-content" className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto" tabIndex={-1}>
-              {children}
+            <main id="main-content" className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto flex flex-col justify-between" tabIndex={-1}>
+              <div className="flex-1">
+                {children}
+              </div>
+              <div className="pt-8 pb-4 border-t border-[#D5E3EC]/60 mt-10">
+                <TeamCredit />
+              </div>
             </main>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { BrandSenseLogo } from '@/components/ui/BrandSenseLogo';
+import { TeamCredit } from '@/components/ui/TeamCredit';
 import styles from './AuthShell.module.css';
 
 interface AuthShellProps {
@@ -71,7 +72,10 @@ export const AuthShell: React.FC<AuthShellProps> = ({ variant, children }) => {
               <p>{content.description}</p>
             </div>
 
-            <div className={styles.welcomeBottom}>© 2026 BrandSense. All rights reserved.</div>
+            <div className={styles.welcomeBottom}>
+              <div className="text-[11px] text-white/60 mb-2">© 2026 BrandSense. All rights reserved.</div>
+              <TeamCredit variant="light" align="left" />
+            </div>
           </section>
 
           <section
@@ -81,6 +85,11 @@ export const AuthShell: React.FC<AuthShellProps> = ({ variant, children }) => {
           >
             {children}
           </section>
+        </div>
+
+        {/* Subtle team credit visible on mobile/smaller screens where welcomePanel is hidden */}
+        <div className="w-full max-w-[960px] mt-4 pb-2 flex justify-center md:hidden">
+          <TeamCredit variant="subtle" />
         </div>
       </main>
     </div>
