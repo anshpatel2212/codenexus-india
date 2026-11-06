@@ -152,5 +152,6 @@ export interface UserProfile {
   department: string;
   organisation: string;
   organizationId?: string;
+  supabaseUserId?: string;
   isDemo?: boolean;
 }
