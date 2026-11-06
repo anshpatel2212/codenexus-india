@@ -1,4 +1,6 @@
 export const landingMarkup = `
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
 <!-- NAVBAR -->
 <header class="navbar" id="home" role="banner">
   <div class="container nav-inner">
@@ -19,7 +21,7 @@ export const landingMarkup = `
       <a href="/dashboard" class="btn btn-primary">Get started</a>
     </div>
 
-    <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">&#x2630;</button>
+    <button type="button" class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">&#x2630;</button>
   </div>
 </header>
 
@@ -38,8 +40,7 @@ export const landingMarkup = `
         </h1>
 
         <p class="hero-description">
-          BrandSense reviews your content against your brand guidelines,
-          catches inconsistencies, and helps your team publish with confidence.
+          BrandSense checks your content against your brand rules, finds issues and helps your team publish with confidence.
         </p>
 
         <div class="hero-buttons">
@@ -82,8 +83,7 @@ export const landingMarkup = `
               <div class="content-tag">Submitted content</div>
               <h3 class="content-sample-heading">Make every moment extraordinary.</h3>
               <p>
-                Discover our latest collection, designed to bring something
-                special to your everyday experience.
+                Explore our latest collection and make every day more special.
               </p>
             </div>
 
@@ -112,7 +112,7 @@ export const landingMarkup = `
                   <strong>Terminology check passed</strong>
                   <small>Approved product terminology has been used.</small>
                 </div>
-                <div class="issue-label" style="color:var(--success)">Passed</div>
+                <div class="issue-label success">Passed</div>
               </div>
             </div>
 
@@ -153,8 +153,7 @@ export const landingMarkup = `
           Great content can still <span class="highlight">miss the mark.</span>
         </h2>
         <p>
-          As teams grow, keeping every campaign, document and message aligned
-          with brand standards becomes harder.
+          As your team grows, it gets harder to keep every campaign, document and message on brand.
         </p>
       </div>
 
@@ -163,8 +162,7 @@ export const landingMarkup = `
           <div class="card-number">01 / Without BrandSense</div>
           <h3>Brand rules get lost between teams.</h3>
           <p>
-            Manual reviews, scattered guidelines and inconsistent feedback
-            make it difficult to maintain a unified brand voice.
+            Manual reviews, scattered guidelines and mixed feedback make it hard to keep one clear brand voice.
           </p>
           <div class="card-symbol" aria-hidden="true">?</div>
         </div>
@@ -173,8 +171,7 @@ export const landingMarkup = `
           <div class="card-number">02 / With BrandSense</div>
           <h3>One clear standard. Smarter reviews.</h3>
           <p>
-            Bring your brand knowledge into one place and review content with
-            relevant guidance, explanations and actionable suggestions.
+            Keep your brand knowledge in one place. Review content with clear guidance and useful suggestions.
           </p>
 
           <div class="solution-points">
@@ -199,8 +196,7 @@ export const landingMarkup = `
           <span class="highlight">A brand intelligence layer.</span>
         </h2>
         <p>
-          BrandSense understands your approved brand knowledge and helps teams
-          identify what needs attention before content goes live.
+          BrandSense uses your approved brand rules to find issues before your content goes live.
         </p>
       </div>
 
@@ -209,8 +205,7 @@ export const landingMarkup = `
           <div class="feature-icon" aria-hidden="true">&#x2318;</div>
           <h3>Brand Knowledge Base</h3>
           <p>
-            Keep guidelines, approved facts, terminology and brand assets
-            organised in one accessible knowledge base.
+            Keep your guidelines, approved facts, key terms and brand assets in one place.
           </p>
         </div>
 
@@ -218,8 +213,7 @@ export const landingMarkup = `
           <div class="feature-icon" aria-hidden="true">&#x2733;</div>
           <h3>AI Content Review</h3>
           <p>
-            Review text and visual content for tone, terminology, claims and
-            alignment with brand standards.
+            Check text and images for tone, key terms, claims and brand fit.
           </p>
         </div>
 
@@ -227,8 +221,7 @@ export const landingMarkup = `
           <div class="feature-icon" aria-hidden="true">&#x25ce;</div>
           <h3>Evidence-backed Findings</h3>
           <p>
-            Understand why something was flagged, with relevant guideline
-            references and clear explanations.
+            See why content was flagged and which brand rules explain the issue.
           </p>
         </div>
 
@@ -236,8 +229,7 @@ export const landingMarkup = `
           <div class="feature-icon" aria-hidden="true">&#x2197;</div>
           <h3>Intent-preserving Suggestions</h3>
           <p>
-            Get practical recommendations that improve brand alignment without
-            losing the creator&#x2019;s original purpose.
+            Get clear tips to match your brand while keeping the creator&#x2019;s original idea.
           </p>
         </div>
 
@@ -254,8 +246,7 @@ export const landingMarkup = `
           <div class="feature-icon" aria-hidden="true">&#x2301;</div>
           <h3>Brand Insights</h3>
           <p>
-            Identify recurring issues and unclear guidelines to improve
-            consistency across future content.
+            Find common issues and unclear rules to keep future content consistent.
           </p>
         </div>
       </div>
@@ -277,26 +268,26 @@ export const landingMarkup = `
         </p>
       </div>
 
-      <div class="workflow">
-        <div class="step">
+      <div class="workflow" role="list">
+        <div class="step" role="listitem">
           <div class="step-number" aria-hidden="true">01</div>
           <h3>Set up your brand</h3>
           <p>Add approved guidelines, facts, terminology and reusable assets.</p>
         </div>
 
-        <div class="step">
+        <div class="step" role="listitem">
           <div class="step-number" aria-hidden="true">02</div>
           <h3>Submit your content</h3>
           <p>Upload or submit content for a structured brand compliance review.</p>
         </div>
 
-        <div class="step">
+        <div class="step" role="listitem">
           <div class="step-number" aria-hidden="true">03</div>
           <h3>Review AI findings</h3>
           <p>Understand issues, explore evidence and consider suggested fixes.</p>
         </div>
 
-        <div class="step">
+        <div class="step" role="listitem">
           <div class="step-number" aria-hidden="true">04</div>
           <h3>Approve with confidence</h3>
           <p>Reviewers make the final decision and keep a record of changes.</p>
@@ -315,14 +306,12 @@ export const landingMarkup = `
           <span style="color:var(--yellow)">Not replace them.</span>
         </h2>
         <p>
-          BrandSense is designed to make reviews more transparent.
-          Every finding should be understandable, grounded in approved brand
-          knowledge and open to human judgement.
+          BrandSense makes reviews clear and easy to follow. Every finding is based on approved brand rules, with people making the final decisions.
         </p>
       </div>
 
-      <div class="trust-list">
-        <div class="trust-item">
+      <div class="trust-list" role="list">
+        <div class="trust-item" role="listitem">
           <div class="trust-check" aria-hidden="true">&#x2713;</div>
           <div>
             <h3>Evidence-first reviews</h3>
@@ -333,7 +322,7 @@ export const landingMarkup = `
           </div>
         </div>
 
-        <div class="trust-item">
+        <div class="trust-item" role="listitem">
           <div class="trust-check" aria-hidden="true">&#x2713;</div>
           <div>
             <h3>Transparent explanations</h3>
@@ -344,7 +333,7 @@ export const landingMarkup = `
           </div>
         </div>
 
-        <div class="trust-item">
+        <div class="trust-item" role="listitem">
           <div class="trust-check" aria-hidden="true">&#x2713;</div>
           <div>
             <h3>Human-controlled approvals</h3>
