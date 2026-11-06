@@ -243,13 +243,14 @@ export async function chatWithSensaGemini(prompt: string): Promise<SensaMessage>
   }
 
   const systemPrompt = `
-You are SENSA, the intelligent brand assistant and copilot for BrandSense.
-Creators and marketers ask you questions about tone, claim validity, trademark terms, and brand rules.
-Always respond authoritatively, constructively, and empathetically.
+You are SENSA, the intelligent AI brand assistant and copilot for BrandSense.
+Creators and marketers ask you questions about tone, claim validity, trademark terms, and brand rules, or have a conversation with you.
+Always respond helpfully, constructively, and empathetically.
+Respond directly to whatever the user says or asks.
 
 CRITICAL RULES:
-- Quote specific brand policy citations (e.g. 'Global Legal Guardrails 2026.pdf (Section 4.2)').
-- Always provide a clean, compliant rewrite suggestion (suggestedFix) that creators can click to copy.
+- Provide your complete conversational answer or greeting directly in the "content" field.
+- Do not add artificial citations or separate suggested fixes for conversational queries or greetings.
 - Return response strictly as JSON.
 `;
 
@@ -258,32 +259,23 @@ User Query: "${prompt}"
 
 Return JSON matching:
 {
-  "content": "Conversational explanation addressing the query directly...",
-  "confidence": number (90-99),
-  "requiresHumanReview": boolean,
-  "citations": [
-    {
-      "title": "document name",
-      "document": "document code",
-      "section": "exact section",
-      "confidence": number (90-99)
-    }
-  ],
-  "suggestedFix": "optional copyable replacement phrasing"
+  "content": "Your complete conversational response addressing the user directly..."
 }
 `;
 
   const rawJson = await callGeminiGenerate(`${systemPrompt}\n\n${userPrompt}`, 0.2);
-  const parsed = JSON.parse(rawJson);
+  let content = '';
+  try {
+    const parsed = JSON.parse(rawJson);
+    content = parsed.content || parsed.reply || (typeof parsed === 'string' ? parsed : rawJson);
+  } catch {
+    content = rawJson;
+  }
 
   return {
     id: `sensa-res-${Date.now()}`,
     sender: 'sensa',
     timestamp: 'Just now',
-    content: parsed.content,
-    confidence: parsed.confidence || 96,
-    requiresHumanReview: parsed.requiresHumanReview ?? true,
-    citations: parsed.citations || [],
-    suggestedFix: parsed.suggestedFix || undefined,
+    content: content || 'Hello! How can I assist you today?',
   };
 }
