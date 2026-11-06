@@ -3,11 +3,15 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uuid
+import json
+import logging
 
 from backend.auth.jwt_guard import get_current_user, require_role, AuthenticatedUser
 from backend.services.ai_review_engine import ai_review_engine
 from backend.services.supabase_admin import supabase_admin
 from backend.services.db import get_db_connection
+
+logger = logging.getLogger("brandsense.reviews")
 
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
 
@@ -118,6 +122,82 @@ async def submit_review(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database transaction error: Failed to save review ({str(e)})"
             )
+    else:
+        # SQLite persistence fallback
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            now_iso = datetime.utcnow().isoformat() + "Z"
+            org_id = current_user.organization_id or "org-demo-brandsense"
+
+            cur.execute("""
+                INSERT INTO reviews (
+                    id, organization_id, title, content_type, original_content,
+                    suggested_content, instructions, overall_score, category_scores,
+                    status, author_id, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                review_id,
+                org_id,
+                req.title,
+                req.contentType,
+                req.content,
+                suggested_content,
+                req.instructions,
+                overall_score,
+                json.dumps(category_scores),
+                review_status,
+                current_user.id,
+                now_iso,
+                now_iso
+            ))
+
+            for f in findings:
+                cur.execute("""
+                    INSERT INTO findings (
+                        id, review_id, organization_id, category, severity,
+                        reason, evidence, highlighted_text, suggested_fix,
+                        explanation, confidence, status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    f["id"],
+                    review_id,
+                    org_id,
+                    f["category"],
+                    f["severity"],
+                    f["reason"],
+                    f.get("evidence"),
+                    f.get("highlightedText"),
+                    f.get("suggestedFix"),
+                    f.get("explanation"),
+                    f.get("confidence", 90),
+                    f.get("status", "pending")
+                ))
+
+            approval_id = f"appr-{uuid.uuid4().hex[:8]}"
+            cur.execute("""
+                INSERT INTO approvals (
+                    id, review_id, organization_id, submitted_by,
+                    assigned_to, status, urgency, compliance_score,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                approval_id,
+                review_id,
+                org_id,
+                current_user.id,
+                None,
+                "Pending",
+                "Medium" if overall_score >= 75 else "High",
+                overall_score,
+                now_iso,
+                now_iso
+            ))
+
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Failed to persist review to SQLite: {e}")
 
     return {
         "id": review_id,

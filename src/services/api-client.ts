@@ -10,8 +10,9 @@ import { supabaseDataService } from './supabase-service';
 import { getClientEnv } from '@/lib/env';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { isGeminiConfigured, analyzeContentWithGemini, chatWithSensaGemini } from './gemini-ai';
+import { authClient, DEMO_ORG_ID } from './auth-client';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? '/api/v1' : 'http://127.0.0.1:8000/api/v1');
 
 /**
  * BrandSense Production API Service Client
@@ -49,21 +50,21 @@ class BrandSenseApiClient {
     authorName?: string;
     authorEmail?: string;
   }): Promise<ReviewItem> {
+    const orgId = data.orgId || DEMO_ORG_ID;
+    const payload = { ...data, orgId };
+
     // 1. Primary: Autonomous Google Gemini AI Engine
     // Real neural reasoning across all 6 brand categories without manual regex limits
     if (isGeminiConfigured()) {
       try {
-        const liveAiReview = await analyzeContentWithGemini(data);
+        const liveAiReview = await analyzeContentWithGemini(payload);
         
         // Persist locally (scoped to organization and active review)
         if (typeof window !== 'undefined') {
-          const orgId = data.orgId || 'org-1';
-          const key = orgId !== 'org-1' ? `brandsense_reviews_${orgId}` : 'brandsense_reviews';
-          const current = await this.getReviews(orgId);
-          const updated = [liveAiReview, ...current.filter((r) => r.id !== liveAiReview.id)];
-          localStorage.setItem(key, JSON.stringify(updated));
-          localStorage.setItem('brandsense_reviews', JSON.stringify(updated));
+          const userKey = data.authorId ? `brandsense_current_review_${data.authorId}` : 'brandsense_current_review';
+          localStorage.setItem(userKey, JSON.stringify(liveAiReview));
           localStorage.setItem('brandsense_current_review', JSON.stringify(liveAiReview));
+          supabaseDataService.saveLocalReview(liveAiReview, orgId, data.authorId);
         }
 
         // Persist to Supabase if available
@@ -73,8 +74,8 @@ class BrandSenseApiClient {
           if (session?.user) {
             // Save to Supabase using live AI findings
             await supabaseDataService.createReview({
-              ...data,
-              orgId: session.user.user_metadata?.organization_id || data.orgId,
+              ...payload,
+              orgId: session.user.user_metadata?.organization_id || orgId,
               authorId: session.user.id,
               authorName: session.user.user_metadata?.full_name || data.authorName || 'Author',
               authorEmail: session.user.email
@@ -90,7 +91,7 @@ class BrandSenseApiClient {
       }
     }
 
-    // 2. Secondary: Ansh's FastAPI Backend (if configured and running)
+    // 2. Secondary: FastAPI Backend (if configured and running)
     const env = getClientEnv();
     if (env.apiUrl && !env.apiUrl.includes('placeholder')) {
       try {
@@ -99,9 +100,12 @@ class BrandSenseApiClient {
 
         let token: string | undefined;
         try {
-          const supabase = getSupabaseBrowserClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          token = session?.access_token;
+          token = authClient.getToken() || undefined;
+          if (!token) {
+            const supabase = getSupabaseBrowserClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            token = session?.access_token;
+          }
         } catch {
           // Token fetch fallback
         }
@@ -116,22 +120,45 @@ class BrandSenseApiClient {
         const res = await fetch(`${API_BASE_URL}/reviews/submit`, {
           method: 'POST',
           headers,
-          body: JSON.stringify(data),
+          body: JSON.stringify(payload),
           signal: controller.signal,
         });
 
         clearTimeout(timeoutId);
 
         if (res.ok) {
-          return await res.json();
+          const result = await res.json();
+          if (typeof window !== 'undefined') {
+            const userKey = data.authorId ? `brandsense_current_review_${data.authorId}` : 'brandsense_current_review';
+            localStorage.setItem(userKey, JSON.stringify(result));
+            localStorage.setItem('brandsense_current_review', JSON.stringify(result));
+            supabaseDataService.saveLocalReview(result, orgId, data.authorId);
+          }
+          return result;
+        } else if (res.status === 401 || res.status === 403) {
+          const errData = await res.json().catch(() => ({ detail: 'Unauthorized' }));
+          throw new Error(errData.detail || 'Authentication required to submit review.');
+        } else if (res.status === 422) {
+          const errData = await res.json().catch(() => ({ detail: 'Validation failed' }));
+          const msg = Array.isArray(errData.detail) ? errData.detail[0]?.msg : errData.detail;
+          throw new Error(msg || 'Validation error: please verify all required fields.');
         }
-      } catch (backendErr) {
+      } catch (backendErr: any) {
+        if (backendErr?.message && (backendErr.message.includes('Authentication required') || backendErr.message.includes('Validation error'))) {
+          throw backendErr;
+        }
         console.warn('FastAPI backend unreachable, using Supabase data layer:', backendErr);
       }
     }
 
     // 3. Fallback: Supabase Heuristic Data Service
-    return supabaseDataService.createReview(data);
+    const fallbackReview = await supabaseDataService.createReview(payload);
+    if (typeof window !== 'undefined' && fallbackReview) {
+      const userKey = data.authorId ? `brandsense_current_review_${data.authorId}` : 'brandsense_current_review';
+      localStorage.setItem(userKey, JSON.stringify(fallbackReview));
+      localStorage.setItem('brandsense_current_review', JSON.stringify(fallbackReview));
+    }
+    return fallbackReview;
   }
 
   async updateFinding(
