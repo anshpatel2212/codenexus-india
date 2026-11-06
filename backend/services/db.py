@@ -60,11 +60,18 @@ class DatabaseService:
             avatar_url TEXT DEFAULT '',
             status TEXT DEFAULT 'active',
             is_demo INTEGER DEFAULT 0,
+            supabase_user_id TEXT,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
         )
         """)
+
+        # Backward compatibility migration: ensure supabase_user_id column exists
+        cur.execute("PRAGMA table_info(users)")
+        columns = [row[1] for row in cur.fetchall()]
+        if "supabase_user_id" not in columns:
+            cur.execute("ALTER TABLE users ADD COLUMN supabase_user_id TEXT")
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS knowledge_items (
