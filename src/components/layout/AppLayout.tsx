@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { BrandSenseLogo } from '@/components/ui/BrandSenseLogo';
 import { Button } from '@/components/ui/Button';
-import { currentUser, sampleOrganizations } from '@/data/mock-data';
+import { sampleOrganizations } from '@/data/mock-data';
 import { SensaChatDrawer } from '@/components/assistant/SensaChatDrawer';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -50,7 +50,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [selectedOrg, setSelectedOrg] = useState<{ id: string; name: string; tier: string; reviewsThisMonth: number; logo?: string }>(() => ({
     id: user?.organizationId || 'org-user',
     name: user?.organisation || 'BrandSense Workspace',
-    tier: `${user?.role || 'Brand Manager'} Workspace`,
+    tier: user?.role === 'Admin' ? 'Enterprise Governance' : `${user?.role || 'Creator'} Workspace`,
     reviewsThisMonth: 0,
     logo: (user?.organisation || 'BrandSense').charAt(0).toUpperCase(),
   }));
@@ -70,7 +70,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       setSelectedOrg({
         id: user.organizationId || 'org-user',
         name: user.organisation,
-        tier: user.role === 'Admin' ? 'Enterprise Governance' : `${user.role || 'Member'} Workspace`,
+        tier: user.role === 'Admin' ? 'Enterprise Governance' : `${user.role || 'Creator'} Workspace`,
         reviewsThisMonth: 0,
         logo: user.organisation.charAt(0).toUpperCase(),
       });
@@ -83,13 +83,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const logoutDialogRef = useRef<HTMLDivElement>(null);
 
-  const accountUser = user ?? currentUser;
-  const accountInitials = accountUser.name
-    .split(' ')
-    .map((part) => part.charAt(0))
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
+  const accountInitials = user?.name
+    ? user.name
+        .split(' ')
+        .map((part) => part.charAt(0))
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+    : 'BS';
 
   // Close menus on outside click or Escape
   useEffect(() => {
@@ -342,14 +343,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   >
                     <div className="px-3 py-2 border-b border-[#C4D5E0]">
                       <div className="flex items-center justify-between gap-1">
-                        <p className="text-xs font-bold text-[#20364A] truncate">{accountUser.name}</p>
-                        {accountUser.isDemo && (
+                        <p className="text-xs font-bold text-[#20364A] truncate">{user?.name || 'User'}</p>
+                        {user?.isDemo && (
                           <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#F4D77B]/40 text-[#9A682D] border border-[#B77938]/30">
                             Demo Sandbox
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-[#4F6576] truncate">{accountUser.email}</p>
+                      <p className="text-xs text-[#4F6576] truncate">{user?.email || ''}</p>
                     </div>
                     <Link
                       href="/settings"
@@ -360,7 +361,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                       <Settings className="w-4 h-4 text-[#4F6576]" aria-hidden="true" />
                       Account settings
                     </Link>
-                    {accountUser.isDemo && (
+                    {user?.isDemo && (
                       <button
                         type="button"
                         role="menuitem"
@@ -370,7 +371,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                           toast('Demo sandbox reset to initial seed state.');
                           setTimeout(() => window.location.reload(), 300);
                         }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[#B77938] hover:bg-[#F4D77B]/20 transition-colors focus:outline-none focus-visible:bg-[#F4D77B]/20"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[#B77938] hover:bg-[#F4D77B]/20 transition-colors focus:outline-none focus-visible:bg-[#F4F8FA]/20"
                       >
                         <RotateCcw className="w-4 h-4" aria-hidden="true" />
                         Reset Demo Data
@@ -400,9 +401,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   aria-label="Open profile menu"
                 >
                   <div className="flex items-center gap-2.5 overflow-hidden">
-                    {accountUser.avatar ? (
+                    {user?.avatar ? (
                       <img
-                        src={accountUser.avatar}
+                        src={user.avatar}
                         alt=""
                         className="w-8 h-8 rounded-full object-cover border border-[#C4D5E0]"
                       />
@@ -412,8 +413,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                       </span>
                     )}
                     <div className="truncate">
-                      <p className="text-xs font-bold text-[#20364A] truncate">{accountUser.name}</p>
-                      <p className="text-xs text-[#4F6576] truncate">{accountUser.role}</p>
+                      <p className="text-xs font-bold text-[#20364A] truncate">{user?.name || 'User'}</p>
+                      <p className="text-xs text-[#4F6576] truncate">{user?.role || 'Creator'}</p>
                     </div>
                   </div>
                   <ChevronDown

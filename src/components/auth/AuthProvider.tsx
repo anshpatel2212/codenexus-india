@@ -19,7 +19,7 @@ interface AuthContextValue {
   register: (input: RegisterInput) => Promise<AuthResult>;
   signInDemo: (profile: DemoProfile) => Promise<AuthResult>;
   resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
-  logout: () => void;
+  logout: () => Promise<void> | void;
   refreshUser: () => Promise<void>;
   updateUser: (updates: Partial<UserProfile>) => Promise<UserProfile | null>;
 }
@@ -115,8 +115,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return authClient.resetPassword(email);
   };
 
-  const logout = () => {
-    authClient.logout();
+  const logout = async () => {
+    await authClient.logout();
     setUser(null);
   };
 

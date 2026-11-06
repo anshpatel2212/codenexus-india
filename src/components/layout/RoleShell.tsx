@@ -203,6 +203,40 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
 
   const navItems = navigationConfig[role] || navigationConfig['Admin'];
 
+  const initials = user?.name
+    ? user.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+    : 'BS';
+
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen bg-[#EDF3F6] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-[#416F89] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-[#4F6576]">Authenticating session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentRole = user.role as string;
+  const isAuthorized =
+    currentRole === 'Super Admin' ||
+    (role === 'Admin' && currentRole === 'Admin') ||
+    (role === 'Creator' && currentRole === 'Creator') ||
+    (role === 'Reviewer' && ['Reviewer', 'Manager'].includes(currentRole));
+
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-[#EDF3F6] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-[#416F89] border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-[#4F6576]">Redirecting to authorized workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Derive display styling from the authenticated user's actual role, not the route prop
   const roleStyles = {
     'Super Admin': {
       pillBg: 'bg-purple-100 text-purple-800 border-purple-200',
@@ -214,7 +248,7 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
     'Admin': {
       pillBg: 'bg-blue-100 text-blue-800 border-blue-200',
       pillLabel: 'ORGANISATION ADMIN',
-      workspaceLabel: user?.organisation || 'Organisation Workspace',
+      workspaceLabel: user.organisation || 'Organisation Workspace',
       actionBtnText: 'Submit Content',
       actionBtnHref: '/creator/new-review',
     },
@@ -232,22 +266,20 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
       actionBtnText: 'View Queue',
       actionBtnHref: '/reviewer/assigned',
     },
-  }[role];
-
-  const initials = user?.name
-    ? user.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
-    : 'BS';
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#EDF3F6] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-3 border-[#416F89] border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-bold text-[#4F6576]">Authenticating session...</p>
-        </div>
-      </div>
-    );
-  }
+    'Manager': {
+      pillBg: 'bg-amber-100 text-amber-800 border-amber-200',
+      pillLabel: 'REVIEWER & COMPLIANCE',
+      workspaceLabel: 'Governance Queue',
+      actionBtnText: 'View Queue',
+      actionBtnHref: '/reviewer/assigned',
+    },
+  }[currentRole] || {
+    pillBg: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    pillLabel: 'CONTENT CREATOR',
+    workspaceLabel: 'Creator Studio',
+    actionBtnText: 'Run AI Review',
+    actionBtnHref: '/creator/new-review',
+  };
 
   return (
     <div className="bs-app-shell min-h-screen text-[#20364A] flex flex-col font-sans antialiased bg-[#EDF3F6]">
@@ -349,7 +381,7 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
                 </div>
 
                 <Link
-                  href={role === 'Super Admin' ? '/super-admin/settings' : role === 'Admin' ? '/admin/settings' : role === 'Creator' ? '/creator/profile' : '/reviewer/profile'}
+                  href={currentRole === 'Super Admin' ? '/super-admin/settings' : currentRole === 'Admin' ? '/admin/settings' : currentRole === 'Creator' ? '/creator/profile' : '/reviewer/profile'}
                   onClick={() => setProfileMenuOpen(false)}
                   className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-[#20364A] hover:bg-[#F4F8FA]"
                 >
