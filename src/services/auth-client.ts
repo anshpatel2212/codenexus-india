@@ -5,8 +5,21 @@ import { getClientEnv } from '@/lib/env';
 const USERS_KEY = 'brandsense_auth_users';
 const SESSION_KEY = 'brandsense_auth_session';
 const TOKEN_KEY = 'brandsense_auth_token';
+const ACTIVE_USER_KEY = 'brandsense_active_user';
 
-export const AUTH_STORAGE_KEYS = [USERS_KEY, SESSION_KEY, TOKEN_KEY];
+export const AUTH_STORAGE_KEYS = [USERS_KEY, SESSION_KEY, TOKEN_KEY, ACTIVE_USER_KEY];
+
+/**
+ * Single source of truth for role-based dashboard destination.
+ * Used identically across Registration, Login, Logout, and Route Guards.
+ */
+export function getDashboardRouteForRole(role?: string | null): string {
+  if (role === 'Super Admin') return '/super-admin/dashboard';
+  if (role === 'Admin') return '/admin/dashboard';
+  if (role === 'Creator') return '/creator/dashboard';
+  if (role === 'Reviewer' || role === 'Manager') return '/reviewer/dashboard';
+  return '/dashboard';
+}
 
 export type AuthField = 'name' | 'email' | 'password';
 
@@ -300,13 +313,24 @@ class BrandSenseAuthClient {
     }
   }
 
+  public clearSession() {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(ACTIVE_USER_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+    } catch {
+      // Ignore
+    }
+  }
+
   // ---------------------------------------------------------------------------
-  // Session Handling
+  // Session Handling (Single Source of Truth: Database via /api/v1/auth/me)
   // ---------------------------------------------------------------------------
   async getSession(): Promise<UserProfile | null> {
     const token = this.getToken();
 
-    // 1. Try Backend Token Authentication (/api/v1/auth/me)
+    // 1. Authoritative Backend Token Authentication (/api/v1/auth/me)
     if (token) {
       try {
         const res = await fetch('/api/v1/auth/me', {
@@ -320,7 +344,7 @@ class BrandSenseAuthClient {
             id: profile.id,
             name: profile.name,
             email: profile.email,
-            role: profile.role,
+            role: profile.role, // Always taken directly from database
             organizationId: profile.organizationId,
             organisation: profile.organisation,
             avatar: profile.avatar || '',
@@ -329,12 +353,18 @@ class BrandSenseAuthClient {
           };
           this.writeSession(userProfile);
           return userProfile;
-        } else if (res.status === 401) {
-          // Token expired or invalid
+        } else if (res.status === 401 || res.status === 403) {
+          // Token expired, revoked, or rejected by server
           this.setToken(null);
+          this.clearSession();
+          return null;
         }
       } catch (e) {
-        // Backend not reached, continue to local session check
+        // Backend temporarily unreachable (offline mode), fallback to verified cache
+        const cachedUser = readJSON<UserProfile>(ACTIVE_USER_KEY);
+        if (cachedUser) {
+          return cachedUser;
+        }
       }
     }
 
@@ -348,38 +378,23 @@ class BrandSenseAuthClient {
             await new Promise((r) => setTimeout(r, 600));
             profile = await this.fetchUserProfile(session.user.id);
           }
-          if (profile) return profile;
+          if (profile) {
+            this.writeSession(profile);
+            return profile;
+          }
         }
       } catch (err) {
         console.warn('Supabase getSession error:', err);
       }
     }
 
-    // 3. Local storage cached session check
-    const cachedUser = readJSON<UserProfile>('brandsense_active_user');
-    if (cachedUser) {
-      return cachedUser;
-    }
-
-    await this.ensureSeeded();
-    const session = readJSON<StoredSession>(SESSION_KEY);
-    if (!session) return null;
-
-    // Check expiration (7 days)
-    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-    if (Date.now() - session.issuedAt > SEVEN_DAYS) {
-      this.logout();
+    // 3. If no token, user is logged out - never revive from stale localStorage!
+    if (!token) {
+      this.clearSession();
       return null;
     }
 
-    const users = this.readUsers();
-    const user = users.find((u) => u.id === session.userId);
-    if (!user) {
-      this.logout();
-      return null;
-    }
-
-    return toPublicUser(user);
+    return null;
   }
 
   // ---------------------------------------------------------------------------
@@ -505,6 +520,9 @@ class BrandSenseAuthClient {
       return { success: false, error: 'Reserved email prefix. Please use your legitimate work email.', field: 'email' };
     }
 
+    // Secure Role Resolution: Public accounts are restricted strictly to Creator or Manager
+    const sanitizedRole: UserProfile['role'] = input.role === 'Manager' ? 'Manager' : 'Creator';
+
     // 1. Primary: Persistent Backend Relational Database Registration
     try {
       const resp = await fetch('/api/v1/auth/signup', {
@@ -515,7 +533,7 @@ class BrandSenseAuthClient {
           email,
           password,
           organisation,
-          role: input.role || 'Admin',
+          role: sanitizedRole,
           invitationToken: input.invitationToken || null,
         }),
       });
@@ -572,9 +590,9 @@ class BrandSenseAuthClient {
             id: data.user.id,
             name,
             email,
-            role: (input.role as UserProfile['role']) || 'Admin',
+            role: sanitizedRole,
             avatar: '',
-            department: 'Brand Management',
+            department: sanitizedRole === 'Manager' ? 'Brand & Compliance Management' : 'Content Creation',
             organisation,
             isDemo: false,
           };
@@ -605,9 +623,9 @@ class BrandSenseAuthClient {
       organizationId: uniqueOrgId,
       name,
       email,
-      role: (input.role as UserProfile['role']) || 'Admin',
+      role: sanitizedRole,
       avatar: '',
-      department: 'Brand Management',
+      department: sanitizedRole === 'Manager' ? 'Brand & Compliance Management' : 'Content Creation',
       organisation,
       isDemo: false,
       passwordHash: await hashPassword(password),
@@ -759,21 +777,13 @@ class BrandSenseAuthClient {
   // ---------------------------------------------------------------------------
   async logout(): Promise<void> {
     this.setToken(null);
+    this.clearSession();
 
     if (this.isSupabaseLive()) {
       try {
         await this.supabase.auth.signOut();
       } catch (err) {
         console.warn('Supabase signOut error:', err);
-      }
-    }
-
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem(SESSION_KEY);
-        localStorage.removeItem('brandsense_active_user');
-      } catch {
-        // Ignore
       }
     }
   }
