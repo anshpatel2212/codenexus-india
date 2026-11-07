@@ -703,37 +703,16 @@ class BrandSenseApiClient {
       console.warn('Server-side SENSA route unreachable, using local fallback:', err);
     }
 
-    // 3. Fallback: Deterministic brand governance analysis
+    // 3. Fallback: Honest status if both backend and Next.js route were unreachable
     const lower = prompt.toLowerCase().trim();
-    const isGreeting = /^(hi|hello|hey|hhii|heyy|greetings|hola)\b/i.test(lower);
-    const hasGuarantee = lower.includes('guarantee') || lower.includes('100%') || lower.includes('zero fine') || lower.includes('cures') || lower.includes('miracle');
-    const hasFomo = lower.includes('dinosaur') || lower.includes('idiot') || lower.includes('stupid') || lower.includes('hurry') || lower.includes('dust');
-    const hasDirectional = lower.includes('green button') || lower.includes('right side') || lower.includes('click here');
-
     let content = '';
 
-    if (isGreeting) {
-      content = 'Hello! I am SENSA, your BrandSense copilot. How can I assist you with your brand guidelines and content today?';
-    } else if (hasGuarantee) {
-      content = `**Policy Review Result: Non-Compliant Claim Flagged**
-
-Your drafted copy contains absolute performance warranties ("guarantee", "100%", "miracle"). Under corporate legal guardrails, absolute guarantees expose the brand to regulatory penalties unless supported by registered, audited third-party validation.
-
-**Guidance:** Pivot from absolute promises to quantifiable risk-mitigation messaging.`;
-    } else if (hasFomo) {
-      content = `**Policy Review Result: Aggressive Tone Flagged**
-
-BrandSense voice guidelines require an empowering, authoritative, and respectful tone. Aggressive urgency or demeaning phrases ("don't be a dinosaur", fear-of-missing-out pressure) undermine enterprise trust.
-
-**Guidance:** Frame the value proposition around operational efficiency and strategic enablement.`;
-    } else if (hasDirectional) {
-      content = `**Policy Review Result: Accessibility Issue (WCAG 2.2)**
-
-Directional or sensory-only cues (e.g. "click the green button on the right") violate accessibility standards for vision-impaired users utilizing screen readers.
-
-**Guidance:** Use clear, non-spatial action verbs such as "Download the compliance report" or "Select Continue".`;
+    if (/\b(how\s+are\s+(you|u|ya))\b/i.test(lower)) {
+      content = "I'm doing well, thank you for asking! As your BrandSense AI copilot, I'm ready to help you check brand voice, look up approved facts, or review marketing copy. What are you working on today?";
+    } else if (/^(hi|hello|hey|greetings)\b/i.test(lower)) {
+      content = 'Hello! I am SENSA, your BrandSense copilot. How can I assist you with your brand guidelines and copy today?';
     } else {
-      content = `Your query aligns well with BrandSense institutional brand governance principles. The tone is constructive, professional, and clear. Let me know if you need specific guidance on brand voice, terminology, or compliance!`;
+      content = `I received your request regarding: "${prompt}". The AI assistant service is temporarily unreachable from your browser. Please check your network connection or try again in a few moments.`;
     }
 
     return {

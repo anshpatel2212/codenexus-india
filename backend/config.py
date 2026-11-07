@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     NVIDIA_API_KEY: str = os.getenv("NVIDIA_API_KEY", "")
     NVIDIA_MODEL: str = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-4-340b-instruct")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     AI_MODEL_NAME: str = os.getenv("AI_MODEL_NAME", "nvidia/nemotron-4-340b-instruct")
 

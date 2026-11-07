@@ -98,35 +98,44 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
 
   if (!isOpen) return null;
 
+  const isSubmittingRef = useRef(false);
+
   const handleSendMessage = (textToSend?: string) => {
     const text = (textToSend ?? inputText).trim();
-    if (!text || isTyping) return;
+    if (!text || isTyping || isSubmittingRef.current) return;
 
+    isSubmittingRef.current = true;
     const userMessage: SensaMessage = {
-      id: `usr-${Date.now()}`,
+      id: `usr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       sender: 'user',
       timestamp: 'Just now',
       content: text,
     };
 
-    setMessages((previous) => [...previous, userMessage]);
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
     setInputText('');
     setError('');
     setIsTyping(true);
 
     (async () => {
       try {
-        const history = messages.map((m) => ({
+        const history = nextMessages.map((m) => ({
           role: m.sender === 'user' ? ('user' as const) : ('model' as const),
           content: m.content,
         }));
         const response = await apiClient.querySensa(text, history);
-        setMessages((previous) => [...previous, response]);
+        setMessages((previous) => {
+          // Guard against duplicate appending of the same response ID
+          if (previous.some((m) => m.id === response.id)) return previous;
+          return [...previous, response];
+        });
       } catch {
         setError('SENSA could not respond just now. Please try again.');
         toast('SENSA could not respond. Please try again.', 'error');
       } finally {
         setIsTyping(false);
+        isSubmittingRef.current = false;
       }
     })();
   };
@@ -264,7 +273,7 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
               Try asking
             </span>
           </div>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {sensaPromptSuggestions.slice(0, 3).map((item) => (
               <button
                 key={item.label}

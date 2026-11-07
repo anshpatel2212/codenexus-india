@@ -434,7 +434,7 @@ export default function AssistantPage() {
                 Suggested Prompts
               </span>
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {sensaPromptSuggestions.map((item) => (
                 <button
                   key={item.label}

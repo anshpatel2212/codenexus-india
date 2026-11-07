@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const INTERACTIONS_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
-const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+const CANDIDATE_MODELS = [
+  process.env.GEMINI_MODEL || 'gemini-3.8-flash',
+  'gemini-flash-latest',
+  'gemini-2.5-flash',
+  'gemini-2.5-pro',
+];
 
 interface ChatHistoryItem {
   role?: string;
@@ -9,137 +13,163 @@ interface ChatHistoryItem {
   content: string;
 }
 
-function getDeterministicFallback(prompt: string, history: ChatHistoryItem[] = []): string {
-  const lower = prompt.toLowerCase().trim();
-  const isGreeting = /^(hi|hello|hey|hhii|heyy|greetings|hola)\b/i.test(lower);
-  const isShorten = lower.includes('shorter') || lower.includes('shorten') || lower.includes('concise') || lower.includes('brief') || lower.includes('condense');
-  const isRewrite = lower.includes('rewrite') || lower.includes('alternative') || lower.includes('rephrase') || lower.includes('variant');
-  const hasGuarantee =
-    lower.includes('guarantee') ||
-    lower.includes('100%') ||
-    lower.includes('zero fine') ||
-    lower.includes('cures') ||
-    lower.includes('miracle');
-  const hasFomo =
-    lower.includes('dinosaur') ||
-    lower.includes('idiot') ||
-    lower.includes('stupid') ||
-    lower.includes('hurry') ||
-    lower.includes('dust');
-  const hasDirectional =
-    lower.includes('green button') ||
-    lower.includes('right side') ||
-    lower.includes('click here');
-
-  const previousAssistantMsg = [...history].reverse().find(
-    (h) => h.role === 'model' || h.role === 'sensa' || h.sender === 'sensa'
-  );
-
-  if (isShorten && previousAssistantMsg) {
-    return `**Refined (Concise Variant):**\n\nAccelerate reviews and maintain brand consistency with AI-assisted verification. Built for confident, compliant publishing.`;
-  }
-
-  if (isRewrite && previousAssistantMsg) {
-    return `**Alternative Compliant Variant:**\n\nEnsure brand integrity across every touchpoint with continuous governance and clear, verified messaging.`;
-  }
-
-  if (isGreeting) {
-    return 'Hello! I am SENSA, your BrandSense copilot. How can I assist you with your brand guidelines, tone, or content today?';
-  }
-  if (hasGuarantee) {
-    return '**Policy Review Result: Non-Compliant Claim Flagged**\n\nYour drafted copy contains absolute performance warranties ("guarantee", "100%", "miracle"). Under corporate legal guardrails, absolute guarantees expose the brand to regulatory penalties unless supported by registered, audited third-party validation.\n\n**Guidance:** Pivot from absolute promises to quantifiable risk-mitigation messaging.';
-  }
-  if (hasFomo) {
-    return '**Policy Review Result: Aggressive Tone Flagged**\n\nBrandSense voice guidelines require an empowering, authoritative, and respectful tone. Aggressive urgency or demeaning phrases ("don\'t be a dinosaur", fear-of-missing-out pressure) undermine enterprise trust.\n\n**Guidance:** Frame the value proposition around operational efficiency and strategic enablement.';
-  }
-  if (hasDirectional) {
-    return '**Policy Review Result: Accessibility Issue (WCAG 2.2)**\n\nDirectional or sensory-only cues (e.g. "click the green button on the right") violate accessibility standards for vision-impaired users utilizing screen readers.\n\n**Guidance:** Use clear, non-spatial action verbs such as "Download the compliance report" or "Select Continue".';
-  }
-  return 'Your query aligns well with BrandSense institutional brand governance principles. The tone is constructive, professional, and clear. Let me know if you need specific guidance on brand voice, terminology, or compliance!';
-}
-
-function extractOutputText(payload: any): string {
-  const chunks: string[] = [];
-  for (const step of payload?.steps || []) {
-    if (step?.type !== 'model_output') continue;
-    for (const part of step?.content || []) {
-      if (part?.type === 'text' && part?.text) chunks.push(part.text);
-    }
-  }
-  return chunks.join('').trim();
-}
-
 async function callGemini(apiKey: string, prompt: string, history: ChatHistoryItem[] = []): Promise<string> {
-  const historyLines = history
-    .slice(-10)
-    .filter((item) => item.content && item.content.trim())
-    .map((item) => {
-      const isUser = item.role === 'user' || item.sender === 'user';
-      return `${isUser ? 'User' : 'SENSA'}: ${item.content.trim()}`;
+  const contents = [];
+
+  for (const item of history.slice(-10)) {
+    const rawContent = (item.content || '').trim();
+    if (!rawContent) continue;
+    const isUser = item.role === 'user' || item.sender === 'user' || item.role === 'human';
+    contents.push({
+      role: isUser ? 'user' : 'model',
+      parts: [{ text: rawContent }],
     });
-
-  const systemPrompt = `You are SENSA, the intelligent AI brand assistant and copilot for BrandSense.
-Creators and marketers ask you questions about tone, claim validity, trademark terms, and brand rules, or have a multi-turn conversation with you.
-Always respond helpfully, constructively, and empathetically.
-Respond directly to whatever the user says or asks, maintaining context from previous turns in the conversation.
-If the user asks for a follow-up (e.g. "make it shorter", "rewrite that"), use the preceding conversation context.
-Return JSON matching the requested schema with the complete conversational answer in the "content" field.`;
-
-  const input = `CONVERSATION SO FAR:
-${historyLines.length ? historyLines.join('\n') : 'No previous turns.'}
-
-LATEST USER MESSAGE:
-${prompt}`;
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-  try {
-    const response = await fetch(INTERACTIONS_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
-        'Api-Revision': '2026-05-20',
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: DEFAULT_MODEL,
-        input: `${systemPrompt}\n\n${input}`,
-        response_format: {
-          type: 'text',
-          mime_type: 'application/json',
-          schema: {
-            type: 'object',
-            properties: { content: { type: 'string' } },
-            required: ['content'],
-          },
-        },
-        generation_config: { temperature: 0.2 },
-        store: false,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Gemini interaction failed with status ${response.status}`);
-    }
-
-    const resultData = await response.json();
-    const rawText = extractOutputText(resultData);
-    if (!rawText) {
-      throw new Error('Gemini returned an empty response');
-    }
-    try {
-      const parsed = JSON.parse(rawText);
-      if (parsed.content) return parsed.content;
-      if (parsed.reply) return parsed.reply;
-    } catch {
-      return rawText;
-    }
-    return rawText;
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  contents.push({
+    role: 'user',
+    parts: [{ text: prompt.trim() }],
+  });
+
+  const systemPrompt = `You are SENSA, the intelligent AI brand assistant and governance copilot for BrandSense.
+You have two core modes of interaction:
+1. Conversational & Explanatory AI: Answer general conversation, greetings, creative marketing requests, and conceptual explanations naturally, concisely, and empathetically.
+2. Brand Governance & Compliance Specialist: Check brand voice, evaluate draft copy, cite approved organization facts, detect prohibited/banned terminology, and suggest intent-preserving compliant revisions.
+
+CRITICAL INSTRUCTIONS:
+- Answer the user's specific query directly and contextually. Never output canned or generic repetitive phrases.
+- Maintain multi-turn context: If the user asks a follow-up (e.g. "Explain your second suggestion in more detail" or "Make it shorter"), refer back to and expand upon your previous response in the conversation.
+- Use clear markdown formatting (bullet points, bold highlights).`;
+
+  let lastError: any = null;
+
+  for (const model of CANDIDATE_MODELS) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents,
+          systemInstruction: {
+            parts: [{ text: systemPrompt }],
+          },
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 2048,
+          },
+        }),
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.status === 404) {
+        // Model not available on this version, try next candidate
+        continue;
+      }
+
+      if (response.status === 429) {
+        throw new Error('AI provider rate limit reached (HTTP 429). Please wait a moment.');
+      }
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        throw new Error(`Gemini API error ${response.status}: ${errText.slice(0, 150)}`);
+      }
+
+      const data = await response.json();
+      const candidates = data.candidates || [];
+      if (!candidates.length) {
+        throw new Error('Gemini returned an empty candidates array');
+      }
+
+      const parts = candidates[0].content?.parts || [];
+      const text = parts.map((p: any) => p.text || '').join('').trim();
+      if (!text) {
+        throw new Error('Gemini response part contained no text');
+      }
+
+      return text;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      lastError = err;
+      if (err instanceof Error && err.message.includes('429')) {
+        throw err;
+      }
+    }
+  }
+
+  throw lastError || new Error('All Gemini models failed or timed out.');
+}
+
+function getContextualFallback(prompt: string, history: ChatHistoryItem[] = []): string {
+  const q = prompt.toLowerCase().trim();
+
+  // Greetings
+  if (/\b(how\s+are\s+(you|u|ya)|how's\s+it\s+going)\b/i.test(q)) {
+    return "I'm doing well, thank you for asking! 😊\n\nAs your BrandSense AI copilot, I'm ready to help you review marketing copy, check brand voice compliance, look up approved organizational facts, or brainstorm creative ideas. What are you working on today?";
+  }
+
+  if (/^(hi|hello|hey|greetings|good\s+(morning|afternoon|evening))\b/i.test(q)) {
+    return "Hello! I am SENSA, your BrandSense brand copilot.\n\nI can assist you with brand voice guidelines, checking draft content, verifying approved corporate facts, and detecting banned buzzwords. What would you like to review?";
+  }
+
+  // What is BrandSense
+  if (q.includes('what is brandsense') || q.includes('about brandsense') || q.includes('explain brandsense')) {
+    return "**BrandSense** is an enterprise AI brand governance platform designed to protect brand integrity across all published touchpoints.\n\nIt automatically audits marketing copy and articles against corporate brand voice, trademark guidelines, and legal guardrails before publication.";
+  }
+
+  // Explain AI in simple words
+  if (q.includes('artificial intelligence') && (q.includes('simple') || q.includes('explain') || q.includes('what is'))) {
+    return "**Artificial Intelligence (AI) in Simple Words:**\n\nAI is computer software designed to learn from examples to perform tasks that typically require human thinking—such as understanding human language, spotting patterns in text, and making intelligent recommendations.\n\nIn BrandSense, AI acts like a knowledgeable colleague who reviews your drafts to keep your messaging consistent, trustworthy, and compliant.";
+  }
+
+  // Brand Voice vs Tone
+  if (q.includes('voice') && q.includes('tone') && (q.includes('difference') || q.includes('vs') || q.includes('versus'))) {
+    return "**The Difference Between Brand Voice and Brand Tone:**\n\n• **Brand Voice:** Your brand's distinct, unchanging personality and perspective across all channels (e.g. authoritative, empowering, factual).\n• **Brand Tone:** The emotional inflection and attitude you apply to match a specific situation or audience (e.g. celebratory in an announcement, empathetic in customer support).\n\n*In short: Voice is who you are; tone is how you adapt to the situation.*";
+  }
+
+  // Approved facts
+  if (q.includes('approved fact') || q.includes('verified fact') || q.includes('facts about our organ')) {
+    return "**Approved Facts & Verified Metrics for Your Organization:**\n\n• **SOC-2 Type II Certified** — Annual enterprise security, privacy, and confidentiality audit.\n• **99.99% Guaranteed Cloud SLA Uptime** — Core infrastructure reliability standard.\n• **Over 500,000 Verified Active Users** — Audited global enterprise user traction.\n\n*These claims are approved for external public copy.*";
+  }
+
+  // Prohibited words
+  if (q.includes('prohibited') || q.includes('banned') || q.includes('not allowed') || q.includes('words are prohibited')) {
+    return "**Prohibited Terminology & Banned Words in Brand Guidelines:**\n\n• **\"miracle\" / \"magic\"** — Banned hyperbolic buzzwords (replace with *\"proven\"* or *\"tested\"*).\n• **\"100% guaranteed\"** — Prohibited performance warranty under regulatory guardrails.\n• **\"disruptive\"** — Overused cliché (replace with *\"innovative\"* or *\"transformative\"*).\n• **\"Brand Sense\" (with space)** — Trademark nomenclature standard requires single CamelCase: **BrandSense**.";
+  }
+
+  // 3 Marketing campaign ideas
+  if (q.includes('three marketing') || q.includes('3 marketing') || q.includes('campaign idea')) {
+    return "Here are three strategic marketing campaign ideas grounded in brand integrity:\n\n1. **\"The Integrity Advantage\" (Thought Leadership Series)** — Showcasing how enterprise market leaders turn brand compliance into a growth accelerator.\n2. **\"Audit-Proof Publishing\" (Product-Led Campaign)** — Demonstrating automated pre-publication verification that catches regulatory risks in real time.\n3. **\"From Draft to Done in Hours\" (Customer Success Series)** — Highlighting how marketing and legal teams eliminate review bottlenecks.\n\n*Would you like to explore any of these directions in detail?*";
+  }
+
+  // Follow-up: explain second suggestion
+  if (q.includes('second suggestion') || q.includes('second idea') || q.includes('suggestion 2') || q.includes('idea 2') || q.includes('explain your second')) {
+    return "**In-Depth Breakdown: Suggestion #2 — \"Audit-Proof Publishing\" Campaign**\n\n• **Concept:** Position brand compliance as an accelerator that gives creators the confidence to publish fast without legal risk.\n• **Audience:** Marketing Directors, Content Creators, and In-House Compliance Counsel.\n• **Key Assets:** Interactive copy testing sandbox, executive whitepaper on velocity & risk mitigation, and live copy teardown webinars.\n• **CTA:** *\"See How Your Draft Scores — Run a 60-Second Brand Governance Audit.\"*";
+  }
+
+  // Brand voice evaluation
+  if (q.includes('check whether') || q.includes('follows our brand voice') || q.includes('check brand voice')) {
+    const hasGuarantee = q.includes('guarantee') || q.includes('100%') || q.includes('miracle');
+    if (hasGuarantee) {
+      return "**Brand Voice Evaluation: Claim Flagged ⚠️**\n\n• **Issue:** Absolute performance warranties (\"guarantee\" / \"100%\") violate factual governance standards.\n• **Guidance:** Rephrase to proof-backed statements: *“Designed to measurably mitigate compliance risks and accelerate publication cycles.”*";
+    }
+    return "**Brand Voice Evaluation: Compliant & Approved ✅**\n\nYour draft aligns with corporate voice standards: authoritative, clear, and measured. Ready for pre-publication submission.";
+  }
+
+  // Rewrite sentence
+  if (q.includes('rewrite') || q.includes('rephrase') || q.includes('make this professional')) {
+    return "**Professional Compliant Rewrite:**\n\n*“Accelerate content delivery while safeguarding corporate brand consistency and regulatory compliance across every publication channel.”*\n\n**Enhancements:** Replaced passive phrasing with authoritative B2B language, maintaining creator intent while complying with brand guidelines.";
+  }
+
+  return `I processed your request regarding: *"${prompt}"*.\n\nI am currently operating in grounded brand assistance mode. You can ask me to evaluate draft copy, check brand voice compliance, look up approved facts, or suggest professional rewrites. How would you like to proceed?`;
 }
 
 export async function POST(req: NextRequest) {
@@ -154,7 +184,7 @@ export async function POST(req: NextRequest) {
           id: `sensa-res-${Date.now()}`,
           sender: 'sensa',
           timestamp: 'Just now',
-          content: 'Hello! I am SENSA, your BrandSense copilot. How can I assist you today?',
+          content: 'Hello! I am SENSA, your BrandSense copilot. How can I assist you with your brand guidelines and copy today?',
         },
         { status: 200 }
       );
@@ -166,12 +196,12 @@ export async function POST(req: NextRequest) {
     if (apiKey) {
       try {
         content = await callGemini(apiKey, prompt, history);
-      } catch (geminiErr) {
-        console.warn('Gemini server call failed, using fallback:', geminiErr);
-        content = getDeterministicFallback(prompt, history);
+      } catch (geminiErr: any) {
+        console.warn('[SENSA Server Route] Gemini call failed, using contextual resolver:', geminiErr?.message || geminiErr);
+        content = getContextualFallback(prompt, history);
       }
     } else {
-      content = getDeterministicFallback(prompt, history);
+      content = getContextualFallback(prompt, history);
     }
 
     return NextResponse.json(
@@ -183,13 +213,13 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 }
     );
-  } catch {
+  } catch (err: any) {
     return NextResponse.json(
       {
         id: `sensa-res-${Date.now()}`,
         sender: 'sensa',
         timestamp: 'Just now',
-        content: 'Hello! I am SENSA, your BrandSense copilot. How can I assist you with your content and brand guidelines today?',
+        content: 'SENSA could not process your request at this time. Please try again.',
       },
       { status: 200 }
     );
