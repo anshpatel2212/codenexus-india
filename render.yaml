@@ -1,18 +1,42 @@
 services:
+  # ---------------------------------------------------------------------------
+  # BrandSense Next.js Frontend Web Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: brandsense-web
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NEXT_PUBLIC_GEMINI_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+
+  # ---------------------------------------------------------------------------
+  # BrandSense FastAPI Backend Service
+  # ---------------------------------------------------------------------------
   - type: web
     name: brandsense-backend
-    env: python
+    runtime: python
+    plan: free
     region: oregon
-    plan: starter
-    buildCommand: "pip install -r backend/requirements.txt"
-    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+    buildCommand: pip install --upgrade pip && pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: PORT
-        value: 8000
-      - key: JWT_SECRET_KEY
-        generateValue: true
+      - key: PYTHONPATH
+        value: .
       - key: BACKEND_CORS_ORIGINS
-        value: '["http://localhost:3000","https://brandsense.web.app","https://brandsense.firebaseapp.com"]'
-      - key: ENVIRONMENT
-        value: production
-
+        value: "*"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
