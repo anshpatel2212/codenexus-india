@@ -1,3 +1,5 @@
+import os
+import hmac
 import uuid
 import secrets
 import logging
@@ -168,6 +170,7 @@ async def signup(req: SignupRequest):
     return {
         "success": True,
         "token": token,
+        "access_token": token,
         "user": {
             "id": user_id,
             "name": req.name.strip(),
@@ -309,6 +312,7 @@ async def login(req: LoginRequest, background_tasks: BackgroundTasks):
     return {
         "success": True,
         "token": token,
+        "access_token": token,
         "user": {
             "id": user["id"],
             "name": user["full_name"],
@@ -419,6 +423,7 @@ async def demo_login(role_slug: str):
     return {
         "success": True,
         "token": token,
+        "access_token": token,
         "user": {
             "id": user["id"],
             "name": user["full_name"],
