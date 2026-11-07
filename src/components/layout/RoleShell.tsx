@@ -303,7 +303,7 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
         {/* Role-Specific Isolated Sidebar */}
         <aside
           className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-[#C4D5E0] flex flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-0 -translate-x-full'
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
           {/* Brand Logo & Role Pill */}
