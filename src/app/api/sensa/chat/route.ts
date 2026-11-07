@@ -7,9 +7,17 @@ const CANDIDATE_MODELS = [
   'gemini-flash-latest',
 ];
 
-function getDeterministicFallback(prompt: string): string {
+interface ChatHistoryItem {
+  role?: string;
+  sender?: string;
+  content: string;
+}
+
+function getDeterministicFallback(prompt: string, history: ChatHistoryItem[] = []): string {
   const lower = prompt.toLowerCase().trim();
   const isGreeting = /^(hi|hello|hey|hhii|heyy|greetings|hola)\b/i.test(lower);
+  const isShorten = lower.includes('shorter') || lower.includes('shorten') || lower.includes('concise') || lower.includes('brief') || lower.includes('condense');
+  const isRewrite = lower.includes('rewrite') || lower.includes('alternative') || lower.includes('rephrase') || lower.includes('variant');
   const hasGuarantee =
     lower.includes('guarantee') ||
     lower.includes('100%') ||
@@ -27,8 +35,21 @@ function getDeterministicFallback(prompt: string): string {
     lower.includes('right side') ||
     lower.includes('click here');
 
+  // Check conversational follow-ups with history
+  const previousAssistantMsg = [...history].reverse().find(
+    (h) => h.role === 'model' || h.role === 'sensa' || h.sender === 'sensa'
+  );
+
+  if (isShorten && previousAssistantMsg) {
+    return `**Refined (Concise Variant):**\n\nAccelerate reviews and maintain brand consistency with AI-assisted verification. Built for confident, compliant publishing.`;
+  }
+
+  if (isRewrite && previousAssistantMsg) {
+    return `**Alternative Compliant Variant:**\n\nEnsure brand integrity across every touchpoint with continuous governance and clear, verified messaging.`;
+  }
+
   if (isGreeting) {
-    return 'Hello! I am SENSA, your BrandSense copilot. How can I assist you with your brand guidelines and content today?';
+    return 'Hello! I am SENSA, your BrandSense copilot. How can I assist you with your brand guidelines, tone, or content today?';
   }
   if (hasGuarantee) {
     return '**Policy Review Result: Non-Compliant Claim Flagged**\n\nYour drafted copy contains absolute performance warranties ("guarantee", "100%", "miracle"). Under corporate legal guardrails, absolute guarantees expose the brand to regulatory penalties unless supported by registered, audited third-party validation.\n\n**Guidance:** Pivot from absolute promises to quantifiable risk-mitigation messaging.';
@@ -42,27 +63,42 @@ function getDeterministicFallback(prompt: string): string {
   return 'Your query aligns well with BrandSense institutional brand governance principles. The tone is constructive, professional, and clear. Let me know if you need specific guidance on brand voice, terminology, or compliance!';
 }
 
-async function callGemini(apiKey: string, prompt: string): Promise<string> {
+async function callGemini(apiKey: string, prompt: string, history: ChatHistoryItem[] = []): Promise<string> {
   const systemPrompt = `
 You are SENSA, the intelligent AI brand assistant and copilot for BrandSense.
-Creators and marketers ask you questions about tone, claim validity, trademark terms, and brand rules, or have a conversation with you.
+Creators and marketers ask you questions about tone, claim validity, trademark terms, and brand rules, or have a multi-turn conversation with you.
 Always respond helpfully, constructively, and empathetically.
-Respond directly to whatever the user says or asks.
+Respond directly to whatever the user says or asks, maintaining context from previous turns in the conversation.
 
 CRITICAL RULES:
 - Provide your complete conversational answer or greeting directly in the "content" field.
-- Do not add artificial citations or separate suggested fixes for conversational queries or greetings.
-- Return response strictly as JSON.
+- If the user asks for a follow-up (e.g. "make it shorter", "rewrite that"), use the preceding conversation context.
+- Return response strictly as JSON with key "content".
 `;
 
-  const userPrompt = `
-User Query: "${prompt}"
+  // Format multi-turn contents
+  const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
 
-Return JSON matching:
-{
-  "content": "Your complete conversational response addressing the user directly..."
-}
-`;
+  // Add previous turns (up to last 10 turns to stay within context limits)
+  const recentHistory = history.slice(-10);
+  for (const item of recentHistory) {
+    if (!item.content || !item.content.trim()) continue;
+    const isUser = item.role === 'user' || item.sender === 'user';
+    contents.push({
+      role: isUser ? 'user' : 'model',
+      parts: [{ text: item.content.trim() }],
+    });
+  }
+
+  // Ensure initial user turn includes system prompt if this is the start
+  const currentPromptText = contents.length === 0
+    ? `${systemPrompt}\n\nUser Query: "${prompt}"`
+    : prompt;
+
+  contents.push({
+    role: 'user',
+    parts: [{ text: currentPromptText }],
+  });
 
   for (const model of CANDIDATE_MODELS) {
     const controller = new AbortController();
@@ -75,12 +111,7 @@ Return JSON matching:
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }],
-            },
-          ],
+          contents,
           generationConfig: {
             responseMimeType: 'application/json',
             temperature: 0.2,
@@ -118,6 +149,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const prompt = (body?.prompt || '').trim();
+    const history: ChatHistoryItem[] = Array.isArray(body?.history) ? body.history : [];
 
     if (!prompt) {
       return NextResponse.json(
@@ -140,13 +172,13 @@ export async function POST(req: NextRequest) {
 
     if (apiKey.trim()) {
       try {
-        content = await callGemini(apiKey.trim(), prompt);
+        content = await callGemini(apiKey.trim(), prompt, history);
       } catch (geminiErr) {
         console.warn('Gemini server call failed, using fallback:', geminiErr);
-        content = getDeterministicFallback(prompt);
+        content = getDeterministicFallback(prompt, history);
       }
     } else {
-      content = getDeterministicFallback(prompt);
+      content = getDeterministicFallback(prompt, history);
     }
 
     return NextResponse.json(
