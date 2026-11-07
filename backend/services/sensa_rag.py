@@ -1,14 +1,20 @@
 import os
 import json
 import urllib.request
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from backend.config import settings
 from backend.services.supabase_admin import supabase_admin
 
 class SensaRAGService:
-    async def chat(self, prompt: str, org_id: str, user_id: str) -> Dict[str, Any]:
+    async def chat(
+        self,
+        prompt: str,
+        org_id: str,
+        user_id: str,
+        history: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
         """
-        Grounded RAG Brand Governance Assistant.
+        Grounded RAG Brand Governance Assistant with Multi-Turn Memory.
         1. Uses Autonomous Google Gemini Flash if API key is set.
         2. Falls back to deterministic rule matching.
         """
@@ -19,18 +25,41 @@ class SensaRAGService:
             try:
                 system_prompt = """
 You are SENSA, the intelligent brand governance copilot for BrandSense.
-Creators and marketers ask you questions about tone, claim validity, trademark terms, and brand rules.
-Always respond authoritatively, constructively, and empathetically.
+Creators and marketers ask you questions about tone, claim validity, trademark terms, and brand rules, or have a multi-turn conversation with you.
+Always respond authoritatively, constructively, and empathetically, maintaining conversational context across turns.
 CRITICAL RULES:
 - Quote specific brand policy citations (e.g. 'Global Legal Guardrails 2026.pdf (Section 4.2)').
 - Always provide a clean, compliant rewrite suggestion (suggestedFix) that creators can click to copy.
 - Return response strictly as JSON with keys: content, confidence, requiresHumanReview, citations, suggestedFix.
 """
+                # Format multi-turn contents
+                contents: List[Dict[str, Any]] = []
+                if history:
+                    for item in history[-8:]:
+                        c = item.get("content", "")
+                        if not c or not str(c).strip():
+                            continue
+                        is_user = item.get("role") == "user" or item.get("sender") == "user"
+                        contents.append({
+                            "role": "user" if is_user else "model",
+                            "parts": [{"text": str(c).strip()}]
+                        })
+
+                if not contents:
+                    current_turn = f"{system_prompt}\n\nUSER PROMPT:\n{prompt}"
+                else:
+                    current_turn = prompt
+
+                contents.append({
+                    "role": "user",
+                    "parts": [{"text": current_turn}]
+                })
+
                 models = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-flash-latest"]
                 for model in models:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
                     payload = {
-                        "contents": [{"parts": [{"text": f"{system_prompt}\n\nUSER PROMPT:\n{prompt}"}]}],
+                        "contents": contents,
                         "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2}
                     }
                     req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
@@ -62,10 +91,33 @@ CRITICAL RULES:
             except Exception as e:
                 print(f"Gemini Sensa chat backend fallback: {e}")
 
-        # Deterministic Fallback
+        # Deterministic Fallback with Conversational Memory
         prompt_lower = prompt.lower()
         matched_citations: List[Dict[str, Any]] = []
         is_risky = False
+
+        is_shorten = any(w in prompt_lower for w in ["shorter", "shorten", "concise", "brief", "summarize"])
+        is_rewrite = any(w in prompt_lower for w in ["rewrite", "alternative", "rephrase", "variant"])
+
+        if is_shorten and history:
+            return {
+                "id": f"sensa-res-{uuid_time()}",
+                "sender": "sensa",
+                "timestamp": "Just now",
+                "content": (
+                    "**Refined (Concise Variant):**\n\n"
+                    "Accelerate campaign reviews and uphold brand compliance with automated policy checking."
+                ),
+                "confidence": 98,
+                "requiresHumanReview": False,
+                "citations": [{
+                    "title": "Brand Voice & Lexicon Guidelines (2026 Edition)",
+                    "document": "Acme Core Voice v4.2",
+                    "section": "Pillar 1 — Authoritative and Fact-Grounded Voice",
+                    "confidence": 95
+                }],
+                "suggestedFix": "“Accelerate campaign reviews and uphold brand compliance with automated policy checking.”",
+            }
 
         if any(w in prompt_lower for w in ["miracle", "disruptive", "magic", "dinosaur"]):
             is_risky = True

@@ -203,7 +203,11 @@ export default function AssistantPage() {
 
     (async () => {
       try {
-        const response = await apiClient.querySensa(text);
+        const history = nextMessages.map((m) => ({
+          role: m.sender === 'user' ? ('user' as const) : ('model' as const),
+          content: m.content,
+        }));
+        const response = await apiClient.querySensa(text, history);
         const finalMessages = [...nextMessages, response];
         setMessages(finalMessages);
 
