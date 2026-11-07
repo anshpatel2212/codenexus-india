@@ -11,18 +11,13 @@ services:
     startCommand: npm run start
     envVars:
       - key: NODE_VERSION
-        value: 20.18.0
+        value: 20
       - key: NEXT_PUBLIC_GEMINI_API_KEY
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
         sync: false
-      - key: BACKEND_API_URL
-        fromService:
-          type: web
-          name: brandsense-backend
-          property: host
 
   # ---------------------------------------------------------------------------
   # BrandSense FastAPI Backend Service
@@ -32,13 +27,11 @@ services:
     runtime: python
     plan: free
     region: oregon
-    buildCommand: pip install -r backend/requirements.txt
+    buildCommand: pip install --upgrade pip && pip install -r backend/requirements.txt
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
-      - key: PORT
-        value: 10000
+      - key: PYTHONPATH
+        value: .
       - key: BACKEND_CORS_ORIGINS
         value: "*"
       - key: SUPABASE_URL
