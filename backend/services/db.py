@@ -13,8 +13,10 @@ DB_PATH = DB_DIR / "brandsense.db"
 
 def get_db_connection() -> sqlite3.Connection:
     DB_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn = sqlite3.connect(str(DB_PATH), timeout=30.0, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout = 10000;")
     return conn
 
 def hash_password(password: str, salt: Optional[str] = None) -> Tuple[str, str]:

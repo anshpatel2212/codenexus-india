@@ -76,8 +76,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
-      if (!event.key || !AUTH_STORAGE_KEYS.includes(event.key)) return;
-      authClient.getSession().then((sessionUser) => setUser(sessionUser));
+      if (event.key === 'brandsense_auth_token') {
+        if (!event.newValue) {
+          setUser(null);
+        } else {
+          authClient.getSession(true).then((sessionUser) => setUser(sessionUser));
+        }
+      } else if (event.key === 'brandsense_active_user') {
+        if (!event.newValue) {
+          setUser(null);
+        } else {
+          try {
+            const parsed = JSON.parse(event.newValue);
+            if (parsed && parsed.id) {
+              setUser(parsed);
+            }
+          } catch {
+            // Ignore parse errors
+          }
+        }
+      }
     };
 
     window.addEventListener('storage', handleStorage);

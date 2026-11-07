@@ -143,6 +143,13 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
     };
   }, []);
 
+  // Ensure drawers and menus automatically close on route navigation
+  useEffect(() => {
+    setSidebarOpen(false);
+    setProfileMenuOpen(false);
+    setNotifDropdownOpen(false);
+  }, [pathname]);
+
   const handleLogout = () => {
     logout();
     setLogoutConfirmOpen(false);
