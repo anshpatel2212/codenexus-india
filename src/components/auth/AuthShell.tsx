@@ -59,6 +59,16 @@ export const AuthShell: React.FC<AuthShellProps> = ({ variant, children }) => {
             variant === 'login' ? styles.loginWrapper : styles.registerWrapper
           }`}
         >
+          {/* Section 1: Form Panel (Left on Desktop, First/Top on Mobile) */}
+          <section
+            className={`${styles.formPanel} ${
+              variant === 'login' ? styles.formPanelLogin : ''
+            }`}
+          >
+            {children}
+          </section>
+
+          {/* Section 2: Reserved Branding Panel (Right on Desktop, Below/Second on Mobile) */}
           <section className={styles.welcomePanel} aria-labelledby="auth-welcome-heading">
             <div className={styles.welcomeContent}>
               <div className={styles.welcomeBadge}>
@@ -75,19 +85,6 @@ export const AuthShell: React.FC<AuthShellProps> = ({ variant, children }) => {
               <div className="text-[11px] text-white/60">© 2026 BrandSense. All rights reserved.</div>
             </div>
           </section>
-
-          <section
-            className={`${styles.formPanel} ${
-              variant === 'login' ? styles.formPanelLogin : ''
-            }`}
-          >
-            {children}
-          </section>
-        </div>
-
-        {/* Copyright visible on mobile/smaller screens where welcomePanel bottom is hidden */}
-        <div className="w-full max-w-[480px] mt-5 pb-4 flex items-center justify-center md:hidden text-center">
-          <div className="text-[11px] text-[#718494] font-medium">© 2026 BrandSense. All rights reserved.</div>
         </div>
       </main>
     </div>

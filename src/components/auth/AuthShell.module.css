@@ -629,75 +629,110 @@
 
   .main,
   .loginMain {
-    padding: 12px 14px 28px;
+    padding: 16px 14px 40px;
     align-items: center;
     width: 100%;
     box-sizing: border-box;
+    min-height: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
   }
 
   .wrapper,
   .loginWrapper,
   .registerWrapper {
     width: 100%;
-    max-width: 460px;
+    max-width: 480px;
     min-height: auto;
     max-height: none !important;
-    grid-template-columns: 1fr;
-    border-radius: 20px;
+    height: auto !important;
+    display: flex;
+    flex-direction: column;
+    border-radius: 24px;
     box-shadow: 0 15px 45px rgba(32, 54, 74, 0.08);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    overflow: hidden;
   }
 
-  /* Compact Branded Hero Banner at top of card */
+  /* Form panel appears FIRST on mobile */
+  .formPanel,
+  .formPanelLogin {
+    order: 1;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 28px 24px 24px;
+    background: #ffffff;
+    border-radius: 24px 24px 0 0;
+  }
+
+  /* Reserved branding panel appears BELOW the form on mobile */
   .welcomePanel {
-    padding: 22px 22px 18px;
+    order: 2;
+    width: 100%;
+    box-sizing: border-box;
+    background: linear-gradient(145deg, #20364a, #416f89);
+    color: #ffffff;
+    padding: 30px 24px 26px;
+    border-radius: 0 0 24px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
     min-height: auto;
-    border-radius: 20px 20px 0 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
   }
 
   .welcomePanel::before {
     width: 260px;
     height: 260px;
     right: -100px;
-    top: -90px;
+    top: -80px;
   }
 
   .welcomePanel::after {
     width: 180px;
     height: 180px;
     right: -40px;
-    top: -40px;
+    top: -30px;
   }
 
   .welcomeBadge {
-    margin-bottom: 8px;
-    padding: 4px 10px;
-    font-size: 11px;
+    margin-bottom: 14px;
+    padding: 5px 12px;
+    font-size: 11.5px;
     display: inline-flex;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.22);
   }
 
   .welcomePanel h1 {
-    font-size: 20px;
+    font-size: 22px;
     line-height: 1.25;
-    margin-bottom: 6px;
+    margin-bottom: 10px;
+    font-weight: 800;
+    color: #ffffff;
   }
 
   .welcomePanel p {
-    font-size: 12px;
-    line-height: 1.45;
-    opacity: 0.9;
+    display: block !important;
+    font-size: 13px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.85);
     margin: 0;
+    max-width: 100%;
   }
 
-  /* Internal card credits hidden on mobile so they don't overlap */
+  /* Internal card credits ALWAYS fully visible at bottom of welcomePanel */
   .welcomeBottom {
-    display: none !important;
-  }
-
-  .formPanel,
-  .formPanelLogin {
-    padding: 26px 22px 28px;
-    width: 100%;
-    box-sizing: border-box;
+    display: block !important;
+    margin-top: 22px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.75);
   }
 
   .formHeading {
@@ -766,33 +801,43 @@
 
   .main,
   .loginMain {
-    padding: 8px 10px 24px;
+    padding: 10px 10px 32px;
   }
 
   .wrapper,
   .loginWrapper,
   .registerWrapper {
     max-width: 100%;
-    border-radius: 18px;
-  }
-
-  .welcomePanel {
-    padding: 16px 16px 14px;
-    border-radius: 18px 18px 0 0;
-  }
-
-  .welcomePanel h1 {
-    font-size: 18px;
-  }
-
-  .welcomePanel p {
-    font-size: 11px;
-    line-height: 1.4;
+    border-radius: 20px;
   }
 
   .formPanel,
   .formPanelLogin {
-    padding: 20px 16px 22px;
+    padding: 24px 18px 20px;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .welcomePanel {
+    padding: 24px 18px 22px;
+    border-radius: 0 0 20px 20px;
+  }
+
+  .welcomePanel h1 {
+    font-size: 20px;
+    line-height: 1.25;
+  }
+
+  .welcomePanel p {
+    display: block !important;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+
+  .welcomeBottom {
+    display: block !important;
+    margin-top: 18px;
+    padding-top: 12px;
+    font-size: 11px;
   }
 
   .formHeading h2 {
@@ -825,7 +870,7 @@
 
   .primaryBtn {
     height: 45px;
-    font-size: 13px;
+    font-size: 13.5px;
   }
 
   .exploreDemoBtn {
@@ -838,29 +883,40 @@
 @media (max-width: 360px) {
   .main,
   .loginMain {
-    padding: 6px 8px 20px;
-  }
-
-  .welcomePanel {
-    padding: 14px 14px 12px;
-  }
-
-  .welcomePanel p {
-    display: none;
-  }
-
-  .welcomeBadge {
-    font-size: 10px;
-    padding: 3px 8px;
-  }
-
-  .welcomePanel h1 {
-    font-size: 16px;
+    padding: 6px 8px 24px;
   }
 
   .formPanel,
   .formPanelLogin {
-    padding: 16px 12px 18px;
+    padding: 18px 12px 16px;
+  }
+
+  .welcomePanel {
+    padding: 20px 12px 18px;
+  }
+
+  .welcomeBadge {
+    font-size: 10px;
+    padding: 4px 8px;
+    margin-bottom: 10px;
+  }
+
+  .welcomePanel h1 {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .welcomePanel p {
+    display: block !important;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .welcomeBottom {
+    display: block !important;
+    margin-top: 14px;
+    padding-top: 10px;
+    font-size: 10.5px;
   }
 
   .formHeading h2 {

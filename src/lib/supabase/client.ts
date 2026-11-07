@@ -114,22 +114,89 @@ export class BrandSenseSupabaseClient {
       };
     },
 
-    signUp: async (_credentials: any): Promise<{ data: any; error: any }> => {
+    signUp: async (credentials: any): Promise<{ data: any; error: any }> => {
+      if (this.url && this.key && !this.url.includes('placeholder')) {
+        try {
+          const res = await fetch(`${this.url}/auth/v1/signup`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: this.key,
+              Authorization: `Bearer ${this.key}`,
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+              data: credentials.options?.data || {},
+            }),
+          });
+          const json = await res.json();
+          if (!res.ok) {
+            return {
+              data: { user: null, session: null },
+              error: {
+                message: json.msg || json.error_description || json.message || 'Supabase signup failed',
+              },
+            };
+          }
+          return {
+            data: { user: json.user || json, session: json.session || null },
+            error: null,
+          };
+        } catch (err: any) {
+          return {
+            data: { user: null, session: null },
+            error: { message: err?.message || 'Supabase authentication is not configured.' },
+          };
+        }
+      }
       return {
         data: { user: null, session: null },
         error: {
-          message:
-            'Supabase authentication is not configured. Sign-up requires the BrandSense backend service.',
+          message: 'Supabase authentication is not configured.',
         },
       };
     },
 
-    signInWithPassword: async (_credentials: any): Promise<{ data: any; error: any }> => {
+    signInWithPassword: async (credentials: any): Promise<{ data: any; error: any }> => {
+      if (this.url && this.key && !this.url.includes('placeholder')) {
+        try {
+          const res = await fetch(`${this.url}/auth/v1/token?grant_type=password`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: this.key,
+              Authorization: `Bearer ${this.key}`,
+            },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          });
+          const json = await res.json();
+          if (!res.ok) {
+            return {
+              data: { user: null, session: null },
+              error: {
+                message: json.msg || json.error_description || json.message || 'Supabase sign-in failed',
+              },
+            };
+          }
+          return {
+            data: { user: json.user, session: json },
+            error: null,
+          };
+        } catch (err: any) {
+          return {
+            data: { user: null, session: null },
+            error: { message: err?.message || 'Supabase authentication is not configured.' },
+          };
+        }
+      }
       return {
         data: { user: null, session: null },
         error: {
-          message:
-            'Supabase authentication is not configured. Sign-in requires the BrandSense backend service.',
+          message: 'Supabase authentication is not configured.',
         },
       };
     },

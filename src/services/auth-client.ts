@@ -479,11 +479,19 @@ class BrandSenseAuthClient {
         });
 
         if (error) {
-          return {
-            success: false,
-            error: error.message || 'Authentication failed. Please verify your credentials.',
-            field: 'password',
-          };
+          if (
+            error.message?.includes('not configured') ||
+            error.message?.includes('backend service') ||
+            error.message?.includes('Failed to fetch')
+          ) {
+            console.warn('Supabase auth not configured for direct sign-in, falling back to local user store.');
+          } else {
+            return {
+              success: false,
+              error: error.message || 'Authentication failed. Please verify your credentials.',
+              field: 'password',
+            };
+          }
         }
 
         if (data.user) {
@@ -611,7 +619,15 @@ class BrandSenseAuthClient {
         });
 
         if (error) {
-          return { success: false, error: error.message, field: 'email' };
+          if (
+            error.message?.includes('not configured') ||
+            error.message?.includes('backend service') ||
+            error.message?.includes('Failed to fetch')
+          ) {
+            console.warn('Supabase auth not configured for direct signup, falling back to local persistent store.');
+          } else {
+            return { success: false, error: error.message, field: 'email' };
+          }
         }
 
         if (data.user) {
