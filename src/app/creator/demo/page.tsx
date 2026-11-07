@@ -23,7 +23,7 @@ export default function CreatorDemoPage() {
       restrictions={[
         'Cannot edit approved brand rules, facts, or terminology',
         'Cannot approve own content submissions for official publication',
-        'Cannot view drafts created by other team members',
+        'Cannot view drafts created by other users',
       ]}
       dashboardPath="/creator/dashboard"
       loginPath="/creator/login"

@@ -16,7 +16,7 @@ export default function OrgAdminDemoPage() {
       capabilities={[
         'Full authority over organization brand guidelines and tone voice rules',
         'Curate verified brand facts, banned phrases, and legal disclaimers',
-        'Invite team members and configure roles (Creators, Reviewers, Managers)',
+        'Invite users and configure roles (Creators, Reviewers, Managers)',
         'Oversee all departmental reviews and compliance metrics',
         'Configure organization settings and integration webhooks',
       ]}

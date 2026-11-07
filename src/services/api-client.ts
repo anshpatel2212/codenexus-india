@@ -5,12 +5,12 @@ import {
   ApprovalItem,
   ApprovalComment,
   SensaMessage,
-  ContentType
+  ContentType,
+  OrganizationUser
 } from '@/types';
 import { supabaseDataService } from './supabase-service';
 import { getClientEnv } from '@/lib/env';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { isGeminiConfigured, analyzeContentWithGemini, chatWithSensaGemini } from './gemini-ai';
 import { authClient, DEMO_ORG_ID } from './auth-client';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? '/api/v1' : 'http://127.0.0.1:8000/api/v1');
@@ -230,6 +230,40 @@ class BrandSenseApiClient {
   }
 
   // ---------------------------------------------------------------------------
+  // Organisation Users
+  // ---------------------------------------------------------------------------
+  async getUsers(): Promise<OrganizationUser[]> {
+    try {
+      const res = await this.fetchWithAuth('/auth/users');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend /auth/users unreachable:', err);
+    }
+    return [];
+  }
+
+  async inviteUser(email: string, role: string): Promise<{ success: boolean; inviteLink?: string; error?: string }> {
+    try {
+      const res = await this.fetchWithAuth('/onboarding/invite', {
+        method: 'POST',
+        body: JSON.stringify({ email, role }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.inviteLink) {
+        return { success: true, inviteLink: data.inviteLink };
+      }
+      return { success: false, error: data.detail || 'Failed to create invitation.' };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Failed to create invitation.' };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Reviews
   // ---------------------------------------------------------------------------
   async getReviews(orgId?: string): Promise<ReviewItem[]> {
@@ -328,23 +362,7 @@ class BrandSenseApiClient {
       console.warn('FastAPI backend submission failed or unreachable, checking local AI:', backendErr);
     }
 
-    // 2. Secondary: Client-side Gemini AI Review
-    if (isGeminiConfigured()) {
-      try {
-        const liveAiReview = await analyzeContentWithGemini(payload);
-        if (typeof window !== 'undefined') {
-          const userKey = data.authorId ? `brandsense_current_review_${data.authorId}` : 'brandsense_current_review';
-          localStorage.setItem(userKey, JSON.stringify(liveAiReview));
-          localStorage.setItem('brandsense_current_review', JSON.stringify(liveAiReview));
-          supabaseDataService.saveLocalReview(liveAiReview, orgId, data.authorId);
-        }
-        return liveAiReview;
-      } catch (geminiErr) {
-        console.warn('Gemini live analysis encountered issue, using fallback:', geminiErr);
-      }
-    }
-
-    // 3. Fallback: Local demo heuristic review
+    // 2. Fallback: Local demo heuristic review
     const fallbackReview = await supabaseDataService.createReview(payload);
     if (typeof window !== 'undefined' && fallbackReview) {
       const userKey = data.authorId ? `brandsense_current_review_${data.authorId}` : 'brandsense_current_review';
@@ -650,7 +668,24 @@ class BrandSenseApiClient {
     history: Array<{ role: 'user' | 'model' | 'sensa'; content: string }> = [],
     context?: any
   ): Promise<SensaMessage> {
-    // 1. Primary: Server-side Next.js route with multi-turn history
+    // 1. Primary: Authenticated backend SENSA endpoint with org knowledge + history
+    try {
+      const res = await this.fetchWithAuth('/sensa/chat', {
+        method: 'POST',
+        body: JSON.stringify({ prompt, history, context }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.content) {
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend SENSA endpoint unreachable, trying server route:', err);
+    }
+
+    // 2. Secondary: Server-side Next.js route with multi-turn history
     try {
       const res = await fetch('/api/sensa/chat', {
         method: 'POST',
@@ -665,16 +700,7 @@ class BrandSenseApiClient {
         }
       }
     } catch (err) {
-      console.warn('Server-side SENSA route unreachable, trying client fallback:', err);
-    }
-
-    // 2. Secondary: Direct client-side Gemini fallback with multi-turn
-    if (isGeminiConfigured()) {
-      try {
-        return await chatWithSensaGemini(prompt);
-      } catch (err) {
-        console.warn('Client Gemini call failed:', err);
-      }
+      console.warn('Server-side SENSA route unreachable, using local fallback:', err);
     }
 
     // 3. Fallback: Deterministic brand governance analysis

@@ -21,6 +21,7 @@ import { apiClient } from '@/services/api-client';
 import { authClient } from '@/services/auth-client';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getClientEnv } from '@/lib/env';
+import { OrganizationUser } from '@/types';
 
 type SettingsSection = 
   | 'profile' 
@@ -30,21 +31,6 @@ type SettingsSection =
   | 'notifications' 
   | 'transparency' 
   | 'security';
-
-interface TeamMember {
-  name: string;
-  email: string;
-  role: string;
-  dept: string;
-  status: string;
-}
-
-const INITIAL_TEAM_MEMBERS: TeamMember[] = [
-  { name: 'Elena Rostova', email: 'elena.rostova@brandsense.ai', role: 'Manager', dept: 'Brand & Global Marketing', status: 'Active' },
-  { name: 'Marcus Vance', email: 'm.vance@brandsense.ai', role: 'Reviewer', dept: 'Legal & Regulatory Compliance', status: 'Active' },
-  { name: 'Chloe Dubois', email: 'c.dubois@brandsense.ai', role: 'Creator', dept: 'Creative & Social Media', status: 'Active' },
-  { name: 'Devon Hayes', email: 'd.hayes@brandsense.ai', role: 'Admin', dept: 'Information Security & IT', status: 'Active' },
-];
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -97,58 +83,37 @@ export default function SettingsPage() {
   const [inviteRole, setInviteRole] = useState<'Creator' | 'Manager' | 'Reviewer' | 'Admin'>('Reviewer');
   const [inviteLink, setInviteLink] = useState('');
   
-  const [members, setMembers] = useState<TeamMember[]>(() => {
-    if (typeof window !== 'undefined' && user?.organizationId) {
-      const saved = localStorage.getItem(`brandsense_team_${user.organizationId}`);
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {}
-      }
-    }
-    if (user && !user.isDemo) {
-      return [
-        {
-          name: user.name,
-          email: user.email,
-          role: user.role || 'Brand Manager',
-          dept: user.department || 'Brand & Marketing',
-          status: 'Active (You)',
-        },
-      ];
-    }
-    return INITIAL_TEAM_MEMBERS;
-  });
+  const [members, setMembers] = useState<OrganizationUser[]>([]);
 
-  const handleSendInvite = (e: React.FormEvent) => {
+  React.useEffect(() => {
+    let cancelled = false;
+    apiClient.getUsers().then((users) => {
+      if (!cancelled) setMembers(users);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.organizationId]);
+
+  const handleSendInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim() || !inviteEmail.includes('@')) {
       toast('Please enter a valid email address.', 'error');
       return;
     }
 
-    const token = Math.random().toString(36).substring(2, 12);
-    const link = `${window.location.origin}/invite?token=${token}&email=${encodeURIComponent(inviteEmail)}&role=${encodeURIComponent(inviteRole)}&org=${encodeURIComponent(orgName)}`;
-    setInviteLink(link);
-    navigator.clipboard?.writeText(link);
-
-    const updatedMembers = [
-      {
-        name: inviteEmail.split('@')[0],
-        email: inviteEmail,
-        role: inviteRole,
-        dept: inviteRole === 'Reviewer' ? 'Legal & Regulatory' : 'Brand & Marketing',
-        status: 'Pending Invite',
-      },
-      ...members,
-    ];
-    setMembers(updatedMembers);
-
-    if (user?.organizationId) {
-      localStorage.setItem(`brandsense_team_${user.organizationId}`, JSON.stringify(updatedMembers));
+    const result = await apiClient.inviteUser(inviteEmail.trim(), inviteRole);
+    if (!result.success || !result.inviteLink) {
+      toast(result.error || 'Could not create invitation.', 'error');
+      return;
     }
 
-    toast(`Invitation link generated and copied to clipboard!`);
+    const link = `${window.location.origin}${result.inviteLink}`;
+    setInviteLink(link);
+    navigator.clipboard?.writeText(link);
+    const users = await apiClient.getUsers();
+    setMembers(users);
+    toast('Invitation link generated and copied to clipboard!');
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -244,7 +209,7 @@ export default function SettingsPage() {
   const navItems = [
     { id: 'profile', label: 'Personal Profile', icon: User },
     { id: 'organization', label: 'Organisation Settings', icon: Building2 },
-    { id: 'team', label: 'Team Members', icon: Users, badge: members.length > 0 ? String(members.length) : undefined },
+    { id: 'team', label: 'Users', icon: Users, badge: members.length > 0 ? String(members.length) : undefined },
     { id: 'roles', label: 'Roles & Permissions', icon: Shield },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'transparency', label: 'AI Transparency', icon: Eye },
@@ -262,7 +227,7 @@ export default function SettingsPage() {
               Enterprise Governance Settings
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-[#4F6576]">
-              Manage personal credentials, team authorizations, AI transparency policies, and security guardrails.
+              Manage personal credentials, user access, AI transparency policies, and security guardrails.
             </p>
           </div>
 
@@ -437,13 +402,13 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* 3. Team */}
+            {/* 3. Users */}
             {activeSection === 'team' && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="font-heading text-base font-bold text-[#20364A]">Team Members</h2>
-                    <p className="text-xs text-[#4F6576] mt-0.5">Authorised creators, managers, and legal reviewers.</p>
+                    <h2 className="font-heading text-base font-bold text-[#20364A]">Users</h2>
+                    <p className="text-xs text-[#4F6576] mt-0.5">Authorised creators, managers, and legal reviewers in this organisation.</p>
                   </div>
                   <Button size="sm" variant="primary" onClick={() => setIsInviteModalOpen(true)}>
                     Invite Member
@@ -451,10 +416,10 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="overflow-x-auto border border-[#C4D5E0] rounded-lg">
-                  <table className="w-full text-left text-xs" aria-label="Team members table">
+                  <table className="w-full text-left text-xs" aria-label="Organisation users table">
                     <thead className="bg-[#D5E3EC]/40 text-[#4F6576] uppercase tracking-wider text-xs font-bold border-b border-[#C4D5E0]">
                       <tr>
-                        <th scope="col" className="px-4 py-3">Member</th>
+                        <th scope="col" className="px-4 py-3">User</th>
                         <th scope="col" className="px-4 py-3">Role</th>
                         <th scope="col" className="px-4 py-3">Department</th>
                         <th scope="col" className="px-4 py-3">Status</th>
@@ -472,7 +437,7 @@ export default function SettingsPage() {
                               {m.role}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-[#4F6576]">{m.dept}</td>
+                          <td className="px-4 py-3 text-[#4F6576]">{m.department}</td>
                           <td className="px-4 py-3">
                             <span className={`font-bold flex items-center gap-1.5 ${
                               m.status === 'Active' ? 'text-[#1F7560]' : 'text-[#B77938]'
@@ -497,10 +462,10 @@ export default function SettingsPage() {
                     aria-modal="true"
                     aria-labelledby="invite-modal-title"
                   >
-                    <div className="bg-white rounded-xl max-w-md w-full shadow-elevated border border-[#C4D5E0] p-6 space-y-4">
+                    <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-elevated border border-[#C4D5E0] p-4 sm:p-6 space-y-4">
                       <div className="flex items-center justify-between pb-3 border-b border-[#C4D5E0]">
                         <h2 id="invite-modal-title" className="font-heading text-base font-bold text-[#20364A]">
-                          Invite Workspace Colleague
+                          Invite User to Workspace
                         </h2>
                         <button
                           type="button"
@@ -543,7 +508,7 @@ export default function SettingsPage() {
                             <option value="Creator">Creator (Submit copy, apply suggestions)</option>
                             <option value="Manager">Manager (Edit policies, manage reviews)</option>
                             <option value="Reviewer">Reviewer (Legal & compliance sign-off)</option>
-                            <option value="Admin">Admin (Workspace & team administration)</option>
+                            <option value="Admin">Admin (Workspace & user administration)</option>
                           </select>
                         </div>
 

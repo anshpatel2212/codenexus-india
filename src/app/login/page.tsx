@@ -31,7 +31,7 @@ const DEMO_PERSONAS: DemoPersona[] = [
     name: 'Julian Thorne',
     title: 'Brand Operations Director',
     department: 'BrandSense Demo Corp',
-    description: 'Manage brand guidelines, approved facts, terminology rules, team members, and compliance analytics.',
+    description: 'Manage brand guidelines, approved facts, terminology rules, user access, and compliance analytics.',
     badge: 'Recommended',
     badgeColor: 'bg-blue-100 text-blue-800 border-blue-200',
     avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
@@ -316,20 +316,20 @@ export default function LoginPage() {
           onClick={() => !demoLoadingRole && setIsDemoModalOpen(false)}
         >
           <div
-            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-[#D5E3EC] overflow-hidden animate-in zoom-in-95 duration-200"
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-[#D5E3EC] overflow-hidden animate-in zoom-in-95 duration-200 my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-gradient-to-r from-[#20364A] to-[#31566D] text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
-                  <Sparkles className="w-5 h-5 text-[#F4D77B]" />
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-gradient-to-r from-[#20364A] to-[#31566D] text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 flex-shrink-0">
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#F4D77B]" />
                 </div>
                 <div>
-                  <h3 id="demo-modal-title" className="text-base font-bold text-white leading-tight">
+                  <h3 id="demo-modal-title" className="text-sm sm:text-base font-bold text-white leading-tight">
                     Explore BrandSense Demo Workspace
                   </h3>
-                  <p className="text-xs text-white/80">
+                  <p className="text-[11px] sm:text-xs text-white/80 line-clamp-1 sm:line-clamp-none">
                     Select any role to experience the interconnected brand governance platform instantly.
                   </p>
                 </div>
@@ -337,7 +337,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => !demoLoadingRole && setIsDemoModalOpen(false)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
                 aria-label="Close dialog"
                 disabled={!!demoLoadingRole}
               >
@@ -346,7 +346,7 @@ export default function LoginPage() {
             </div>
 
             {/* Persona Grid */}
-            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[75vh] overflow-y-auto">
+            <div className="p-3.5 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3.5 max-h-[75vh] overflow-y-auto">
               {DEMO_PERSONAS.map((persona) => {
                 const isSelectedLoading = demoLoadingRole === persona.roleSlug;
                 return (
@@ -399,10 +399,10 @@ export default function LoginPage() {
             </div>
 
             {/* Modal Footer Note */}
-            <div className="px-6 py-3 bg-[#EDF3F6] border-t border-[#D5E3EC] flex items-center justify-between text-xs text-[#718494]">
+            <div className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[#EDF3F6] border-t border-[#D5E3EC] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 text-[11px] sm:text-xs text-[#718494]">
               <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                Interconnected demo organization: <strong>BrandSense Demo Corp</strong>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                <span>Interconnected demo organization: <strong>BrandSense Demo Corp</strong></span>
               </span>
               <span>All changes persist in sandbox session</span>
             </div>

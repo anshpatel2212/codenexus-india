@@ -415,13 +415,24 @@ async def get_review_revisions(
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        cur.execute("""
-            SELECT rev.*, u.full_name as author_name, u.role as author_role
-            FROM review_revisions rev
-            LEFT JOIN users u ON rev.author_id = u.id
-            WHERE rev.review_id = ?
-            ORDER BY rev.version_number DESC
-        """, (review_id,))
+        org_id = current_user.organization_id or "org-demo-brandsense"
+        if current_user.role == "Super Admin":
+            cur.execute("""
+                SELECT rev.*, u.full_name as author_name, u.role as author_role
+                FROM review_revisions rev
+                LEFT JOIN users u ON rev.author_id = u.id
+                WHERE rev.review_id = ?
+                ORDER BY rev.version_number DESC
+            """, (review_id,))
+        else:
+            cur.execute("""
+                SELECT rev.*, u.full_name as author_name, u.role as author_role
+                FROM review_revisions rev
+                JOIN reviews r ON r.id = rev.review_id
+                LEFT JOIN users u ON rev.author_id = u.id
+                WHERE rev.review_id = ? AND r.organization_id = ?
+                ORDER BY rev.version_number DESC
+            """, (review_id, org_id))
         rows = cur.fetchall()
         return [
             {
@@ -461,6 +472,8 @@ async def create_review_revision(
             raise HTTPException(status_code=404, detail="Parent review not found.")
 
         org_id = rev_row["organization_id"]
+        if current_user.role != "Super Admin" and org_id != (current_user.organization_id or "org-demo-brandsense"):
+            raise HTTPException(status_code=404, detail="Parent review not found.")
 
         # Calculate next version number
         cur.execute("SELECT MAX(version_number) FROM review_revisions WHERE review_id = ?", (review_id,))
@@ -494,8 +507,8 @@ async def create_review_revision(
         cur.execute("""
             UPDATE reviews
             SET original_content = ?, updated_at = ?
-            WHERE id = ?
-        """, (req.content, now_iso, review_id))
+            WHERE id = ? AND organization_id = ?
+        """, (req.content, now_iso, review_id, org_id))
 
         conn.commit()
     except HTTPException:
@@ -528,11 +541,20 @@ async def update_finding_status(
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        cur.execute("""
-            UPDATE findings 
-            SET status = ?, suggested_fix = COALESCE(?, suggested_fix)
-            WHERE id = ? AND review_id = ?
-        """, (req.status, req.suggestedFix, finding_id, review_id))
+        if current_user.role == "Super Admin":
+            cur.execute("""
+                UPDATE findings 
+                SET status = ?, suggested_fix = COALESCE(?, suggested_fix)
+                WHERE id = ? AND review_id = ?
+            """, (req.status, req.suggestedFix, finding_id, review_id))
+        else:
+            org_id = current_user.organization_id or "org-demo-brandsense"
+            cur.execute("""
+                UPDATE findings 
+                SET status = ?, suggested_fix = COALESCE(?, suggested_fix)
+                WHERE id = ? AND review_id = ?
+                  AND review_id IN (SELECT id FROM reviews WHERE organization_id = ?)
+            """, (req.status, req.suggestedFix, finding_id, review_id, org_id))
         
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Finding not found.")
@@ -596,7 +618,15 @@ async def rewrite_review_content(
         try:
             conn = get_db_connection()
             cur = conn.cursor()
-            cur.execute("SELECT reason FROM findings WHERE id = ? AND review_id = ?", (req.targetFindingId, review_id))
+            if current_user.role == "Super Admin":
+                cur.execute("SELECT reason FROM findings WHERE id = ? AND review_id = ?", (req.targetFindingId, review_id))
+            else:
+                org_id = current_user.organization_id or "org-demo-brandsense"
+                cur.execute("""
+                    SELECT f.reason FROM findings f
+                    JOIN reviews r ON r.id = f.review_id
+                    WHERE f.id = ? AND f.review_id = ? AND r.organization_id = ?
+                """, (req.targetFindingId, review_id, org_id))
             row = cur.fetchone()
             if row:
                 finding_reason = row["reason"]

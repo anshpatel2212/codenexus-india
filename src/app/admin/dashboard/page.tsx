@@ -40,7 +40,8 @@ export default function OrgAdminDashboardPage() {
         apiClient.getReviews(user.organizationId),
         apiClient.getKnowledgeBase(user.organizationId),
         apiClient.getApprovals(user.organizationId),
-      ]).then(([reviews, kb, approvals]) => {
+        apiClient.getUsers(),
+      ]).then(([reviews, kb, approvals, users]) => {
         const guidelines = (kb || []).filter((k: any) => k.type === 'guideline').length;
         const facts = (kb || []).filter((k: any) => k.type === 'fact').length;
         const pending = (approvals || []).filter((a: any) => a.status === 'Pending').length;
@@ -55,7 +56,7 @@ export default function OrgAdminDashboardPage() {
           totalReviews: reviews.length,
           guidelinesCount: guidelines,
           approvedFactsCount: facts,
-          teamMembersCount: user.isDemo ? 4 : 1,
+          teamMembersCount: users.length,
           pendingApprovals: pending,
           complianceScore: avgScore,
         });
@@ -65,7 +66,7 @@ export default function OrgAdminDashboardPage() {
     } else {
       setLoading(false);
     }
-  }, [user?.organizationId, user?.isDemo]);
+  }, [user?.organizationId]);
 
   return (
     <RoleShell role="Admin" title="Organisation Brand Governance Command Center">
@@ -181,7 +182,7 @@ export default function OrgAdminDashboardPage() {
             className="p-5 bg-white rounded-xl border border-[#C4D5E0] hover:border-[#416F89] shadow-subtle hover:shadow-dropdown transition-all group"
           >
             <Users className="w-5 h-5 text-[#315C74] mb-2" />
-            <h3 className="font-heading font-bold text-sm text-[#20364A]">Team &amp; Roles</h3>
+            <h3 className="font-heading font-bold text-sm text-[#20364A]">Users &amp; Access</h3>
             <p className="text-xs text-[#4F6576] mt-1">Invite creators, reviewers, and brand managers.</p>
           </Link>
         </div>

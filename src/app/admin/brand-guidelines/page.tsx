@@ -157,7 +157,7 @@ export default function AdminBrandGuidelinesPage() {
         {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#20364A]/50">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-elevated border border-[#C4D5E0] space-y-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-elevated border border-[#C4D5E0] space-y-4">
               <h3 className="font-heading font-bold text-base text-[#20364A]">Create Brand Guideline</h3>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>

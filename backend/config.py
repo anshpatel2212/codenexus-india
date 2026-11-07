@@ -60,8 +60,13 @@ class Settings(BaseSettings):
     NVIDIA_API_KEY: str = os.getenv("NVIDIA_API_KEY", "")
     NVIDIA_MODEL: str = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-4-340b-instruct")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     AI_MODEL_NAME: str = os.getenv("AI_MODEL_NAME", "nvidia/nemotron-4-340b-instruct")
+
+    # Application session signing secret (independent of Supabase identity keys)
+    APP_JWT_SECRET: str = os.getenv("APP_JWT_SECRET", "")
+    DATABASE_PATH: str = os.getenv("DATABASE_PATH", "")
 
     class Config:
         env_file = str(_backend_env) if _backend_env.exists() else (str(_root_env_local) if _root_env_local.exists() else ".env")
@@ -107,6 +112,14 @@ class Settings(BaseSettings):
             has_secret = bool(self.SUPABASE_JWT_SECRET and len(self.SUPABASE_JWT_SECRET) >= 16 and not any(p in self.SUPABASE_JWT_SECRET.lower() for p in ["placeholder", "your_jwt_secret", "your-jwt-secret"]))
             if not has_jwks and not has_secret:
                 missing.append("SUPABASE_JWKS_URL (or valid SUPABASE_URL) or SUPABASE_JWT_SECRET")
+            app_secret = self.APP_JWT_SECRET or self.SUPABASE_LEGACY_HS256_SECRET or self.SUPABASE_JWT_SECRET
+            if not app_secret or len(app_secret) < 32 or any(p in app_secret.lower() for p in ["placeholder", "change-me", "your-"]):
+                missing.append("APP_JWT_SECRET (32+ characters) or a valid SUPABASE_JWT_SECRET")
+            origins = self.BACKEND_CORS_ORIGINS
+            if isinstance(origins, str):
+                origins = [origin.strip() for origin in origins.split(",") if origin.strip()]
+            if not origins or "*" in origins:
+                missing.append("BACKEND_CORS_ORIGINS (explicit origins, wildcard is not allowed in production)")
             if missing:
                 raise RuntimeError(
                     f"Production startup blocked. Missing required environment variables: {', '.join(missing)}"

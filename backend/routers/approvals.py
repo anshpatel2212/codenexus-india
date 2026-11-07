@@ -119,13 +119,24 @@ async def get_approval_comments(
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        cur.execute("""
-            SELECT c.*, u.full_name as author_name, u.role as author_role
-            FROM approval_comments c
-            LEFT JOIN users u ON c.author_id = u.id
-            WHERE c.approval_id = ?
-            ORDER BY c.created_at ASC
-        """, (approval_id,))
+        if current_user.role == "Super Admin":
+            cur.execute("""
+                SELECT c.*, u.full_name as author_name, u.role as author_role
+                FROM approval_comments c
+                LEFT JOIN users u ON c.author_id = u.id
+                WHERE c.approval_id = ?
+                ORDER BY c.created_at ASC
+            """, (approval_id,))
+        else:
+            org_id = current_user.organization_id or "org-demo-brandsense"
+            cur.execute("""
+                SELECT c.*, u.full_name as author_name, u.role as author_role
+                FROM approval_comments c
+                JOIN approvals a ON a.id = c.approval_id
+                LEFT JOIN users u ON c.author_id = u.id
+                WHERE c.approval_id = ? AND a.organization_id = ?
+                ORDER BY c.created_at ASC
+            """, (approval_id, org_id))
         rows = cur.fetchall()
         return [
             {
@@ -170,6 +181,8 @@ async def execute_approval_decision(
         approval = cur.fetchone()
         if not approval:
             raise HTTPException(status_code=404, detail="Approval record not found.")
+        if current_user.role != "Super Admin" and approval["organization_id"] != (current_user.organization_id or "org-demo-brandsense"):
+            raise HTTPException(status_code=404, detail="Approval record not found.")
 
         target_review_id = req.reviewId or approval["review_id"]
         actual_approval_id = approval["id"]
@@ -186,8 +199,8 @@ async def execute_approval_decision(
             cur.execute("""
                 UPDATE reviews
                 SET status = ?, updated_at = ?
-                WHERE id = ?
-            """, (req.status, now_iso, target_review_id))
+                WHERE id = ? AND organization_id = ?
+            """, (req.status, now_iso, target_review_id, approval["organization_id"]))
 
         # If a decision note was provided, insert an audit decision comment
         if req.note:
@@ -240,7 +253,11 @@ async def add_approval_comment(
     try:
         cur.execute("SELECT organization_id FROM approvals WHERE id = ?", (approval_id,))
         row = cur.fetchone()
-        org_id = row["organization_id"] if row else (current_user.organization_id or "org-demo-brandsense")
+        if not row:
+            raise HTTPException(status_code=404, detail="Approval record not found.")
+        org_id = row["organization_id"] or "org-demo-brandsense"
+        if current_user.role != "Super Admin" and org_id != (current_user.organization_id or "org-demo-brandsense"):
+            raise HTTPException(status_code=404, detail="Approval record not found.")
 
         cur.execute("""
             INSERT INTO approval_comments (id, approval_id, author_id, organization_id, text, created_at)

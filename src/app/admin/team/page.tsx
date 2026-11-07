@@ -1,45 +1,47 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Users,
-  Plus,
   Mail,
   Copy,
   Check,
-  Shield,
-  UserCheck,
 } from 'lucide-react';
 import { RoleShell } from '@/components/layout/RoleShell';
 import { Button } from '@/components/ui/Button';
-import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
+import { apiClient } from '@/services/api-client';
+import { OrganizationUser } from '@/types';
 
 export default function AdminTeamPage() {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'Creator' | 'Reviewer' | 'Manager'>('Creator');
   const [inviteLink, setInviteLink] = useState('');
   const [copied, setCopied] = useState(false);
+  const [members, setMembers] = useState<OrganizationUser[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const teamMembers = user?.isDemo
-    ? [
-        { name: 'Julian Thorne', email: 'demo-admin@brandsense.ai', role: 'Admin', department: 'Executive Governance', status: 'Active' },
-        { name: 'Sarah Chen, Esq.', email: 'demo-reviewer@brandsense.ai', role: 'Reviewer', department: 'Legal & Regulatory Compliance', status: 'Active' },
-        { name: 'Marcus Vance', email: 'demo-creator@brandsense.ai', role: 'Creator', department: 'Growth Copywriting & Social', status: 'Active' },
-        { name: 'Elena Rostova', email: 'demo-manager@brandsense.ai', role: 'Manager', department: 'Brand & Global Marketing', status: 'Active' },
-      ]
-    : [
-        { name: user?.name || 'Administrator', email: user?.email || 'admin@company.com', role: 'Admin', department: user?.department || 'Brand Management', status: 'Active' },
-      ];
+  const loadUsers = async () => {
+    const users = await apiClient.getUsers();
+    setMembers(users);
+    setLoading(false);
+  };
 
-  const handleGenerateInvite = (e: React.FormEvent) => {
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const handleGenerateInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
 
-    const token = `inv-${Math.random().toString(36).substring(2, 10)}`;
-    const link = `${window.location.origin}/signup?token=${token}&role=${inviteRole}`;
+    const result = await apiClient.inviteUser(inviteEmail.trim(), inviteRole);
+    if (!result.success || !result.inviteLink) {
+      toast(result.error || 'Could not create invitation.', 'error');
+      return;
+    }
+    const link = `${window.location.origin}${result.inviteLink}`;
     setInviteLink(link);
     toast(`Invitation generated for ${inviteEmail}.`);
   };
@@ -52,17 +54,16 @@ export default function AdminTeamPage() {
   };
 
   return (
-    <RoleShell role="Admin" title="Team Members &amp; Role Assignments">
+    <RoleShell role="Admin" title="Users &amp; Access">
       <div className="space-y-6">
-        {/* Invite Box */}
         <div className="bg-white p-6 rounded-xl border border-[#C4D5E0] shadow-subtle space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-lg bg-blue-50 text-blue-700">
               <Mail className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-heading font-bold text-sm text-[#20364A]">Invite Team Colleague</h3>
-              <p className="text-xs text-[#4F6576]">Assign an authorized role with scoped workspace access.</p>
+              <h3 className="font-heading font-bold text-sm text-[#20364A]">Invite User</h3>
+              <p className="text-xs text-[#4F6576]">Assign an authorised role with scoped workspace access.</p>
             </div>
           </div>
 
@@ -77,7 +78,7 @@ export default function AdminTeamPage() {
             />
             <select
               value={inviteRole}
-              onChange={(e: any) => setInviteRole(e.target.value)}
+              onChange={(e) => setInviteRole(e.target.value as 'Creator' | 'Reviewer' | 'Manager')}
               className="px-3.5 py-2 border border-[#C4D5E0] rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#416F89]"
             >
               <option value="Creator">Creator (Drafts &amp; AI Scans)</option>
@@ -99,11 +100,15 @@ export default function AdminTeamPage() {
           )}
         </div>
 
-        {/* Members Table */}
         <div className="bg-white rounded-xl border border-[#C4D5E0] shadow-subtle overflow-hidden">
           <div className="p-5 border-b border-[#C4D5E0]">
-            <h3 className="font-heading font-bold text-sm text-[#20364A]">Active Team Members</h3>
-            <p className="text-xs text-[#4F6576]">All members authorized to access this organisation workspace</p>
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-[#416F89]" />
+              <h3 className="font-heading font-bold text-sm text-[#20364A]">Organisation Users</h3>
+            </div>
+            <p className="text-xs text-[#4F6576] mt-1">
+              Actual accounts with access to this organisation workspace
+            </p>
           </div>
 
           <div className="overflow-x-auto">
@@ -117,34 +122,48 @@ export default function AdminTeamPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#C4D5E0]">
-                {teamMembers.map((member, i) => (
-                  <tr key={i} className="hover:bg-[#F4F8FA] transition-colors">
-                    <td className="px-6 py-4 font-bold text-[#20364A]">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-[#20364A] text-white flex items-center justify-center font-bold text-xs">
-                          {member.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p>{member.name}</p>
-                          <p className="text-[11px] text-[#4F6576] font-normal">{member.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-[#D5E3EC] text-[#20364A]">
-                        {member.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-[#4F6576]">
-                      {member.department}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        {member.status}
-                      </span>
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-8 text-center text-[#4F6576]">
+                      Loading users...
                     </td>
                   </tr>
-                ))}
+                ) : members.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-8 text-center text-[#4F6576]">
+                      No users found for this organisation.
+                    </td>
+                  </tr>
+                ) : (
+                  members.map((member) => (
+                    <tr key={member.id} className="hover:bg-[#F4F8FA] transition-colors">
+                      <td className="px-6 py-4 font-bold text-[#20364A]">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-[#20364A] text-white flex items-center justify-center font-bold text-xs">
+                            {member.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p>{member.name}</p>
+                            <p className="text-[11px] text-[#4F6576] font-normal">{member.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-[#D5E3EC] text-[#20364A]">
+                          {member.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-[#4F6576]">
+                        {member.department}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {member.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -153,4 +172,3 @@ export default function AdminTeamPage() {
     </RoleShell>
   );
 }
-

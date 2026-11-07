@@ -285,7 +285,7 @@ export default function KnowledgeBasePage() {
           aria-modal="true"
           aria-labelledby="add-rule-modal-title"
         >
-          <div className="bg-white rounded-xl max-w-lg w-full shadow-elevated border border-[#C4D5E0] p-6 animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-elevated border border-[#C4D5E0] p-4 sm:p-6 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 border-b border-[#C4D5E0]">
               <h2 id="add-rule-modal-title" className="font-heading text-base font-bold text-[#20364A]">
                 Add New {tabsConfig.find(t => t.id === activeTab)?.label.slice(0, -1)}
@@ -382,7 +382,7 @@ export default function KnowledgeBasePage() {
           aria-modal="true"
           aria-labelledby="upload-rule-modal-title"
         >
-          <div className="bg-white rounded-xl max-w-lg w-full shadow-elevated border border-[#C4D5E0] p-6 animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-elevated border border-[#C4D5E0] p-4 sm:p-6 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 border-b border-[#C4D5E0]">
               <h2 id="upload-rule-modal-title" className="font-heading text-base font-bold text-[#20364A]">
                 Upload Brand Guideline or Legal File
@@ -432,7 +432,7 @@ export default function KnowledgeBasePage() {
           aria-modal="true"
           aria-labelledby="preview-rule-modal-title"
         >
-          <div className="bg-white rounded-xl max-w-xl w-full shadow-elevated border border-[#C4D5E0] p-6 animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-elevated border border-[#C4D5E0] p-4 sm:p-6 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 border-b border-[#C4D5E0]">
               <div className="flex items-center gap-2">
                 <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-[#D5E3EC] text-[#20364A]">

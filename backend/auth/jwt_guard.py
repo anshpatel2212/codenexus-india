@@ -14,7 +14,18 @@ from backend.services.db import get_db_connection
 logger = logging.getLogger("brandsense.auth")
 security = HTTPBearer(auto_error=False)
 
-APP_JWT_SECRET = settings.SUPABASE_LEGACY_HS256_SECRET or settings.SUPABASE_JWT_SECRET or "brandsense-secure-enterprise-jwt-key-32-chars-min"
+APP_JWT_SECRET = (
+    settings.APP_JWT_SECRET
+    or settings.SUPABASE_LEGACY_HS256_SECRET
+    or settings.SUPABASE_JWT_SECRET
+)
+if not APP_JWT_SECRET:
+    if settings.is_production():
+        raise RuntimeError(
+            "APP_JWT_SECRET or SUPABASE_JWT_SECRET must be configured in production."
+        )
+    # Local-development-only fallback. Never used when ENVIRONMENT=production.
+    APP_JWT_SECRET = "brandsense-local-development-only-jwt-key"
 
 def create_access_token(user_data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
     """Generate a signed HS256 JWT access token for persistent backend session authentication."""

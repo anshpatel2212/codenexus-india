@@ -8,8 +8,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
 
-DB_DIR = Path(__file__).resolve().parent.parent / "data"
-DB_PATH = DB_DIR / "brandsense.db"
+_configured_db_path = os.getenv("DATABASE_PATH", "").strip()
+if _configured_db_path:
+    DB_PATH = Path(_configured_db_path).expanduser().resolve()
+    DB_DIR = DB_PATH.parent
+else:
+    DB_DIR = Path(__file__).resolve().parent.parent / "data"
+    DB_PATH = DB_DIR / "brandsense.db"
 
 def get_db_connection() -> sqlite3.Connection:
     DB_DIR.mkdir(parents=True, exist_ok=True)

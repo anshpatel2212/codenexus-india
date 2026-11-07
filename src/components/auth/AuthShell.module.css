@@ -12,9 +12,17 @@
 }
 
 .pageLogin {
-  height: 100vh;
-  max-height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  height: auto;
+  overflow-x: hidden;
+}
+
+@media (min-width: 1024px) and (min-height: 820px) {
+  .pageLogin {
+    height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto;
+  }
 }
 
 .page h1,
@@ -608,424 +616,261 @@
   cursor: not-allowed;
 }
 
-/* RESPONSIVE */
+/* ==========================================================================
+   UNIFIED RESPONSIVE SYSTEM (320px, 360px, 375px, 430px, 768px, 1024px+)
+   ========================================================================== */
 
-@media (max-width: 800px) {
+/* Tablet & Mobile Screens (<= 840px) */
+@media (max-width: 840px) {
   .nav {
-    padding: 0 6%;
-    height: 70px;
+    padding: 0 16px;
+    height: 60px;
   }
 
   .main,
   .loginMain {
-    padding: 25px 16px 40px;
+    padding: 12px 14px 28px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
   }
 
-  .wrapper {
-    max-width: 500px;
+  .wrapper,
+  .loginWrapper,
+  .registerWrapper {
+    width: 100%;
+    max-width: 460px;
+    min-height: auto;
+    max-height: none !important;
     grid-template-columns: 1fr;
+    border-radius: 20px;
+    box-shadow: 0 15px 45px rgba(32, 54, 74, 0.08);
   }
 
+  /* Compact Branded Hero Banner at top of card */
   .welcomePanel {
-    padding: 35px;
-    min-height: 250px;
+    padding: 22px 22px 18px;
+    min-height: auto;
+    border-radius: 20px 20px 0 0;
   }
 
-  .welcomePanel h1 {
-    font-size: 32px;
+  .welcomePanel::before {
+    width: 260px;
+    height: 260px;
+    right: -100px;
+    top: -90px;
   }
 
-  .welcomePanel p {
-    font-size: 13px;
+  .welcomePanel::after {
+    width: 180px;
+    height: 180px;
+    right: -40px;
+    top: -40px;
   }
 
   .welcomeBadge {
-    margin-bottom: 20px;
+    margin-bottom: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    display: inline-flex;
   }
 
+  .welcomePanel h1 {
+    font-size: 20px;
+    line-height: 1.25;
+    margin-bottom: 6px;
+  }
+
+  .welcomePanel p {
+    font-size: 12px;
+    line-height: 1.45;
+    opacity: 0.9;
+    margin: 0;
+  }
+
+  /* Internal card credits hidden on mobile so they don't overlap */
   .welcomeBottom {
-    margin-top: 30px;
+    display: none !important;
   }
 
   .formPanel,
   .formPanelLogin {
-    padding: 40px 30px;
-  }
-}
-
-@media (max-width: 420px) {
-  .formPanel,
-  .formPanelLogin {
-    padding: 35px 22px;
+    padding: 26px 22px 28px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
-  .welcomePanel {
-    padding: 30px 25px;
+  .formHeading {
+    margin-bottom: 18px;
   }
 
   .formHeading h2 {
-    font-size: 28px;
-  }
-}
-
-/* LOGIN PAGE — KEEP THE FORM ABOVE THE FOLD */
-
-.pageLogin .loginMain {
-  padding: 26px 20px 40px;
-}
-
-.pageLogin .loginWrapper {
-  min-height: 560px;
-}
-
-.pageLogin .formPanelLogin {
-  padding: 44px 56px;
-}
-
-.pageLogin .formPanelLogin .formHeading {
-  margin-bottom: 26px;
-}
-
-.pageLogin .formPanelLogin .formGroup {
-  margin-bottom: 16px;
-}
-
-.pageLogin .formPanelLogin .formGroup label {
-  margin-bottom: 7px;
-}
-
-.pageLogin .formPanelLogin .inputWrapper input {
-  height: 50px;
-}
-
-.pageLogin .formPanelLogin .formOptions {
-  margin: 2px 0 20px;
-}
-
-.pageLogin .formPanelLogin .primaryBtn {
-  height: 51px;
-}
-
-.pageLogin .formPanelLogin .divider {
-  margin: 20px 0;
-}
-
-.pageLogin .formPanelLogin .securityNote {
-  margin-top: 22px;
-}
-
-.pageLogin .formPanelLogin .demoRow {
-  margin-top: 10px;
-}
-
-@media (max-height: 820px) {
-  .pageLogin .loginMain {
-    padding: 12px 20px 16px;
+    font-size: 24px;
+    line-height: 1.2;
+    margin-bottom: 4px;
   }
 
-  .pageLogin .loginWrapper {
-    min-height: 0;
+  .formHeading p {
+    font-size: 13px;
   }
 
-  .pageLogin .formPanelLogin {
-    padding: 28px 48px;
-  }
-
-  .pageLogin .formPanelLogin .formHeading {
-    margin-bottom: 18px;
-  }
-
-  .pageLogin .formPanelLogin .formGroup {
-    margin-bottom: 12px;
-  }
-
-  .pageLogin .formPanelLogin .formGroup label {
-    margin-bottom: 6px;
-  }
-
-  .pageLogin .formPanelLogin .inputWrapper input {
-    height: 46px;
-  }
-
-  .pageLogin .formPanelLogin .formOptions {
-    margin: 1px 0 16px;
-  }
-
-  .pageLogin .formPanelLogin .primaryBtn {
-    height: 48px;
-  }
-
-  .pageLogin .formPanelLogin .divider {
-    margin: 15px 0;
-  }
-
-  .pageLogin .formPanelLogin .securityNote {
-    margin-top: 16px;
-  }
-
-  .pageLogin .formPanelLogin .demoRow {
-    margin-top: 8px;
-  }
-
-  .pageLogin .welcomePanel {
-    padding: 45px;
-  }
-}
-
-@media (max-width: 800px) {
-  .pageLogin .loginMain {
-    padding: 16px 16px 24px;
-  }
-
-  .pageLogin .welcomePanel {
-    min-height: 0;
-    padding: 24px 28px;
-  }
-
-  .pageLogin .welcomePanel h1 {
-    font-size: 26px;
-    margin-bottom: 10px;
-  }
-
-  .pageLogin .welcomePanel p {
-    display: none;
-  }
-
-  .pageLogin .welcomeBadge {
-    margin-bottom: 14px;
-    padding: 7px 12px;
-    font-size: 12px;
-  }
-
-  .pageLogin .welcomeBottom {
-    display: none;
-  }
-
-  .pageLogin .formPanelLogin {
-    padding: 30px;
-  }
-
-  .pageLogin .formPanelLogin .formHeading {
-    margin-bottom: 20px;
-  }
-
-  .pageLogin .formPanelLogin .formGroup {
+  .formGroup {
     margin-bottom: 13px;
   }
 
-  .pageLogin .formPanelLogin .formGroup label {
-    margin-bottom: 6px;
-  }
-
-  .pageLogin .formPanelLogin .inputWrapper input {
-    height: 46px;
-  }
-
-  .pageLogin .formPanelLogin .formOptions {
-    margin: 1px 0 16px;
-  }
-
-  .pageLogin .formPanelLogin .primaryBtn {
-    height: 48px;
-  }
-
-  .pageLogin .formPanelLogin .divider {
-    margin: 15px 0;
-  }
-
-  .pageLogin .formPanelLogin .securityNote {
-    margin-top: 16px;
-  }
-
-  .pageLogin .formPanelLogin .demoRow {
-    margin-top: 8px;
-  }
-}
-
-/* REGISTER PAGE — COMPACT, NO SCROLL */
-
-.pageRegister .main {
-  padding: 24px 20px 30px;
-}
-
-.pageRegister .registerWrapper {
-  min-height: 0;
-}
-
-.pageRegister .welcomePanel {
-  padding: 50px 48px;
-}
-
-.pageRegister .welcomePanel h1 {
-  font-size: clamp(30px, 3.6vw, 42px);
-}
-
-.pageRegister .formPanel {
-  padding: 36px 54px;
-}
-
-.pageRegister .formHeading {
-  margin-bottom: 20px;
-}
-
-.pageRegister .formGroup {
-  margin-bottom: 11px;
-}
-
-.pageRegister .formGroup label {
-  margin-bottom: 5px;
-}
-
-.pageRegister .inputWrapper input {
-  height: 46px;
-}
-
-.pageRegister .terms {
-  margin: 2px 0 16px;
-}
-
-.pageRegister .primaryBtn {
-  height: 48px;
-}
-
-@media (max-height: 820px) {
-  .pageRegister .main {
-    padding: 12px 20px 16px;
-  }
-
-  .pageRegister .welcomePanel {
-    padding: 38px;
-  }
-
-  .pageRegister .formPanel {
-    padding: 24px 44px;
-  }
-
-  .pageRegister .formHeading {
-    margin-bottom: 16px;
-  }
-
-  .pageRegister .formGroup {
-    margin-bottom: 9px;
-  }
-
-  .pageRegister .formGroup label {
-    margin-bottom: 4px;
-  }
-
-  .pageRegister .inputWrapper input {
-    height: 43px;
-  }
-
-  .pageRegister .terms {
-    margin: 0 0 12px;
-  }
-
-  .pageRegister .primaryBtn {
-    height: 45px;
-  }
-}
-
-@media (max-width: 800px) {
-  .pageRegister .main {
-    padding: 16px;
-  }
-
-  .pageRegister .welcomePanel {
-    display: none;
-  }
-
-  .pageRegister .formPanel {
-    padding: 28px 24px;
-  }
-
-  .pageRegister .formHeading {
-    margin-bottom: 18px;
-  }
-
-  .pageRegister .formGroup {
-    margin-bottom: 10px;
-  }
-
-  .pageRegister .formGroup label {
+  .formGroup label {
+    font-size: 12px;
     margin-bottom: 5px;
   }
 
-  .pageRegister .inputWrapper input {
-    height: 44px;
-  }
-
-  .pageRegister .terms {
-    margin: 2px 0 14px;
-  }
-
-  .pageRegister .primaryBtn {
+  .inputWrapper input {
     height: 46px;
+    font-size: 14px;
+  }
+
+  .formOptions {
+    margin: 4px 0 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .primaryBtn {
+    height: 48px;
+    font-size: 14px;
+  }
+
+  .exploreDemoBtn {
+    height: 42px;
+    font-size: 13px;
+  }
+
+  .divider {
+    margin: 16px 0;
+  }
+
+  .securityNote {
+    margin-top: 14px;
+  }
+
+  .switchText {
+    margin-top: 14px;
   }
 }
 
-@media (max-width: 800px) and (max-height: 740px) {
-  .pageLogin .welcomePanel,
-  .pageRegister .welcomePanel {
-    display: none;
+/* Small to Standard Mobile Screens (<= 430px) */
+@media (max-width: 430px) {
+  .nav {
+    padding: 0 12px;
+    height: 52px;
   }
 
-  .pageLogin .loginMain,
-  .pageRegister .main {
-    padding: 10px 14px 14px;
+  .main,
+  .loginMain {
+    padding: 8px 10px 24px;
   }
 
-  .pageLogin .formPanelLogin,
-  .pageRegister .formPanel {
-    padding: 20px 22px;
+  .wrapper,
+  .loginWrapper,
+  .registerWrapper {
+    max-width: 100%;
+    border-radius: 18px;
   }
 
-  .pageLogin .formPanelLogin .formHeading,
-  .pageRegister .formHeading {
-    margin-bottom: 12px;
+  .welcomePanel {
+    padding: 16px 16px 14px;
+    border-radius: 18px 18px 0 0;
   }
 
-  .pageRegister .formHeading p {
-    display: none;
+  .welcomePanel h1 {
+    font-size: 18px;
   }
 
-  .pageLogin .formPanelLogin .formGroup,
-  .pageRegister .formGroup {
-    margin-bottom: 8px;
+  .welcomePanel p {
+    font-size: 11px;
+    line-height: 1.4;
   }
 
-  .pageLogin .formPanelLogin .formGroup label,
-  .pageRegister .formGroup label {
-    margin-bottom: 4px;
+  .formPanel,
+  .formPanelLogin {
+    padding: 20px 16px 22px;
   }
 
-  .pageLogin .formPanelLogin .inputWrapper input,
-  .pageRegister .inputWrapper input {
-    height: 41px;
+  .formHeading h2 {
+    font-size: 21px;
   }
 
-  .pageRegister .terms {
-    margin: 0 0 10px;
+  .formHeading p {
     font-size: 12px;
   }
 
-  .pageLogin .formPanelLogin .primaryBtn,
-  .pageRegister .primaryBtn {
-    height: 43px;
+  .inputWrapper input {
+    height: 44px;
+    padding: 0 14px;
+    font-size: 14px;
   }
 
-  .pageLogin .formPanelLogin .securityNote {
-    margin-top: 12px;
+  .inputWrapper input[data-has-toggle="true"] {
+    padding-right: 56px;
   }
 
-  .pageLogin .formPanelLogin .demoRow {
-    margin-top: 6px;
-  }
-
-  .pageLogin .formPanelLogin .switchText,
-  .pageRegister .switchText {
-    margin-top: 12px;
+  .passwordToggle {
+    right: 12px;
     font-size: 12px;
+  }
+
+  .formOptions {
+    font-size: 12px;
+    margin: 2px 0 14px;
+  }
+
+  .primaryBtn {
+    height: 45px;
+    font-size: 13px;
+  }
+
+  .exploreDemoBtn {
+    height: 40px;
+    font-size: 12px;
+  }
+}
+
+/* Extra-Small Mobile Screens (<= 360px) */
+@media (max-width: 360px) {
+  .main,
+  .loginMain {
+    padding: 6px 8px 20px;
+  }
+
+  .welcomePanel {
+    padding: 14px 14px 12px;
+  }
+
+  .welcomePanel p {
+    display: none;
+  }
+
+  .welcomeBadge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .welcomePanel h1 {
+    font-size: 16px;
+  }
+
+  .formPanel,
+  .formPanelLogin {
+    padding: 16px 12px 18px;
+  }
+
+  .formHeading h2 {
+    font-size: 19px;
+  }
+
+  .formOptions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
   }
 }
 
@@ -1035,6 +880,13 @@
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-top: 4px;
+}
+
+@media (max-width: 480px) {
+  .roleSelectorGrid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }
 
 .roleCard {

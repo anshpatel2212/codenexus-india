@@ -114,27 +114,23 @@ export class BrandSenseSupabaseClient {
       };
     },
 
-    signUp: async ({ email, password, options }: any): Promise<{ data: any; error: any }> => {
+    signUp: async (_credentials: any): Promise<{ data: any; error: any }> => {
       return {
-        data: {
-          user: { id: `usr-${Date.now()}`, email, user_metadata: options?.data || {} },
-          session: null,
+        data: { user: null, session: null },
+        error: {
+          message:
+            'Supabase authentication is not configured. Sign-up requires the BrandSense backend service.',
         },
-        error: null,
       };
     },
 
-    signInWithPassword: async ({ email, password }: any): Promise<{ data: any; error: any }> => {
+    signInWithPassword: async (_credentials: any): Promise<{ data: any; error: any }> => {
       return {
-        data: {
-          user: { id: `usr-${Date.now()}`, email },
-          session: {
-            access_token: 'mock-access-token',
-            token_type: 'bearer',
-            user: { id: `usr-${Date.now()}`, email },
-          },
+        data: { user: null, session: null },
+        error: {
+          message:
+            'Supabase authentication is not configured. Sign-in requires the BrandSense backend service.',
         },
-        error: null,
       };
     },
 

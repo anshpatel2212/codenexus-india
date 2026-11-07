@@ -31,7 +31,6 @@ import { RequireAuth } from '@/components/auth/RequireAuth';
 import { authClient, getDashboardRouteForRole } from '@/services/auth-client';
 import { apiClient } from '@/services/api-client';
 import { ApprovalItem } from '@/types';
-import { TeamCredit } from '@/components/ui/TeamCredit';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -528,18 +527,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 {children}
               </div>
               <div className="pt-8 pb-4 border-t border-[#D5E3EC]/60 mt-10">
-                <TeamCredit />
+                <p className="text-center text-[11px] font-medium text-[#718494]">
+                  © 2026 BrandSense. All rights reserved.
+                </p>
               </div>
             </main>
           </div>
         </div>
 
         {pathname !== '/assistant' && (
-          <div className="fixed bottom-6 right-6 z-40">
+          <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
             <button
               type="button"
               onClick={() => setSensaOpen(!sensaOpen)}
-              className="group flex items-center gap-2.5 px-4 py-3 bg-[#20364A] hover:bg-[#315C74] text-white rounded-full shadow-elevated transition-colors active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] focus-visible:ring-offset-2"
+              className="group flex items-center gap-2 px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm bg-[#20364A] hover:bg-[#315C74] text-white rounded-full shadow-elevated transition-colors active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] focus-visible:ring-offset-2"
               aria-label="Open SENSA Brand Intelligence Assistant"
             >
               <Sparkles className="w-4 h-4 text-[#F4D77B] flex-shrink-0" aria-hidden="true" />

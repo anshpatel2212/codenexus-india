@@ -1,8 +1,5 @@
-import os
-import json
-import urllib.request
 from typing import Dict, Any, List, Optional
-from backend.config import settings
+from backend.services.gemini_interactions import generate_json, get_gemini_api_key
 from backend.services.supabase_admin import supabase_admin
 
 class SensaRAGService:
@@ -19,75 +16,96 @@ class SensaRAGService:
         2. Falls back to deterministic rule matching.
         """
         knowledge = await supabase_admin.get_brand_knowledge(org_id)
-        
-        gemini_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY") or os.getenv("NEXT_PUBLIC_GEMINI_API_KEY")
+        gemini_key = get_gemini_api_key()
+
         if gemini_key:
             try:
+                knowledge_lines: List[str] = []
+                for item in (knowledge or [])[:20]:
+                    title = item.get("title") or item.get("type") or "Brand rule"
+                    content = item.get("content") or ""
+                    if content:
+                        knowledge_lines.append(f"- {title}: {content}")
+                knowledge_context = "\n".join(knowledge_lines) or "No organisation-specific rules were retrieved."
+
+                history_lines: List[str] = []
+                for item in (history or [])[-10:]:
+                    content = str(item.get("content") or "").strip()
+                    if not content:
+                        continue
+                    is_user = item.get("role") == "user" or item.get("sender") == "user"
+                    history_lines.append(f"{'User' if is_user else 'SENSA'}: {content}")
+                transcript = "\n".join(history_lines) if history_lines else "No previous turns."
+
                 system_prompt = """
 You are SENSA, the intelligent brand governance copilot for BrandSense.
-Creators and marketers ask you questions about tone, claim validity, trademark terms, and brand rules, or have a multi-turn conversation with you.
-Always respond authoritatively, constructively, and empathetically, maintaining conversational context across turns.
-CRITICAL RULES:
-- Quote specific brand policy citations (e.g. 'Global Legal Guardrails 2026.pdf (Section 4.2)').
-- Always provide a clean, compliant rewrite suggestion (suggestedFix) that creators can click to copy.
-- Return response strictly as JSON with keys: content, confidence, requiresHumanReview, citations, suggestedFix.
+Answer the user's latest message using the conversation history and the organisation's active brand knowledge.
+Be authoritative, constructive, and empathetic. Never invent policy citations.
+If the user asks to shorten, rewrite, or refine a previous answer, perform that transformation on the relevant prior content.
+Return a JSON object matching the provided schema.
 """
-                # Format multi-turn contents
-                contents: List[Dict[str, Any]] = []
-                if history:
-                    for item in history[-8:]:
-                        c = item.get("content", "")
-                        if not c or not str(c).strip():
-                            continue
-                        is_user = item.get("role") == "user" or item.get("sender") == "user"
-                        contents.append({
-                            "role": "user" if is_user else "model",
-                            "parts": [{"text": str(c).strip()}]
-                        })
 
-                if not contents:
-                    current_turn = f"{system_prompt}\n\nUSER PROMPT:\n{prompt}"
-                else:
-                    current_turn = prompt
+                prompt = f"""ACTIVE BRAND KNOWLEDGE:
+{knowledge_context}
 
-                contents.append({
-                    "role": "user",
-                    "parts": [{"text": current_turn}]
-                })
+CONVERSATION SO FAR:
+{transcript}
 
-                models = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-flash-latest"]
-                for model in models:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
-                    payload = {
-                        "contents": contents,
-                        "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2}
+LATEST USER MESSAGE:
+{prompt}
+"""
+
+                schema = {
+                    "type": "object",
+                    "properties": {
+                        "content": {"type": "string"},
+                        "confidence": {"type": "integer"},
+                        "requiresHumanReview": {"type": "boolean"},
+                        "citations": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {"type": "string"},
+                                    "document": {"type": "string"},
+                                    "section": {"type": "string"},
+                                    "confidence": {"type": "integer"},
+                                },
+                                "required": ["title", "document", "section", "confidence"],
+                            },
+                        },
+                        "suggestedFix": {"type": "string"},
+                    },
+                    "required": ["content", "confidence", "requiresHumanReview", "citations"],
+                }
+
+                parsed = generate_json(
+                    prompt,
+                    schema,
+                    system_instruction=system_prompt,
+                    temperature=0.2,
+                    timeout=30,
+                )
+                raw_citations = parsed.get("citations") or []
+                citations = [
+                    c if isinstance(c, dict) else {
+                        "title": str(c),
+                        "document": str(c).split("(")[0].strip(),
+                        "section": str(c).split("(")[1].rstrip(")") if "(" in str(c) else "",
+                        "confidence": 95,
                     }
-                    req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
-                    try:
-                        with urllib.request.urlopen(req, timeout=10) as resp:
-                            res = json.loads(resp.read().decode("utf-8"))
-                            raw = res["candidates"][0]["content"]["parts"][0]["text"]
-                            parsed = json.loads(raw)
-                            return {
-                                "id": f"sensa-res-{uuid_time()}",
-                                "sender": "sensa",
-                                "timestamp": "Just now",
-                                "content": parsed.get("content", ""),
-                                "confidence": parsed.get("confidence", 95),
-                                "requiresHumanReview": parsed.get("requiresHumanReview", True),
-                                "citations": [
-                                    c if isinstance(c, dict) else {
-                                        "title": str(c),
-                                        "document": str(c).split("(")[0].strip(),
-                                        "section": str(c).split("(")[1].rstrip(")") if "(" in str(c) else "",
-                                        "confidence": 95
-                                    }
-                                    for c in parsed.get("citations", [])
-                                ],
-                                "suggestedFix": parsed.get("suggestedFix"),
-                            }
-                    except Exception:
-                        continue
+                    for c in raw_citations
+                ]
+                return {
+                    "id": f"sensa-res-{uuid_time()}",
+                    "sender": "sensa",
+                    "timestamp": "Just now",
+                    "content": parsed.get("content", ""),
+                    "confidence": parsed.get("confidence", 95),
+                    "requiresHumanReview": parsed.get("requiresHumanReview", True),
+                    "citations": citations,
+                    "suggestedFix": parsed.get("suggestedFix"),
+                }
             except Exception as e:
                 print(f"Gemini Sensa chat backend fallback: {e}")
 

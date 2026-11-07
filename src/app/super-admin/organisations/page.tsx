@@ -167,7 +167,7 @@ export default function SuperAdminOrganisationsPage() {
                   <th className="px-6 py-3.5">Organisation</th>
                   <th className="px-6 py-3.5">Tenant Slug / ID</th>
                   <th className="px-6 py-3.5">Subscription Tier</th>
-                  <th className="px-6 py-3.5">Team Members</th>
+                  <th className="px-6 py-3.5">Users</th>
                   <th className="px-6 py-3.5">Reviews Scanned</th>
                   <th className="px-6 py-3.5">Status</th>
                   <th className="px-6 py-3.5 text-right">Actions</th>
@@ -241,7 +241,7 @@ export default function SuperAdminOrganisationsPage() {
         {/* Create Modal */}
         {showCreateModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#20364A]/50">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-elevated border border-[#C4D5E0] space-y-4">
+            <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-elevated border border-[#C4D5E0] space-y-4">
               <h3 className="font-heading font-bold text-base text-[#20364A]">Provision New Organisation</h3>
               <form onSubmit={handleCreateOrg} className="space-y-4">
                 <div>

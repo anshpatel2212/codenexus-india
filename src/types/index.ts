@@ -168,3 +168,15 @@ export interface UserProfile {
   supabaseUserId?: string;
   isDemo?: boolean;
 }
+
+export interface OrganizationUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'Super Admin' | 'Admin' | 'Creator' | 'Manager' | 'Reviewer';
+  department: string;
+  status: string;
+  isDemo?: boolean;
+  organizationId?: string;
+  organisation?: string;
+}

@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const CANDIDATE_MODELS = [
-  'gemini-flash-lite-latest',
-  'gemini-3.1-flash-lite-preview',
-  'gemini-3-flash-preview',
-  'gemini-flash-latest',
-];
+const INTERACTIONS_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
 
 interface ChatHistoryItem {
   role?: string;
@@ -35,7 +31,6 @@ function getDeterministicFallback(prompt: string, history: ChatHistoryItem[] = [
     lower.includes('right side') ||
     lower.includes('click here');
 
-  // Check conversational follow-ups with history
   const previousAssistantMsg = [...history].reverse().find(
     (h) => h.role === 'model' || h.role === 'sensa' || h.sender === 'sensa'
   );
@@ -63,86 +58,88 @@ function getDeterministicFallback(prompt: string, history: ChatHistoryItem[] = [
   return 'Your query aligns well with BrandSense institutional brand governance principles. The tone is constructive, professional, and clear. Let me know if you need specific guidance on brand voice, terminology, or compliance!';
 }
 
+function extractOutputText(payload: any): string {
+  const chunks: string[] = [];
+  for (const step of payload?.steps || []) {
+    if (step?.type !== 'model_output') continue;
+    for (const part of step?.content || []) {
+      if (part?.type === 'text' && part?.text) chunks.push(part.text);
+    }
+  }
+  return chunks.join('').trim();
+}
+
 async function callGemini(apiKey: string, prompt: string, history: ChatHistoryItem[] = []): Promise<string> {
-  const systemPrompt = `
-You are SENSA, the intelligent AI brand assistant and copilot for BrandSense.
+  const historyLines = history
+    .slice(-10)
+    .filter((item) => item.content && item.content.trim())
+    .map((item) => {
+      const isUser = item.role === 'user' || item.sender === 'user';
+      return `${isUser ? 'User' : 'SENSA'}: ${item.content.trim()}`;
+    });
+
+  const systemPrompt = `You are SENSA, the intelligent AI brand assistant and copilot for BrandSense.
 Creators and marketers ask you questions about tone, claim validity, trademark terms, and brand rules, or have a multi-turn conversation with you.
 Always respond helpfully, constructively, and empathetically.
 Respond directly to whatever the user says or asks, maintaining context from previous turns in the conversation.
+If the user asks for a follow-up (e.g. "make it shorter", "rewrite that"), use the preceding conversation context.
+Return JSON matching the requested schema with the complete conversational answer in the "content" field.`;
 
-CRITICAL RULES:
-- Provide your complete conversational answer or greeting directly in the "content" field.
-- If the user asks for a follow-up (e.g. "make it shorter", "rewrite that"), use the preceding conversation context.
-- Return response strictly as JSON with key "content".
-`;
+  const input = `CONVERSATION SO FAR:
+${historyLines.length ? historyLines.join('\n') : 'No previous turns.'}
 
-  // Format multi-turn contents
-  const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
+LATEST USER MESSAGE:
+${prompt}`;
 
-  // Add previous turns (up to last 10 turns to stay within context limits)
-  const recentHistory = history.slice(-10);
-  for (const item of recentHistory) {
-    if (!item.content || !item.content.trim()) continue;
-    const isUser = item.role === 'user' || item.sender === 'user';
-    contents.push({
-      role: isUser ? 'user' : 'model',
-      parts: [{ text: item.content.trim() }],
-    });
-  }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-  // Ensure initial user turn includes system prompt if this is the start
-  const currentPromptText = contents.length === 0
-    ? `${systemPrompt}\n\nUser Query: "${prompt}"`
-    : prompt;
-
-  contents.push({
-    role: 'user',
-    parts: [{ text: currentPromptText }],
-  });
-
-  for (const model of CANDIDATE_MODELS) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.2,
+  try {
+    const response = await fetch(INTERACTIONS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+        'Api-Revision': '2026-05-20',
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: DEFAULT_MODEL,
+        input: `${systemPrompt}\n\n${input}`,
+        response_format: {
+          type: 'text',
+          mime_type: 'application/json',
+          schema: {
+            type: 'object',
+            properties: { content: { type: 'string' } },
+            required: ['content'],
           },
-        }),
-      });
+        },
+        generation_config: { temperature: 0.2 },
+        store: false,
+      }),
+    });
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        continue;
-      }
-
-      const resultData = await response.json();
-      const rawText = resultData.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (rawText) {
-        try {
-          const parsed = JSON.parse(rawText);
-          if (parsed.content) return parsed.content;
-          if (parsed.reply) return parsed.reply;
-        } catch {
-          return rawText;
-        }
-      }
-    } catch {
-      clearTimeout(timeoutId);
-      continue;
+    if (!response.ok) {
+      throw new Error(`Gemini interaction failed with status ${response.status}`);
     }
-  }
 
-  throw new Error('All Gemini candidate models failed');
+    const resultData = await response.json();
+    const rawText = extractOutputText(resultData);
+    if (!rawText) {
+      throw new Error('Gemini returned an empty response');
+    }
+    try {
+      const parsed = JSON.parse(rawText);
+      if (parsed.content) return parsed.content;
+      if (parsed.reply) return parsed.reply;
+    } catch {
+      return rawText;
+    }
+    return rawText;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -163,16 +160,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey =
-      process.env.GEMINI_API_KEY ||
-      process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-      '';
-
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
     let content = '';
 
-    if (apiKey.trim()) {
+    if (apiKey) {
       try {
-        content = await callGemini(apiKey.trim(), prompt, history);
+        content = await callGemini(apiKey, prompt, history);
       } catch (geminiErr) {
         console.warn('Gemini server call failed, using fallback:', geminiErr);
         content = getDeterministicFallback(prompt, history);

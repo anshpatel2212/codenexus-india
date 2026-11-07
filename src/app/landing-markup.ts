@@ -413,9 +413,7 @@ export const landingMarkup = `
     <div class="footer-bottom">
       <span>&#xa9; <span id="year"></span> BrandSense. All rights reserved.</span>
       <span style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px;">
-        <span>Made with <span style="color:#E05252">&#x2764;&#xfe0f;</span> by <strong style="color:#ffffff">Team Timepass</strong></span>
-        <span style="opacity:0.5">&bull;</span>
-        <span style="color:#d5e3ec">Ansh Patel &middot; Prince Patel &middot; Smit Patel &middot; Dwij Patel</span>
+        <span style="color:#d5e3ec">Enterprise AI Brand Governance</span>
       </span>
     </div>
   </div>

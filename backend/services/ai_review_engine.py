@@ -1,11 +1,7 @@
-import os
 import re
 import uuid
-import json
-import urllib.request
 from typing import Dict, Any, List, Tuple, Optional
-from datetime import datetime
-from backend.config import settings
+from backend.services.gemini_interactions import generate_json, get_gemini_api_key
 from backend.services.supabase_admin import supabase_admin
 
 class AIReviewEngine:
@@ -57,40 +53,88 @@ Output strict JSON with:
   ]
 }
 """
-        models = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-flash-latest"]
-        for model in models:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-            user_content = f"Content Type: {content_type}\nBrand Profile: {brand_profile_name}\n\nDRAFT CONTENT:\n\"\"\"{content}\"\"\""
-            payload = {
-                "contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_content}"}]}],
-                "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}
-            }
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
-            try:
-                with urllib.request.urlopen(req, timeout=10) as resp:
-                    res = json.loads(resp.read().decode("utf-8"))
-                    raw = res["candidates"][0]["content"]["parts"][0]["text"]
-                    parsed = json.loads(raw)
-                    
-                    findings = parsed.get("findings", [])
-                    for idx, f in enumerate(findings):
-                        if "id" not in f or not f["id"]:
-                            f["id"] = f"f-{uuid.uuid4().hex[:8]}"
-                        if "status" not in f:
-                            f["status"] = "pending"
-                    
-                    return (
-                        parsed.get("overallScore", 78),
-                        parsed.get("categoryScores", {
-                            "Tone and Voice": 80, "Terminology": 85, "Facts and Claims": 70,
-                            "Promotional Claims": 70, "Visual Consistency": 95, "Accessibility": 90
-                        }),
-                        findings,
-                        parsed.get("suggestedContent", content)
-                    )
-            except Exception as e:
-                continue
-        return None
+        schema = {
+            "type": "object",
+            "properties": {
+                "overallScore": {"type": "integer"},
+                "categoryScores": {
+                    "type": "object",
+                    "properties": {
+                        "Tone and Voice": {"type": "integer"},
+                        "Terminology": {"type": "integer"},
+                        "Facts and Claims": {"type": "integer"},
+                        "Promotional Claims": {"type": "integer"},
+                        "Visual Consistency": {"type": "integer"},
+                        "Accessibility": {"type": "integer"},
+                    },
+                    "required": ["Tone and Voice", "Terminology", "Facts and Claims", "Promotional Claims", "Visual Consistency", "Accessibility"],
+                },
+                "suggestedContent": {"type": "string"},
+                "findings": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "string"},
+                            "category": {"type": "string"},
+                            "severity": {"type": "string"},
+                            "reason": {"type": "string"},
+                            "evidence": {"type": "string"},
+                            "highlightedText": {"type": "string"},
+                            "sourceDocument": {"type": "string"},
+                            "sourceSection": {"type": "string"},
+                            "confidence": {"type": "integer"},
+                            "suggestedFix": {"type": "string"},
+                            "explanation": {"type": "string"},
+                            "status": {"type": "string"},
+                        },
+                        "required": ["category", "severity", "reason", "evidence", "highlightedText", "suggestedFix", "explanation"],
+                    },
+                },
+            },
+            "required": ["overallScore", "categoryScores", "suggestedContent", "findings"],
+        }
+
+        knowledge_context = "\n".join(
+            f"- {item.get('title', 'Policy')}: {item.get('content', '')}"
+            for item in (knowledge_items or [])[:20]
+            if item.get("content")
+        ) or "No organisation-specific policies were retrieved."
+
+        user_content = (
+            f"Content Type: {content_type}\n"
+            f"Brand Profile: {brand_profile_name}\n\n"
+            f"ACTIVE BRAND KNOWLEDGE:\n{knowledge_context}\n\n"
+            f"DRAFT CONTENT:\n\"\"\"{content}\"\"\""
+        )
+
+        try:
+            parsed = generate_json(
+                user_content,
+                schema,
+                system_instruction=system_prompt,
+                temperature=0.1,
+                timeout=30,
+            )
+        except Exception:
+            return None
+
+        findings = parsed.get("findings", [])
+        for finding in findings:
+            if "id" not in finding or not finding["id"]:
+                finding["id"] = f"f-{uuid.uuid4().hex[:8]}"
+            if "status" not in finding:
+                finding["status"] = "pending"
+
+        return (
+            parsed.get("overallScore", 78),
+            parsed.get("categoryScores", {
+                "Tone and Voice": 80, "Terminology": 85, "Facts and Claims": 70,
+                "Promotional Claims": 70, "Visual Consistency": 95, "Accessibility": 90
+            }),
+            findings,
+            parsed.get("suggestedContent", content)
+        )
 
     async def analyze_content(
         self,
@@ -103,7 +147,7 @@ Output strict JSON with:
         knowledge_items = await supabase_admin.get_brand_knowledge(org_id)
         
         # 1. Attempt Autonomous Gemini Flash LLM Audit first if API key configured
-        gemini_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY") or os.getenv("NEXT_PUBLIC_GEMINI_API_KEY")
+        gemini_key = get_gemini_api_key()
         if gemini_key:
             try:
                 llm_res = await self._analyze_with_gemini(content, content_type, brand_profile_name, knowledge_items, gemini_key)
@@ -278,14 +322,14 @@ Output strict JSON with:
         Intent-preserving AI rewrite engine powered by Google Gemini.
         Transforms non-compliant copy into enterprise-grade brand-aligned messaging.
         """
-        gemini_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY") or os.getenv("NEXT_PUBLIC_GEMINI_API_KEY")
+        gemini_key = get_gemini_api_key()
         if gemini_key:
             system_prompt = (
                 "You are BrandSense AI, an enterprise brand governance and intent-preserving rewrite copilot.\n"
                 "Your objective is to rewrite flagged copy so it adheres strictly to brand governance guidelines "
                 "(no absolute guarantees, professional B2B tone, compliant terminology, accessible cues) "
                 "while preserving the creator's exact underlying message and intent.\n"
-                "Return response strictly as JSON with a single key 'rewrittenText'."
+                "Return JSON with a single key 'rewrittenText'."
             )
             user_content = f"ORIGINAL TEXT:\n\"{original_text}\"\n"
             if finding_reason:
@@ -293,23 +337,24 @@ Output strict JSON with:
             if instructions:
                 user_content += f"CREATOR INSTRUCTIONS:\n{instructions}\n"
 
-            models = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-flash-latest"]
-            for model in models:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
-                payload = {
-                    "contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_content}"}]}],
-                    "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2}
-                }
-                req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
-                try:
-                    with urllib.request.urlopen(req, timeout=10) as resp:
-                        res = json.loads(resp.read().decode("utf-8"))
-                        raw = res["candidates"][0]["content"]["parts"][0]["text"]
-                        parsed = json.loads(raw)
-                        if parsed.get("rewrittenText"):
-                            return parsed["rewrittenText"].strip()
-                except Exception:
-                    continue
+            schema = {
+                "type": "object",
+                "properties": {"rewrittenText": {"type": "string"}},
+                "required": ["rewrittenText"],
+            }
+            try:
+                parsed = generate_json(
+                    user_content,
+                    schema,
+                    system_instruction=system_prompt,
+                    temperature=0.2,
+                    timeout=30,
+                )
+                rewritten = (parsed.get("rewrittenText") or "").strip()
+                if rewritten:
+                    return rewritten
+            except Exception:
+                pass
 
         # Deterministic rewrite fallback
         text = original_text

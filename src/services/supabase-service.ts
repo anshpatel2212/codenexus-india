@@ -738,7 +738,7 @@ class SupabaseDataService {
       return data.map((c: any) => ({
         id: c.id,
         author: {
-          name: c.author?.full_name || 'Team Member',
+          name: c.author?.full_name || 'User',
           avatar: c.author?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
           role: c.author?.role || 'Reviewer',
         },

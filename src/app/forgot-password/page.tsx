@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
       </div>
 
       <div className="w-full max-w-md mx-auto mt-10 text-center text-xs text-[#4F6576]">
-        ┬⌐ 2026 BrandSense Technologies Inc. SOC 2 Type II Certified.
+        © 2026 BrandSense Technologies Inc. SOC 2 Type II Certified.
       </div>
     </div>
   );

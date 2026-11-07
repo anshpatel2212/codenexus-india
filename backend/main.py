@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.config import settings
 from backend.routers import reviews, approvals, knowledge, sensa, onboarding, auth, super_admin
 
+settings.validate_production()
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,

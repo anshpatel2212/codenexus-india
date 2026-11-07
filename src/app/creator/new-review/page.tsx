@@ -151,11 +151,12 @@ export default function CreatorNewReviewPage() {
               </div>
             )}
 
-            <div className="flex justify-end pt-2">
+            <div className="flex flex-col sm:flex-row justify-end pt-2">
               <Button
                 type="submit"
                 variant="primary"
                 size="md"
+                className="w-full sm:w-auto"
                 isLoading={isProcessing}
                 leftIcon={<Sparkles className="w-4 h-4 text-[#F4D77B]" />}
               >

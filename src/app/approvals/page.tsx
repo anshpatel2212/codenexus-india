@@ -262,32 +262,32 @@ export default function ApprovalsPage() {
                 </div>
 
                 {/* Submitter & Reviewer Meta */}
-                <div className="my-5 p-4 rounded-lg bg-[#EDF3F6]/70 border border-[#C4D5E0] grid grid-cols-2 gap-4 text-xs">
+                <div className="my-5 p-4 rounded-lg bg-[#EDF3F6]/70 border border-[#C4D5E0] grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4 text-xs">
                   <div>
                     <span className="text-[#4F6576] text-xs block font-bold">Submitted By:</span>
-                    <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex items-center gap-2.5 mt-1.5">
                       <img
                         src={selectedApproval.submittedBy.avatar}
                         alt=""
-                        className="w-7 h-7 rounded-full object-cover border border-[#C4D5E0]"
+                        className="w-7 h-7 rounded-full object-cover border border-[#C4D5E0] flex-shrink-0"
                       />
-                      <div>
-                        <p className="font-bold text-[#20364A]">{selectedApproval.submittedBy.name}</p>
-                        <p className="text-xs text-[#4F6576]">{selectedApproval.submittedBy.department}</p>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[#20364A] truncate">{selectedApproval.submittedBy.name}</p>
+                        <p className="text-xs text-[#4F6576] truncate">{selectedApproval.submittedBy.department}</p>
                       </div>
                     </div>
                   </div>
 
                   <div>
                     <span className="text-[#4F6576] text-xs block font-bold">Assigned Legal Signer:</span>
-                    <div className="flex items-center gap-2 mt-1.5">
+                    <div className="flex items-center gap-2.5 mt-1.5">
                       <img
                         src={selectedApproval.assignedReviewer.avatar}
                         alt=""
-                        className="w-7 h-7 rounded-full object-cover border border-[#C4D5E0]"
+                        className="w-7 h-7 rounded-full object-cover border border-[#C4D5E0] flex-shrink-0"
                       />
-                      <div>
-                        <p className="font-bold text-[#20364A]">{selectedApproval.assignedReviewer.name}</p>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[#20364A] truncate">{selectedApproval.assignedReviewer.name}</p>
                         <p className="text-xs text-[#4F6576]">Authorized Reviewer</p>
                       </div>
                     </div>
@@ -295,28 +295,30 @@ export default function ApprovalsPage() {
                 </div>
 
                 {/* Sign-Off Action Bar */}
-                <div className="p-4 rounded-lg bg-[#20364A] text-white flex flex-wrap items-center justify-between gap-3 shadow-md">
+                <div className="p-4 rounded-lg bg-[#20364A] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
                   <div>
                     <p className="text-xs font-heading font-bold text-white">Official Sign-Off Decision</p>
                     <p className="text-xs text-[#D5E3EC]">Logged with timestamp to immutable audit history.</p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                     <Button
                       size="sm"
                       variant="primary"
+                      className="flex-1 sm:flex-initial"
                       leftIcon={<Check className="w-3.5 h-3.5" aria-hidden="true" />}
                       onClick={() => handleDecision(selectedApproval?.id || '', 'Approved')}
                     >
-                      Approve for Publishing
+                      Approve
                     </Button>
                     <Button
                       size="sm"
                       variant="yellow"
+                      className="flex-1 sm:flex-initial"
                       leftIcon={<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />}
                       onClick={() => handleDecision(selectedApproval?.id || '', 'Needs Revision')}
                     >
-                      Request Revision
+                      Revise
                     </Button>
                     <Button
                       size="sm"

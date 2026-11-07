@@ -371,6 +371,55 @@ async def get_current_user_profile(
         "supabaseUserId": ""
     }
 
+@router.get("/users")
+async def list_organization_users(
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
+    """
+    Returns the actual users belonging to the authenticated user's organisation.
+    Super Admins receive the platform-wide user directory.
+    Hardcoded/demo roster data is never returned as a substitute for real records.
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        if current_user.role == "Super Admin":
+            cur.execute("""
+                SELECT u.id, u.full_name, u.email, u.role, u.department, u.status,
+                       u.is_demo, u.organization_id, o.name as organisation
+                FROM users u
+                LEFT JOIN organizations o ON u.organization_id = o.id
+                ORDER BY u.role ASC, u.full_name ASC
+            """)
+        else:
+            org_id = current_user.organization_id or "org-demo-brandsense"
+            cur.execute("""
+                SELECT u.id, u.full_name, u.email, u.role, u.department, u.status,
+                       u.is_demo, u.organization_id, o.name as organisation
+                FROM users u
+                LEFT JOIN organizations o ON u.organization_id = o.id
+                WHERE u.organization_id = ?
+                ORDER BY u.role ASC, u.full_name ASC
+            """, (org_id,))
+        rows = cur.fetchall()
+        return [
+            {
+                "id": row["id"],
+                "name": row["full_name"],
+                "email": row["email"],
+                "role": row["role"],
+                "department": row["department"] or "General",
+                "status": "Active" if (row["status"] or "").lower() == "active" else (row["status"] or "Active"),
+                "isDemo": bool(row["is_demo"]),
+                "organizationId": row["organization_id"],
+                "organisation": row["organisation"] or "BrandSense Workspace",
+            }
+            for row in rows
+        ]
+    finally:
+        conn.close()
+
+
 @router.post("/demo/{role_slug}")
 async def demo_login(role_slug: str):
     """

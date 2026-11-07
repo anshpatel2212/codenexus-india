@@ -39,7 +39,6 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/components/ui/Toast';
 import { authClient, getDashboardRouteForRole } from '@/services/auth-client';
 import { SensaChatDrawer } from '@/components/assistant/SensaChatDrawer';
-import { TeamCredit } from '@/components/ui/TeamCredit';
 
 export type UserRoleType = 'Super Admin' | 'Admin' | 'Creator' | 'Reviewer' | 'Manager';
 
@@ -178,7 +177,7 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
       { name: 'Approved Facts', href: '/admin/approved-facts', icon: CheckCircle2 },
       { name: 'Terminology & Rules', href: '/admin/terminology', icon: Languages },
       { name: 'Brand Assets', href: '/admin/brand-assets', icon: FolderKanban },
-      { name: 'Team & Invites', href: '/admin/team', icon: Users },
+      { name: 'Users & Access', href: '/admin/team', icon: Users },
       { name: 'Content Library', href: '/admin/content', icon: FileText },
       { name: 'Reviews & Approvals', href: '/admin/reviews', icon: CheckSquare },
       { name: 'Governance Analytics', href: '/admin/analytics', icon: BarChart3 },
@@ -490,7 +489,7 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
                 </button>
 
                 {notifDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-dropdown border border-[#C4D5E0] py-2 z-50">
+                  <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-dropdown border border-[#C4D5E0] py-2 z-50">
                     <div className="px-4 py-2 border-b border-[#C4D5E0] flex items-center justify-between">
                       <span className="text-xs font-bold text-[#20364A]">Governance Notifications</span>
                       <span className="text-[10px] font-bold text-[#416F89] bg-[#D5E3EC] px-2 py-0.5 rounded">Real-time</span>
@@ -516,13 +515,15 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
             </div>
           </header>
 
-          {/* Child Page Content with Integrated Product Team Credit */}
+          {/* Child Page Content */}
           <main className="flex-1 p-4 lg:p-8 max-w-7xl w-full mx-auto flex flex-col justify-between">
             <div className="flex-1">
               {children}
             </div>
             <div className="pt-8 pb-4 border-t border-[#D5E3EC]/60 mt-10">
-              <TeamCredit />
+              <p className="text-center text-[11px] font-medium text-[#718494]">
+                © 2026 BrandSense. All rights reserved.
+              </p>
             </div>
           </main>
         </div>
@@ -530,11 +531,11 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
 
       {/* Floating Ask SENSA Copilot Button */}
       {pathname !== '/assistant' && (
-        <div className="fixed bottom-6 right-6 z-40">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
           <button
             type="button"
             onClick={() => setSensaOpen(!sensaOpen)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#20364A] hover:bg-[#315C74] text-white rounded-full shadow-elevated transition-colors"
+            className="flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm bg-[#20364A] hover:bg-[#315C74] text-white rounded-full shadow-elevated transition-colors"
             aria-label="Ask SENSA AI Copilot"
           >
             <Sparkles className="w-4 h-4 text-[#F4D77B]" />

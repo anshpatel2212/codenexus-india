@@ -240,24 +240,24 @@ export default function AssistantPage() {
           aria-label="Conversation history"
           className="flex w-full flex-shrink-0 flex-col overflow-hidden rounded-2xl border border-white/80 bg-white/90 shadow-[0_15px_45px_rgba(32,54,74,.07)] backdrop-blur-[18px] lg:w-[300px]"
         >
-          <div className="border-b border-[#E1EAF0] p-4 lg:p-5">
+          <div className="border-b border-[#E1EAF0] p-3 lg:p-5">
             <div className="flex items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#20364A] text-[#F4D77B] shadow-sm" aria-hidden="true">
-                  <Sparkles className="h-5 w-5" />
+                <div className="flex h-9 w-9 lg:h-10 lg:w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#20364A] text-[#F4D77B] shadow-sm" aria-hidden="true">
+                  <Sparkles className="h-4 w-4 lg:h-5 lg:w-5" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="font-heading text-base font-extrabold tracking-tight text-[#20364A]">
+                  <h1 className="font-heading text-sm lg:text-base font-extrabold tracking-tight text-[#20364A]">
                     SENSA Copilot
                   </h1>
-                  <p className="text-xs font-medium text-[#4F6576]">Brand Intelligence</p>
+                  <p className="text-[11px] lg:text-xs font-medium text-[#4F6576]">Brand Intelligence</p>
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={handleNewConversation}
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-[#D9E5EC] bg-white text-[#4F6576] transition-colors hover:border-[#416F89] hover:text-[#315C74] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89]"
+                className="flex h-8 w-8 lg:h-9 lg:w-9 flex-shrink-0 items-center justify-center rounded-lg border border-[#D9E5EC] bg-white text-[#4F6576] transition-colors hover:border-[#416F89] hover:text-[#315C74] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89]"
                 aria-label="Start a new conversation"
                 title="New chat"
               >
@@ -268,7 +268,7 @@ export default function AssistantPage() {
             <button
               type="button"
               onClick={handleNewConversation}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[#416F89]/30 bg-[#416F89]/10 px-3 py-2 text-xs font-bold text-[#315C74] transition-all hover:bg-[#416F89]/20"
+              className="mt-2 lg:mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[#416F89]/30 bg-[#416F89]/10 px-3 py-1.5 lg:py-2 text-xs font-bold text-[#315C74] transition-all hover:bg-[#416F89]/20"
             >
               <Plus className="h-3.5 w-3.5" />
               <span>+ New Chat</span>
@@ -338,7 +338,7 @@ export default function AssistantPage() {
             )}
           </div>
 
-          <div className="mt-auto border-t border-[#E1EAF0] px-4 py-3">
+          <div className="hidden lg:block mt-auto border-t border-[#E1EAF0] px-4 py-3">
             <div className="flex items-center gap-2 text-xs font-bold text-[#20364A]">
               <span className="h-2 w-2 rounded-full bg-[#1F7560]" aria-hidden="true" />
               <span>Grounded Knowledge Base</span>
