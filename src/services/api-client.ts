@@ -15,21 +15,214 @@ import { authClient, DEMO_ORG_ID } from './auth-client';
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? '/api/v1' : 'http://127.0.0.1:8000/api/v1');
 
 /**
+ * Normalizes backend snake_case response fields to frontend camelCase standards.
+ */
+function normalizeReview(r: any): ReviewItem {
+  if (!r) return r;
+  let catScores = r.categoryScores || r.category_scores || {};
+  if (typeof catScores === 'string') {
+    try {
+      catScores = JSON.parse(catScores);
+    } catch {
+      catScores = {};
+    }
+  }
+
+  const rawFindings = r.findings || [];
+  const findings: Finding[] = rawFindings.map((f: any) => ({
+    id: f.id || `f-${Math.random().toString(36).substring(2, 9)}`,
+    category: f.category || 'General',
+    severity: f.severity || 'Medium',
+    reason: f.reason || '',
+    evidence: f.evidence || '',
+    highlightedText: f.highlightedText || f.highlighted_text || '',
+    suggestedFix: f.suggestedFix || f.suggested_fix || undefined,
+    explanation: f.explanation || undefined,
+    sourceDocument: f.sourceDocument || f.source_document || undefined,
+    sourceSection: f.sourceSection || f.source_section || undefined,
+    confidence: f.confidence !== undefined ? f.confidence : 90,
+    status: f.status || 'pending',
+  }));
+
+  return {
+    id: r.id,
+    title: r.title || 'Untitled Draft',
+    contentType: r.contentType || r.content_type || 'Social Media',
+    brandProfile: r.brandProfile || r.brand_profile || 'Corporate Core (Global English)',
+    createdAt: r.createdAt || r.created_at || new Date().toISOString(),
+    updatedAt: r.updatedAt || r.updated_at || new Date().toISOString(),
+    author: r.author || {
+      name: r.author_name || 'Content Creator',
+      email: r.author_email || '',
+      role: r.author_role || 'Creator',
+      avatar: r.author_avatar || '',
+    },
+    overallScore: r.overallScore !== undefined ? r.overallScore : (r.overall_score !== undefined ? r.overall_score : 80),
+    status: r.status || 'Pending Review',
+    originalContent: r.originalContent || r.original_content || '',
+    suggestedContent: r.suggestedContent || r.suggested_content || '',
+    categoryScores: catScores,
+    findings,
+    revisionCount: r.revisionCount || r.revision_count || (r.revisions ? r.revisions.length : 1),
+  };
+}
+
+function normalizeKnowledgeItem(k: any): KnowledgeItem {
+  let tags = k.tags || [];
+  if (typeof tags === 'string') {
+    try {
+      tags = JSON.parse(tags);
+    } catch {
+      tags = [];
+    }
+  }
+  return {
+    id: k.id,
+    type: k.type,
+    title: k.title,
+    content: k.content,
+    category: k.category || 'General',
+    tags,
+    status: k.status || 'Active',
+    replacement: k.replacement || undefined,
+    fileFormat: k.fileFormat || k.file_format || undefined,
+    fileSize: k.fileSize || k.file_size || undefined,
+    fileUrl: k.fileUrl || k.file_url || undefined,
+    lastUpdated: k.lastUpdated || k.updated_at || k.created_at || 'Just now',
+    updatedBy: k.updatedBy || k.created_by || 'Admin',
+  };
+}
+
+function normalizeApproval(a: any): ApprovalItem {
+  return {
+    id: a.id,
+    reviewId: a.reviewId || a.review_id,
+    submittedBy: a.submittedBy || a.submitted_by || 'Content Creator',
+    assignedTo: a.assignedTo || a.assigned_to || undefined,
+    createdAt: a.createdAt || a.created_at || new Date().toISOString(),
+    status: a.status || 'Pending',
+    urgency: a.urgency || 'Medium',
+    complianceScore: a.complianceScore !== undefined ? a.complianceScore : (a.compliance_score !== undefined ? a.compliance_score : 75),
+    review: a.review ? {
+      title: a.review.title || 'Brand Review',
+      contentType: a.review.contentType || a.review.content_type || 'Campaign',
+      overallScore: a.review.overallScore !== undefined ? a.review.overallScore : (a.review.overall_score !== undefined ? a.review.overall_score : 75),
+    } : {
+      title: 'Brand Review',
+      contentType: 'Campaign',
+      overallScore: 75,
+    },
+    comments: (a.comments || []).map((c: any) => ({
+      id: c.id,
+      author: c.author || {
+        name: c.author_name || 'Compliance Reviewer',
+        role: c.author_role || 'Reviewer',
+      },
+      text: c.text || c.comment_text || '',
+      timestamp: c.timestamp || c.createdAt || c.created_at || 'Just now',
+    })),
+  };
+}
+
+/**
  * BrandSense Production API Service Client
- * Seamlessly integrates:
- * 1. Autonomous Google Gemini Flash AI Engine (Autonomous neural intelligence across all content)
- * 2. Supabase PostgreSQL & RLS (Direct authenticated data persistence)
- * 3. FastAPI Backend Governance Engine (When backend is running)
+ * SQLite Backend API is the authoritative PRIMARY data source for all operations.
  */
 class BrandSenseApiClient {
+  private inFlightGetRequests = new Map<string, Promise<any>>();
+
+  private async fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    let token: string | null = null;
+    try {
+      token = authClient.getToken();
+      if (!token) {
+        const supabase = getSupabaseBrowserClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        token = session?.access_token || null;
+      }
+    } catch {
+      // Ignore token retrieval errors
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string> || {}),
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+      const res = await fetch(url, {
+        ...options,
+        headers,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (res.status === 401 || res.status === 403) {
+        // Expired or unauthorized session
+        if (typeof window !== 'undefined') {
+          console.warn(`[apiClient] ${res.status} response from ${endpoint}`);
+        }
+      }
+
+      return res;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      throw err;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Reviews
   // ---------------------------------------------------------------------------
   async getReviews(orgId?: string): Promise<ReviewItem[]> {
-    return supabaseDataService.getReviews(orgId);
+    const cacheKey = `reviews-${orgId || 'default'}`;
+    if (this.inFlightGetRequests.has(cacheKey)) {
+      return this.inFlightGetRequests.get(cacheKey);
+    }
+
+    const fetchPromise = (async () => {
+      try {
+        const res = await this.fetchWithAuth('/reviews');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            return data.map(normalizeReview);
+          }
+        }
+      } catch (err) {
+        console.warn('Backend /reviews unreachable, attempting local/fallback:', err);
+      } finally {
+        this.inFlightGetRequests.delete(cacheKey);
+      }
+
+      // Safe fallback for demo personas / offline development
+      return supabaseDataService.getReviews(orgId);
+    })();
+
+    this.inFlightGetRequests.set(cacheKey, fetchPromise);
+    return fetchPromise;
   }
 
   async getReviewById(id: string, orgId?: string): Promise<ReviewItem | undefined> {
+    try {
+      const res = await this.fetchWithAuth(`/reviews/${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.id) {
+          return normalizeReview(data);
+        }
+      }
+    } catch (err) {
+      console.warn(`Backend /reviews/${id} unreachable, checking fallback:`, err);
+    }
     return supabaseDataService.getReviewById(id, orgId);
   }
 
@@ -53,105 +246,55 @@ class BrandSenseApiClient {
     const orgId = data.orgId || DEMO_ORG_ID;
     const payload = { ...data, orgId };
 
-    // 1. Primary: Autonomous Google Gemini AI Engine
-    // Real neural reasoning across all 6 brand categories without manual regex limits
+    // 1. Primary: Persistent Backend Relational Database Execution
+    try {
+      const res = await this.fetchWithAuth('/reviews/submit', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        const normalized = normalizeReview(result);
+        if (typeof window !== 'undefined') {
+          const userKey = data.authorId ? `brandsense_current_review_${data.authorId}` : 'brandsense_current_review';
+          localStorage.setItem(userKey, JSON.stringify(normalized));
+          localStorage.setItem('brandsense_current_review', JSON.stringify(normalized));
+          supabaseDataService.saveLocalReview(normalized, orgId, data.authorId);
+        }
+        return normalized;
+      } else if (res.status === 401 || res.status === 403) {
+        const errData = await res.json().catch(() => ({ detail: 'Unauthorized' }));
+        throw new Error(errData.detail || 'Authentication required to submit review.');
+      } else if (res.status === 422) {
+        const errData = await res.json().catch(() => ({ detail: 'Validation failed' }));
+        const msg = Array.isArray(errData.detail) ? errData.detail[0]?.msg : errData.detail;
+        throw new Error(msg || 'Validation error: please verify all required fields.');
+      }
+    } catch (backendErr: any) {
+      if (backendErr?.message && (backendErr.message.includes('Authentication required') || backendErr.message.includes('Validation error'))) {
+        throw backendErr;
+      }
+      console.warn('FastAPI backend submission failed or unreachable, checking local AI:', backendErr);
+    }
+
+    // 2. Secondary: Client-side Gemini AI Review
     if (isGeminiConfigured()) {
       try {
         const liveAiReview = await analyzeContentWithGemini(payload);
-        
-        // Persist locally (scoped to organization and active review)
         if (typeof window !== 'undefined') {
           const userKey = data.authorId ? `brandsense_current_review_${data.authorId}` : 'brandsense_current_review';
           localStorage.setItem(userKey, JSON.stringify(liveAiReview));
           localStorage.setItem('brandsense_current_review', JSON.stringify(liveAiReview));
           supabaseDataService.saveLocalReview(liveAiReview, orgId, data.authorId);
         }
-
-        // Persist to Supabase if available
-        try {
-          const supabase = getSupabaseBrowserClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user) {
-            // Save to Supabase using live AI findings
-            await supabaseDataService.createReview({
-              ...payload,
-              orgId: session.user.user_metadata?.organization_id || orgId,
-              authorId: session.user.id,
-              authorName: session.user.user_metadata?.full_name || data.authorName || 'Author',
-              authorEmail: session.user.email
-            });
-          }
-        } catch {
-          // Ignore
-        }
-        
         return liveAiReview;
       } catch (geminiErr) {
-        console.warn('Gemini live analysis encountered issue, checking backend:', geminiErr);
+        console.warn('Gemini live analysis encountered issue, using fallback:', geminiErr);
       }
     }
 
-    // 2. Secondary: FastAPI Backend (if configured and running)
-    const env = getClientEnv();
-    if (env.apiUrl && !env.apiUrl.includes('placeholder')) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-        let token: string | undefined;
-        try {
-          token = authClient.getToken() || undefined;
-          if (!token) {
-            const supabase = getSupabaseBrowserClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            token = session?.access_token;
-          }
-        } catch {
-          // Token fetch fallback
-        }
-
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-        };
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const res = await fetch(`${API_BASE_URL}/reviews/submit`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (res.ok) {
-          const result = await res.json();
-          if (typeof window !== 'undefined') {
-            const userKey = data.authorId ? `brandsense_current_review_${data.authorId}` : 'brandsense_current_review';
-            localStorage.setItem(userKey, JSON.stringify(result));
-            localStorage.setItem('brandsense_current_review', JSON.stringify(result));
-            supabaseDataService.saveLocalReview(result, orgId, data.authorId);
-          }
-          return result;
-        } else if (res.status === 401 || res.status === 403) {
-          const errData = await res.json().catch(() => ({ detail: 'Unauthorized' }));
-          throw new Error(errData.detail || 'Authentication required to submit review.');
-        } else if (res.status === 422) {
-          const errData = await res.json().catch(() => ({ detail: 'Validation failed' }));
-          const msg = Array.isArray(errData.detail) ? errData.detail[0]?.msg : errData.detail;
-          throw new Error(msg || 'Validation error: please verify all required fields.');
-        }
-      } catch (backendErr: any) {
-        if (backendErr?.message && (backendErr.message.includes('Authentication required') || backendErr.message.includes('Validation error'))) {
-          throw backendErr;
-        }
-        console.warn('FastAPI backend unreachable, using Supabase data layer:', backendErr);
-      }
-    }
-
-    // 3. Fallback: Supabase Heuristic Data Service
+    // 3. Fallback: Local demo heuristic review
     const fallbackReview = await supabaseDataService.createReview(payload);
     if (typeof window !== 'undefined' && fallbackReview) {
       const userKey = data.authorId ? `brandsense_current_review_${data.authorId}` : 'brandsense_current_review';
@@ -165,16 +308,67 @@ class BrandSenseApiClient {
     findingId: string, 
     status: 'accepted' | 'rejected' | 'modified', 
     suggestedFix?: string, 
-    userNote?: string
+    userNote?: string,
+    reviewId?: string
   ): Promise<void> {
+    if (reviewId) {
+      try {
+        const res = await this.fetchWithAuth(`/reviews/${reviewId}/findings/${findingId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status, suggestedFix, userNote }),
+        });
+        if (res.ok) return;
+      } catch (e) {
+        console.warn('Backend updateFinding notice:', e);
+      }
+    }
     return supabaseDataService.updateFindingStatus(findingId, status, suggestedFix, userNote);
+  }
+
+  async deleteReview(id: string, orgId?: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const res = await this.fetchWithAuth(`/reviews/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        supabaseDataService.deleteReview(id, orgId);
+        return { success: true };
+      }
+    } catch (e: any) {
+      console.warn('Backend deleteReview notice:', e);
+    }
+    return supabaseDataService.deleteReview(id, orgId);
   }
 
   // ---------------------------------------------------------------------------
   // Knowledge Base
   // ---------------------------------------------------------------------------
   async getKnowledgeBase(orgId?: string): Promise<KnowledgeItem[]> {
-    return supabaseDataService.getKnowledgeBase(orgId);
+    const cacheKey = `kb-${orgId || 'default'}`;
+    if (this.inFlightGetRequests.has(cacheKey)) {
+      return this.inFlightGetRequests.get(cacheKey);
+    }
+
+    const fetchPromise = (async () => {
+      try {
+        const res = await this.fetchWithAuth('/knowledge-base');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            return data.map(normalizeKnowledgeItem);
+          }
+        }
+      } catch (err) {
+        console.warn('Backend /knowledge-base unreachable, using fallback:', err);
+      } finally {
+        this.inFlightGetRequests.delete(cacheKey);
+      }
+
+      return supabaseDataService.getKnowledgeBase(orgId);
+    })();
+
+    this.inFlightGetRequests.set(cacheKey, fetchPromise);
+    return fetchPromise;
   }
 
   async addKnowledgeItem(
@@ -182,7 +376,23 @@ class BrandSenseApiClient {
     orgId?: string,
     userId?: string
   ): Promise<KnowledgeItem> {
-    return supabaseDataService.addKnowledgeItem(item, orgId, userId);
+    try {
+      const res = await this.fetchWithAuth('/knowledge-base', {
+        method: 'POST',
+        body: JSON.stringify(item),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return normalizeKnowledgeItem(data);
+      } else {
+        const err = await res.json().catch(() => ({ detail: 'Failed to add rule' }));
+        throw new Error(err.detail || 'Failed to save knowledge item.');
+      }
+    } catch (e: any) {
+      if (e?.message && e.message.includes('Failed to save knowledge item')) throw e;
+      console.warn('Backend addKnowledgeItem unreachable, falling back:', e);
+      return supabaseDataService.addKnowledgeItem(item, orgId, userId);
+    }
   }
 
   async createKnowledgeItem(
@@ -193,29 +403,91 @@ class BrandSenseApiClient {
   }
 
   async deleteKnowledgeItem(id: string, orgId?: string): Promise<{ success: boolean; error?: string }> {
-    return supabaseDataService.deleteKnowledgeItem(id, orgId);
-  }
-
-  async deleteReview(id: string, orgId?: string): Promise<{ success: boolean; error?: string }> {
-    return supabaseDataService.deleteReview(id, orgId);
+    try {
+      const res = await this.fetchWithAuth(`/knowledge-base/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        supabaseDataService.deleteKnowledgeItem(id, orgId);
+        return { success: true };
+      }
+      const err = await res.json().catch(() => ({ detail: 'Failed to delete' }));
+      return { success: false, error: err.detail || 'Delete failed' };
+    } catch (e: any) {
+      console.warn('Backend deleteKnowledgeItem unreachable, falling back:', e);
+      return supabaseDataService.deleteKnowledgeItem(id, orgId);
+    }
   }
 
   // ---------------------------------------------------------------------------
   // Approvals & Workflow
   // ---------------------------------------------------------------------------
   async getApprovals(orgId?: string): Promise<ApprovalItem[]> {
-    return supabaseDataService.getApprovals(orgId);
+    const cacheKey = `approvals-${orgId || 'default'}`;
+    if (this.inFlightGetRequests.has(cacheKey)) {
+      return this.inFlightGetRequests.get(cacheKey);
+    }
+
+    const fetchPromise = (async () => {
+      try {
+        const res = await this.fetchWithAuth('/approvals');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            return data.map(normalizeApproval);
+          }
+        }
+      } catch (err) {
+        console.warn('Backend /approvals unreachable, using fallback:', err);
+      } finally {
+        this.inFlightGetRequests.delete(cacheKey);
+      }
+
+      return supabaseDataService.getApprovals(orgId);
+    })();
+
+    this.inFlightGetRequests.set(cacheKey, fetchPromise);
+    return fetchPromise;
   }
 
   async updateApprovalStatus(
     id: string, 
     status: 'Approved' | 'Rejected' | 'Needs Revision',
-    reviewId?: string
+    reviewId?: string,
+    note?: string
   ): Promise<void> {
+    try {
+      const res = await this.fetchWithAuth(`/approvals/${id}/decision`, {
+        method: 'POST',
+        body: JSON.stringify({ status, reviewId, note }),
+      });
+      if (res.ok) {
+        supabaseDataService.updateApprovalStatus(id, status, reviewId);
+        return;
+      }
+    } catch (e) {
+      console.warn('Backend updateApprovalStatus notice:', e);
+    }
     return supabaseDataService.updateApprovalStatus(id, status, reviewId);
   }
 
   async getApprovalComments(approvalId: string): Promise<ApprovalComment[]> {
+    try {
+      const res = await this.fetchWithAuth(`/approvals/${approvalId}/comments`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          return data.map((c: any) => ({
+            id: c.id,
+            author: c.author || { name: 'Reviewer', role: 'Reviewer' },
+            text: c.text,
+            timestamp: c.timestamp || 'Just now',
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('Backend getApprovalComments notice:', e);
+    }
     return supabaseDataService.getApprovalComments(approvalId);
   }
 
@@ -225,6 +497,18 @@ class BrandSenseApiClient {
     authorId?: string, 
     orgId?: string
   ): Promise<void> {
+    try {
+      const res = await this.fetchWithAuth(`/approvals/${approvalId}/comments`, {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      });
+      if (res.ok) {
+        supabaseDataService.addApprovalComment(approvalId, text, authorId, orgId);
+        return;
+      }
+    } catch (e) {
+      console.warn('Backend addApprovalComment notice:', e);
+    }
     return supabaseDataService.addApprovalComment(approvalId, text, authorId, orgId);
   }
 
@@ -232,6 +516,17 @@ class BrandSenseApiClient {
   // Revision History
   // ---------------------------------------------------------------------------
   async getRevisions(reviewId: string) {
+    try {
+      const res = await this.fetchWithAuth(`/reviews/${reviewId}/revisions`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
+    } catch (e) {
+      console.warn('Backend getRevisions notice:', e);
+    }
     return supabaseDataService.getRevisions(reviewId);
   }
 
@@ -248,6 +543,25 @@ class BrandSenseApiClient {
     acceptedCount: number;
     rejectedCount: number;
   }) {
+    try {
+      const res = await this.fetchWithAuth(`/reviews/${data.reviewId}/revisions`, {
+        method: 'POST',
+        body: JSON.stringify({
+          content: data.content,
+          summary: data.summary,
+          complianceScore: data.complianceScore,
+          status: data.status,
+          acceptedCount: data.acceptedCount,
+          rejectedCount: data.rejectedCount,
+        }),
+      });
+      if (res.ok) {
+        supabaseDataService.saveNewRevision(data);
+        return await res.json();
+      }
+    } catch (e) {
+      console.warn('Backend saveRevision notice:', e);
+    }
     return supabaseDataService.saveNewRevision(data);
   }
 
@@ -279,15 +593,19 @@ class BrandSenseApiClient {
   }
 
   // ---------------------------------------------------------------------------
-  // SENSA Assistant Chat (Autonomous Neural RAG Copilot)
+  // SENSA Assistant Chat (Multi-Turn Autonomous Neural RAG Copilot)
   // ---------------------------------------------------------------------------
-  async querySensa(prompt: string, context?: any): Promise<SensaMessage> {
-    // 1. Primary: Server-side Next.js route (works reliably across all devices, mobile & cloud)
+  async querySensa(
+    prompt: string, 
+    history: Array<{ role: 'user' | 'model' | 'sensa'; content: string }> = [], 
+    context?: any
+  ): Promise<SensaMessage> {
+    // 1. Primary: Server-side Next.js route with multi-turn history
     try {
       const res = await fetch('/api/sensa/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, context }),
+        body: JSON.stringify({ prompt, history, context }),
       });
 
       if (res.ok) {
@@ -300,7 +618,7 @@ class BrandSenseApiClient {
       console.warn('Server-side SENSA route unreachable, trying client fallback:', err);
     }
 
-    // 2. Secondary: Direct client-side Gemini fallback
+    // 2. Secondary: Direct client-side Gemini fallback with multi-turn
     if (isGeminiConfigured()) {
       try {
         return await chatWithSensaGemini(prompt);
@@ -309,7 +627,7 @@ class BrandSenseApiClient {
       }
     }
 
-    // 3. Fallback: Instant deterministic brand governance analysis (offline protection)
+    // 3. Fallback: Deterministic brand governance analysis
     const lower = prompt.toLowerCase().trim();
     const isGreeting = /^(hi|hello|hey|hhii|heyy|greetings|hola)\b/i.test(lower);
     const hasGuarantee = lower.includes('guarantee') || lower.includes('100%') || lower.includes('zero fine') || lower.includes('cures') || lower.includes('miracle');

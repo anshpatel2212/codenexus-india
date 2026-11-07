@@ -14,6 +14,8 @@ export const landingMarkup = `
       <a href="#features">Platform</a>
       <a href="#workflow">How it works</a>
       <a href="#trust">Why BrandSense</a>
+      <a href="/login" class="mobile-only-nav-item">Log in</a>
+      <a href="/dashboard" class="mobile-only-nav-item mobile-get-started">Get started &rarr;</a>
     </nav>
 
     <div class="nav-actions">
