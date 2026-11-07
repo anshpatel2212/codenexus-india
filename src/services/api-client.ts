@@ -1,10 +1,11 @@
-import { 
-  ReviewItem, 
-  Finding, 
-  KnowledgeItem, 
-  ApprovalItem, 
+import {
+  ReviewItem,
+  Finding,
+  KnowledgeItem,
+  ApprovalItem,
   ApprovalComment,
-  SensaMessage 
+  SensaMessage,
+  ContentType
 } from '@/types';
 import { supabaseDataService } from './supabase-service';
 import { getClientEnv } from '@/lib/env';
@@ -94,33 +95,82 @@ function normalizeKnowledgeItem(k: any): KnowledgeItem {
 }
 
 function normalizeApproval(a: any): ApprovalItem {
+  const submitterName = typeof a.submittedBy === 'object' && a.submittedBy?.name
+    ? a.submittedBy.name
+    : (typeof a.submittedBy === 'string' && a.submittedBy.trim() ? a.submittedBy : (a.submitter_name || a.submitted_by || 'Content Creator'));
+
+  const submitterAvatar = typeof a.submittedBy === 'object' && a.submittedBy?.avatar
+    ? a.submittedBy.avatar
+    : (a.submitter_avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80');
+
+  const submitterDept = typeof a.submittedBy === 'object' && a.submittedBy?.department
+    ? a.submittedBy.department
+    : (a.submitter_dept || 'Brand & Marketing');
+
+  const reviewerName = typeof a.assignedReviewer === 'object' && a.assignedReviewer?.name
+    ? a.assignedReviewer.name
+    : (a.reviewer_name || 'Sarah Chen, Esq.');
+
+  const reviewerAvatar = typeof a.assignedReviewer === 'object' && a.assignedReviewer?.avatar
+    ? a.assignedReviewer.avatar
+    : 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80';
+
+  const title = a.title || a.review?.title || a.review_title || 'Brand Review';
+  const contentType = (a.contentType || a.review?.contentType || a.content_type || 'Campaign') as ContentType;
+  const submittedDate = a.submittedDate || a.createdAt || a.created_at || 'Just now';
+  const complianceScore = a.complianceScore !== undefined ? a.complianceScore : (a.compliance_score !== undefined ? a.compliance_score : (a.review?.overallScore ?? 75));
+
+  const rawComments = a.comments || [];
+  const comments: ApprovalComment[] = rawComments.map((c: any) => ({
+    id: c.id || `comm-${Math.random().toString(36).substring(2, 9)}`,
+    author: {
+      name: c.author?.name || c.author_name || 'Compliance Reviewer',
+      avatar: c.author?.avatar || c.author_avatar || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80',
+      role: c.author?.role || c.author_role || 'Reviewer',
+    },
+    text: c.text || c.comment_text || '',
+    timestamp: c.timestamp || c.createdAt || c.created_at || 'Just now',
+    resolved: Boolean(c.resolved),
+  }));
+
   return {
     id: a.id,
-    reviewId: a.reviewId || a.review_id,
-    submittedBy: a.submittedBy || a.submitted_by || 'Content Creator',
-    assignedTo: a.assignedTo || a.assigned_to || undefined,
-    createdAt: a.createdAt || a.created_at || new Date().toISOString(),
-    status: a.status || 'Pending',
-    urgency: a.urgency || 'Medium',
-    complianceScore: a.complianceScore !== undefined ? a.complianceScore : (a.compliance_score !== undefined ? a.compliance_score : 75),
-    review: a.review ? {
-      title: a.review.title || 'Brand Review',
-      contentType: a.review.contentType || a.review.content_type || 'Campaign',
-      overallScore: a.review.overallScore !== undefined ? a.review.overallScore : (a.review.overall_score !== undefined ? a.review.overall_score : 75),
-    } : {
-      title: 'Brand Review',
-      contentType: 'Campaign',
-      overallScore: 75,
+    reviewId: a.reviewId || a.review_id || '',
+    title,
+    submittedBy: {
+      name: submitterName,
+      avatar: submitterAvatar,
+      department: submitterDept,
     },
-    comments: (a.comments || []).map((c: any) => ({
-      id: c.id,
-      author: c.author || {
-        name: c.author_name || 'Compliance Reviewer',
-        role: c.author_role || 'Reviewer',
-      },
-      text: c.text || c.comment_text || '',
-      timestamp: c.timestamp || c.createdAt || c.created_at || 'Just now',
-    })),
+    contentType,
+    submittedDate,
+    urgency: a.urgency || (complianceScore < 70 ? 'High' : 'Medium'),
+    complianceScore,
+    status: a.status || 'Pending',
+    assignedReviewer: {
+      name: reviewerName,
+      avatar: reviewerAvatar,
+    },
+    commentsCount: a.commentsCount ?? comments.length,
+    criticalIssuesCount: a.criticalIssuesCount ?? 0,
+    assignedTo: a.assignedTo || a.assigned_to || undefined,
+    organizationId: a.organizationId || a.organization_id || undefined,
+    decisionNotes: a.decisionNotes || a.decision_notes || undefined,
+    decidedBy: a.decidedBy || a.decided_by || undefined,
+    decidedAt: a.decidedAt || a.decided_at || undefined,
+    createdAt: a.createdAt || a.created_at || undefined,
+    review: a.review ? {
+      id: a.review.id || a.reviewId || a.review_id,
+      title: a.review.title || title,
+      contentType: a.review.contentType || contentType,
+      overallScore: a.review.overallScore ?? complianceScore,
+    } : {
+      id: a.reviewId || a.review_id,
+      title,
+      contentType,
+      overallScore: complianceScore,
+    },
+    comments,
   };
 }
 
@@ -305,9 +355,9 @@ class BrandSenseApiClient {
   }
 
   async updateFinding(
-    findingId: string, 
-    status: 'accepted' | 'rejected' | 'modified', 
-    suggestedFix?: string, 
+    findingId: string,
+    status: 'accepted' | 'rejected' | 'modified',
+    suggestedFix?: string,
     userNote?: string,
     reviewId?: string
   ): Promise<void> {
@@ -451,7 +501,7 @@ class BrandSenseApiClient {
   }
 
   async updateApprovalStatus(
-    id: string, 
+    id: string,
     status: 'Approved' | 'Rejected' | 'Needs Revision',
     reviewId?: string,
     note?: string
@@ -492,9 +542,9 @@ class BrandSenseApiClient {
   }
 
   async addApprovalComment(
-    approvalId: string, 
-    text: string, 
-    authorId?: string, 
+    approvalId: string,
+    text: string,
+    authorId?: string,
     orgId?: string
   ): Promise<void> {
     try {
@@ -596,8 +646,8 @@ class BrandSenseApiClient {
   // SENSA Assistant Chat (Multi-Turn Autonomous Neural RAG Copilot)
   // ---------------------------------------------------------------------------
   async querySensa(
-    prompt: string, 
-    history: Array<{ role: 'user' | 'model' | 'sensa'; content: string }> = [], 
+    prompt: string,
+    history: Array<{ role: 'user' | 'model' | 'sensa'; content: string }> = [],
     context?: any
   ): Promise<SensaMessage> {
     // 1. Primary: Server-side Next.js route with multi-turn history

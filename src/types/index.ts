@@ -109,6 +109,19 @@ export interface ApprovalItem {
   };
   commentsCount: number;
   criticalIssuesCount: number;
+  assignedTo?: string;
+  organizationId?: string;
+  decisionNotes?: string;
+  decidedBy?: string;
+  decidedAt?: string;
+  createdAt?: string;
+  review?: {
+    id?: string;
+    title: string;
+    contentType: ContentType | string;
+    overallScore: number;
+  };
+  comments?: ApprovalComment[];
 }
 
 export interface ApprovalComment {

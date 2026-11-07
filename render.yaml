@@ -12,7 +12,13 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
+      - key: BACKEND_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
       - key: NEXT_PUBLIC_GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
@@ -37,6 +43,8 @@ services:
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
         sync: false
       - key: GEMINI_API_KEY
         sync: false
