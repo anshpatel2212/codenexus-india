@@ -1,8 +1,8 @@
 
 services:
-  # ==========================================
-  # BrandSense Next.js Frontend
-  # ==========================================
+  # =====================================================
+  # 1. BrandSense Next.js Frontend
+  # =====================================================
   - type: web
     name: brandsense-web
     runtime: node
@@ -16,18 +16,18 @@ services:
       - key: NODE_VERSION
         value: "20"
 
-      - key: NEXT_PUBLIC_GEMINI_API_KEY
-        sync: false
-
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
 
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
         sync: false
 
-  # ==========================================
-  # BrandSense FastAPI Backend
-  # ==========================================
+      # Do not expose Gemini secret keys through NEXT_PUBLIC.
+      # Use the backend API for Gemini requests.
+
+  # =====================================================
+  # 2. BrandSense FastAPI Backend
+  # =====================================================
   - type: web
     name: brandsense-backend
     runtime: python
@@ -35,23 +35,48 @@ services:
     region: oregon
 
     buildCommand: pip install --upgrade pip && pip install -r backend/requirements.txt
+
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
 
     envVars:
+      # Python configuration
       - key: PYTHONPATH
         value: "."
 
-      - key: BACKEND_CORS_ORIGINS
-        value: "*"
+      - key: ENVIRONMENT
+        value: production
 
+      # CORS: enter the actual frontend URL in Render
+      - key: BACKEND_CORS_ORIGINS
+        sync: false
+
+      # Supabase configuration
       - key: SUPABASE_URL
         sync: false
 
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
 
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+
+      # Optional legacy override; only configure if required
+      # by the backend authentication implementation.
+      - key: SUPABASE_LEGACY_HS256_SECRET
+        sync: false
+
+      # Google Gemini AI
       - key: GEMINI_API_KEY
         sync: false
 
+      # NVIDIA Nemotron AI
       - key: NVIDIA_API_KEY
+        sync: false
+
+      - key: NVIDIA_MODEL
+        value: nvidia/nemotron-3.5-lightning-30b-a3b
+
+      # Optional OpenAI integration
+      # Add this only if the backend actually uses OpenAI.
+      - key: OPENAI_API_KEY
         sync: false
