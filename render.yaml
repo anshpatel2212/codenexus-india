@@ -22,6 +22,12 @@ services:
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
         sync: false
 
+      - key: NEXT_PUBLIC_GEMINI_API_KEY
+        sync: false
+
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+
       # Do not expose Gemini secret keys through NEXT_PUBLIC.
       # Use the backend API for Gemini requests.
 
