@@ -24,7 +24,13 @@ export type ReviewStatus =
   | 'Rejected'
   | 'Needs Revision';
 
+export type ApprovedFactStatus = 'VERIFIED' | 'UNVERIFIED' | 'NOT_APPLICABLE';
+
 export interface Finding {
+  approved_fact_status?: ApprovedFactStatus;
+  recommended_correction?: string;
+  governance_escalation_required?: boolean;
+  source_reference?: string;
   id: string;
   category: FindingCategory;
   severity: SeverityLevel;
@@ -69,6 +75,10 @@ export interface ReviewItem {
   revisionCount: number;
   filePath?: string;
   fileUrl?: string;
+  approved_facts_verification?: string;
+  overall_risk?: 'Critical' | 'High' | 'Medium' | 'Low';
+  suggested_rewritten_content?: string;
+  escalation_reason?: string | null;
 }
 
 export interface KnowledgeItem {

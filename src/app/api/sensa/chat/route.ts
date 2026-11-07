@@ -1,11 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const CANDIDATE_MODELS = [
-  'gemini-flash-lite-latest',
   'gemini-flash-latest',
+  'gemini-2.5-flash',
   'gemini-3.1-flash-lite-preview',
-  'gemini-3-flash-preview',
+  'gemini-flash-lite-latest',
 ];
+
+function sanitizeRewrittenContent(text: string): string {
+  if (!text) return '';
+  const unsupported = [
+    [/\b(?:industry-leading|market-leading|best-in-class)\b/gi, 'standard'],
+    [/\b(?:trusted\s+worldwide|globally\s+trusted)\b/gi, '[claim removed: pending verified evidence]'],
+    [/\b(?:growing\s+teams)\b/gi, 'teams'],
+    [/\b(?:industry\s+standards?)\b/gi, 'established processes'],
+    [/\b(?:millions\s+of\s+(?:customers|users))\b/gi, '[unverified metric removed]'],
+  ] as const;
+
+  let cleaned = text;
+  for (const [pat, rep] of unsupported) {
+    cleaned = cleaned.replace(pat, rep);
+  }
+  return cleaned;
+}
 
 function getDeterministicFallback(prompt: string): string {
   const lower = prompt.toLowerCase().trim();
@@ -31,13 +48,13 @@ function getDeterministicFallback(prompt: string): string {
     return 'Hello! I am SENSA, your BrandSense copilot. How can I assist you with your brand guidelines and content today?';
   }
   if (hasGuarantee) {
-    return '**Policy Review Result: Non-Compliant Claim Flagged**\n\nYour drafted copy contains absolute performance warranties ("guarantee", "100%", "miracle"). Under corporate legal guardrails, absolute guarantees expose the brand to regulatory penalties unless supported by registered, audited third-party validation.\n\n**Guidance:** Pivot from absolute promises to quantifiable risk-mitigation messaging.';
+    return '**Policy Review Result: Potential Risk Flagged**\n\nYour drafted copy contains absolute performance warranties ("guarantee", "100%", "miracle"). Under corporate legal guardrails, absolute guarantees present potential regulatory risks unless supported by registered, audited third-party validation.\n\n**Guidance:** Pivot from absolute promises to quantifiable risk-mitigation messaging.';
   }
   if (hasFomo) {
     return '**Policy Review Result: Aggressive Tone Flagged**\n\nBrandSense voice guidelines require an empowering, authoritative, and respectful tone. Aggressive urgency or demeaning phrases ("don\'t be a dinosaur", fear-of-missing-out pressure) undermine enterprise trust.\n\n**Guidance:** Frame the value proposition around operational efficiency and strategic enablement.';
   }
   if (hasDirectional) {
-    return '**Policy Review Result: Accessibility Issue (WCAG 2.2)**\n\nDirectional or sensory-only cues (e.g. "click the green button on the right") violate accessibility standards for vision-impaired users utilizing screen readers.\n\n**Guidance:** Use clear, non-spatial action verbs such as "Download the compliance report" or "Select Continue".';
+    return '**Policy Review Result: Accessibility Issue (WCAG 2.2)**\n\nDirectional or sensory-only cues (e.g. "click the green button on the right") violate accessibility standards for vision-impaired users utilizing screen readers (Content observation; technical WCAG verification requires DOM and assistive tool validation).\n\n**Guidance:** Use clear, non-spatial action verbs such as "Download the compliance report" or "Select Continue".';
   }
   return 'Your query aligns well with BrandSense institutional brand governance principles. The tone is constructive, professional, and clear. Let me know if you need specific guidance on brand voice, terminology, or compliance!';
 }
@@ -49,10 +66,28 @@ Creators and marketers ask you questions about tone, claim validity, trademark t
 Always respond helpfully, constructively, and empathetically.
 Respond directly to whatever the user says or asks.
 
-CRITICAL RULES:
-- Provide your complete conversational answer or greeting directly in the "content" field.
-- Do not add artificial citations or separate suggested fixes for conversational queries or greetings.
-- Return response strictly as JSON.
+CRITICAL AUDIT ACCURACY RULES:
+1. STRICT EVIDENCE-BASED REWRITING:
+   - Never introduce new marketing claims or unapproved buzzwords ("industry-leading", "trusted worldwide", "growing teams", "industry standards").
+   - Rewrites must use only verified facts and approved brand terminology.
+   - If no approved evidence exists, remove the claim or use a neutral placeholder.
+
+2. BRAND GUIDELINES INTEGRITY:
+   - Never assume brand values (such as trust, transparency, empowerment) unless present in configured brand guidelines.
+   - If guidelines are unavailable, state that they could not be verified.
+
+3. ACCESSIBILITY (WCAG) INTEGRITY:
+   - Never classify exclamation marks (!) or ordinary punctuation as WCAG violations without actual accessibility evidence.
+   - Clearly distinguish content observations from a full technical WCAG audit.
+
+4. COMPLIANCE & LEGAL ANALYSIS:
+   - Frame legal or regulatory issues as "potential risks" rather than definitive legal conclusions.
+   - Distinguish verified facts, unverified claims, potential risks, and recommendations.
+
+5. FORMATTING:
+   - Provide your complete conversational answer or greeting directly in the "content" field.
+   - Do not add artificial citations or separate suggested fixes for conversational queries or greetings.
+   - Return response strictly as JSON.
 `;
 
   const userPrompt = `
@@ -99,10 +134,10 @@ Return JSON matching:
       if (rawText) {
         try {
           const parsed = JSON.parse(rawText);
-          if (parsed.content) return parsed.content;
-          if (parsed.reply) return parsed.reply;
+          if (parsed.content) return sanitizeRewrittenContent(parsed.content);
+          if (parsed.reply) return sanitizeRewrittenContent(parsed.reply);
         } catch {
-          return rawText;
+          return sanitizeRewrittenContent(rawText);
         }
       }
     } catch {

@@ -68,6 +68,7 @@
 .main {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 35px 20px 55px;
@@ -78,6 +79,7 @@
   min-height: 0;
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -385,6 +387,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   margin: 3px 0 25px;
   font-size: 12px;
 }
@@ -400,6 +404,7 @@
   gap: 7px;
   color: #81909c;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .remember input {
@@ -410,6 +415,7 @@
   text-decoration: none;
   color: #416f89;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .forgot:hover {
@@ -773,13 +779,28 @@
 }
 
 @media (max-width: 800px) {
+  .pageLogin {
+    height: auto;
+    min-height: 100vh;
+    max-height: none;
+    overflow-y: auto;
+  }
+
   .pageLogin .loginMain {
     padding: 16px 16px 24px;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .pageLogin .loginWrapper {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto;
+    grid-template-columns: 1fr;
   }
 
   .pageLogin .welcomePanel {
-    min-height: 0;
-    padding: 24px 28px;
+    display: none;
   }
 
   .pageLogin .welcomePanel h1 {

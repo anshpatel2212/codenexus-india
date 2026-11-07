@@ -43,11 +43,23 @@ export default function LandingPage() {
       }
     };
 
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        navLinks.classList.contains('active') &&
+        !navLinks.contains(target) &&
+        !menuToggle.contains(target)
+      ) {
+        closeMenu(false);
+      }
+    };
+
     const links = navLinks.querySelectorAll('a');
 
     menuToggle.addEventListener('click', toggleMenu);
     links.forEach((link) => link.addEventListener('click', () => closeMenu(false)));
     document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('click', handleClickOutside);
 
     const revealElements = document.querySelectorAll('.reveal');
     let observer: IntersectionObserver | null = null;
@@ -77,6 +89,7 @@ export default function LandingPage() {
       menuToggle.removeEventListener('click', toggleMenu);
       links.forEach((link) => link.removeEventListener('click', () => closeMenu(false)));
       document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('click', handleClickOutside);
       observer?.disconnect();
     };
   }, []);

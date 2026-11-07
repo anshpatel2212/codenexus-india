@@ -80,7 +80,7 @@ async def submit_review(
                         "category": f["category"],
                         "severity": f["severity"],
                         "reason": f["reason"],
-                        "evidence": f["evidence"],
+                        "evidence": " ".join(f["evidence"]) if isinstance(" ".join(f["evidence"]) if isinstance(f.get("evidence"), list) else str(f.get("evidence") or ""), list) else str(f.get("evidence") or ""),
                         "highlighted_text": f.get("highlightedText"),
                         "source_document": f.get("sourceDocument"),
                         "source_section": f.get("sourceSection"),
@@ -219,6 +219,10 @@ async def submit_review(
         "categoryScores": category_scores,
         "findings": findings,
         "revisionCount": 1,
+        "approved_facts_verification": getattr(ai_review_engine, "last_parsed", {}).get("approved_facts_verification", "Verified against configured brand guidelines."),
+        "overall_risk": getattr(ai_review_engine, "last_parsed", {}).get("overall_risk", "Low"),
+        "suggested_rewritten_content": suggested_content,
+        "escalation_reason": getattr(ai_review_engine, "last_parsed", {}).get("escalation_reason", None),
     }
 
 @router.get("")

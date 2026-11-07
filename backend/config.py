@@ -58,10 +58,12 @@ class Settings(BaseSettings):
     
     # AI API Configuration (NVIDIA Nemotron / LLM)
     NVIDIA_API_KEY: str = os.getenv("NVIDIA_API_KEY", "")
-    NVIDIA_MODEL: str = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-4-340b-instruct")
+    NVIDIA_MODEL: str = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3.5-lightning-30b-a3b")
+    NVIDIA_BASE_URL: str = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    AI_MODEL_NAME: str = os.getenv("AI_MODEL_NAME", "nvidia/nemotron-4-340b-instruct")
+    OPENAI_BASE_URL: str = os.getenv("OPENAI_BASE_URL", "https://integrate.api.nvidia.com/v1")
+    AI_MODEL_NAME: str = os.getenv("AI_MODEL_NAME", "nvidia/nemotron-3.5-lightning-30b-a3b")
 
     class Config:
         env_file = str(_backend_env) if _backend_env.exists() else (str(_root_env_local) if _root_env_local.exists() else ".env")
