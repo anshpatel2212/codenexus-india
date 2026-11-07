@@ -5,6 +5,7 @@ import json
 import urllib.request
 from typing import Dict, Any, List, Tuple, Optional
 from datetime import datetime
+from backend.config import settings
 from backend.services.supabase_admin import supabase_admin
 
 class AIReviewEngine:
@@ -56,7 +57,7 @@ Output strict JSON with:
   ]
 }
 """
-        models = ["gemini-flash-lite-latest", "gemini-flash-latest", "gemini-3.8-flash"]
+        models = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-flash-latest"]
         for model in models:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
             user_content = f"Content Type: {content_type}\nBrand Profile: {brand_profile_name}\n\nDRAFT CONTENT:\n\"\"\"{content}\"\"\""
@@ -102,7 +103,7 @@ Output strict JSON with:
         knowledge_items = await supabase_admin.get_brand_knowledge(org_id)
         
         # 1. Attempt Autonomous Gemini Flash LLM Audit first if API key configured
-        gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("NEXT_PUBLIC_GEMINI_API_KEY")
+        gemini_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY") or os.getenv("NEXT_PUBLIC_GEMINI_API_KEY")
         if gemini_key:
             try:
                 llm_res = await self._analyze_with_gemini(content, content_type, brand_profile_name, knowledge_items, gemini_key)
@@ -266,5 +267,55 @@ Output strict JSON with:
         }
 
         return overall_score, category_scores, findings, suggested_text
+
+    async def rewrite_text(
+        self,
+        original_text: str,
+        finding_reason: Optional[str] = None,
+        instructions: Optional[str] = None
+    ) -> str:
+        """
+        Intent-preserving AI rewrite engine powered by Google Gemini.
+        Transforms non-compliant copy into enterprise-grade brand-aligned messaging.
+        """
+        gemini_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY") or os.getenv("NEXT_PUBLIC_GEMINI_API_KEY")
+        if gemini_key:
+            system_prompt = (
+                "You are BrandSense AI, an enterprise brand governance and intent-preserving rewrite copilot.\n"
+                "Your objective is to rewrite flagged copy so it adheres strictly to brand governance guidelines "
+                "(no absolute guarantees, professional B2B tone, compliant terminology, accessible cues) "
+                "while preserving the creator's exact underlying message and intent.\n"
+                "Return response strictly as JSON with a single key 'rewrittenText'."
+            )
+            user_content = f"ORIGINAL TEXT:\n\"{original_text}\"\n"
+            if finding_reason:
+                user_content += f"GOVERNANCE ISSUE TO RESOLVE:\n{finding_reason}\n"
+            if instructions:
+                user_content += f"CREATOR INSTRUCTIONS:\n{instructions}\n"
+
+            models = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-flash-latest"]
+            for model in models:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
+                payload = {
+                    "contents": [{"parts": [{"text": f"{system_prompt}\n\n{user_content}"}]}],
+                    "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2}
+                }
+                req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+                try:
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        res = json.loads(resp.read().decode("utf-8"))
+                        raw = res["candidates"][0]["content"]["parts"][0]["text"]
+                        parsed = json.loads(raw)
+                        if parsed.get("rewrittenText"):
+                            return parsed["rewrittenText"].strip()
+                except Exception:
+                    continue
+
+        # Deterministic rewrite fallback
+        text = original_text
+        text = re.sub(r'guarantees?\s+(?:a\s+)?100%[^.]*', 'is engineered to help optimize compliance and reduce regulatory risk', text, flags=re.IGNORECASE)
+        text = re.sub(r'(?:disruptive\s+)?miracle\s+platform', 'enterprise content governance platform', text, flags=re.IGNORECASE)
+        text = re.sub(r'green\s+button\s+on\s+the\s+right(?:\s+side)?', 'primary action button', text, flags=re.IGNORECASE)
+        return text
 
 ai_review_engine = AIReviewEngine()

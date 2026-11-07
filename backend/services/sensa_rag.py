@@ -2,6 +2,7 @@ import os
 import json
 import urllib.request
 from typing import Dict, Any, List
+from backend.config import settings
 from backend.services.supabase_admin import supabase_admin
 
 class SensaRAGService:
@@ -13,7 +14,7 @@ class SensaRAGService:
         """
         knowledge = await supabase_admin.get_brand_knowledge(org_id)
         
-        gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("NEXT_PUBLIC_GEMINI_API_KEY")
+        gemini_key = settings.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY") or os.getenv("NEXT_PUBLIC_GEMINI_API_KEY")
         if gemini_key:
             try:
                 system_prompt = """
@@ -25,7 +26,7 @@ CRITICAL RULES:
 - Always provide a clean, compliant rewrite suggestion (suggestedFix) that creators can click to copy.
 - Return response strictly as JSON with keys: content, confidence, requiresHumanReview, citations, suggestedFix.
 """
-                models = ["gemini-flash-lite-latest", "gemini-flash-latest", "gemini-3.8-flash"]
+                models = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-flash-latest"]
                 for model in models:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
                     payload = {
@@ -45,7 +46,15 @@ CRITICAL RULES:
                                 "content": parsed.get("content", ""),
                                 "confidence": parsed.get("confidence", 95),
                                 "requiresHumanReview": parsed.get("requiresHumanReview", True),
-                                "citations": parsed.get("citations", []),
+                                "citations": [
+                                    c if isinstance(c, dict) else {
+                                        "title": str(c),
+                                        "document": str(c).split("(")[0].strip(),
+                                        "section": str(c).split("(")[1].rstrip(")") if "(" in str(c) else "",
+                                        "confidence": 95
+                                    }
+                                    for c in parsed.get("citations", [])
+                                ],
                                 "suggestedFix": parsed.get("suggestedFix"),
                             }
                     except Exception:

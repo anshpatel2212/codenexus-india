@@ -49,8 +49,8 @@ async def submit_review(
 
     review_status = "Approved" if overall_score >= 95 else "Changes Requested"
 
-    # 2. Persist to Supabase if live
-    if supabase_admin.is_live():
+    # 2. Persist to Supabase if live client exists, otherwise use SQLite
+    if hasattr(supabase_admin, "client") and supabase_admin.client and supabase_admin.is_live():
         try:
             supabase_admin.client.table("reviews").insert({
                 "id": review_id,
@@ -179,8 +179,8 @@ async def submit_review(
                 INSERT INTO approvals (
                     id, review_id, organization_id, submitted_by,
                     assigned_to, status, urgency, compliance_score,
-                    created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 approval_id,
                 review_id,
@@ -190,7 +190,6 @@ async def submit_review(
                 "Pending",
                 "Medium" if overall_score >= 75 else "High",
                 overall_score,
-                now_iso,
                 now_iso
             ))
 
@@ -322,4 +321,39 @@ async def get_review(
         pass
 
     raise HTTPException(status_code=404, detail="Review not found.")
+
+@router.post("/{review_id}/rewrite")
+async def rewrite_review_content(
+    review_id: str,
+    req: RewriteRequest,
+    current_user: AuthenticatedUser = Depends(require_role(["Admin", "Creator", "Manager", "Reviewer"]))
+):
+    """
+    Generate an intent-preserving, compliant rewrite for flagged content or a specific finding.
+    """
+    finding_reason = None
+    if req.targetFindingId:
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT reason FROM findings WHERE id = ? AND review_id = ?", (req.targetFindingId, review_id))
+            row = cur.fetchone()
+            if row:
+                finding_reason = row["reason"]
+            conn.close()
+        except Exception:
+            pass
+
+    rewritten = await ai_review_engine.rewrite_text(
+        original_text=req.originalText,
+        finding_reason=finding_reason
+    )
+
+    return {
+        "success": True,
+        "reviewId": review_id,
+        "originalText": req.originalText,
+        "rewrittenText": rewritten,
+        "targetFindingId": req.targetFindingId
+    }
 

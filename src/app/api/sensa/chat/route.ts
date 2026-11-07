@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const CANDIDATE_MODELS = [
   'gemini-flash-lite-latest',
-  'gemini-flash-latest',
   'gemini-3.1-flash-lite-preview',
   'gemini-3-flash-preview',
+  'gemini-flash-latest',
 ];
 
 function getDeterministicFallback(prompt: string): string {
