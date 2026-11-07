@@ -10,3 +10,10 @@ __pycache__/
 *.pyc
 .DS_Store
 tsconfig.tsbuildinfo
+.firebase/
+
+# BrandSense sensitive database files
+*.db
+*.db-wal
+*.db-shm
+backend/data/

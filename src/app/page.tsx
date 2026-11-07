@@ -40,6 +40,7 @@ export default function LandingPage() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && navLinks.classList.contains('active')) {
         closeMenu(true);
+<<<<<<< HEAD
       }
     };
 
@@ -51,6 +52,8 @@ export default function LandingPage() {
         !menuToggle.contains(target)
       ) {
         closeMenu(false);
+=======
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
       }
     };
 

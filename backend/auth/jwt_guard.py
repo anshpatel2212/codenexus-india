@@ -66,6 +66,10 @@ class AuthenticatedUser(BaseModel):
     role: str  # 'Super Admin' | 'Admin' | 'Creator' | 'Manager' | 'Reviewer'
     department: Optional[str] = None
     supabase_user_id: Optional[str] = None
+<<<<<<< HEAD
+=======
+    avatar_url: Optional[str] = None
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 
 def verify_supabase_jwt(token: str) -> Dict[str, Any]:
     """

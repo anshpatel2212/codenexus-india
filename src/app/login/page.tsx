@@ -113,7 +113,12 @@ export default function LoginPage() {
   };
 
   const routeByRole = (role: string) => {
+<<<<<<< HEAD
     router.replace(getDashboardRouteForRole(role));
+=======
+    const destination = getDashboardRouteForRole(role);
+    router.replace(destination);
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
   };
 
   // Immediate single-click login execution

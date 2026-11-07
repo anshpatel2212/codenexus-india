@@ -13,8 +13,15 @@ DB_PATH = DB_DIR / "brandsense.db"
 
 def get_db_connection() -> sqlite3.Connection:
     DB_DIR.mkdir(parents=True, exist_ok=True)
+<<<<<<< HEAD
     conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
     conn.row_factory = sqlite3.Row
+=======
+    conn = sqlite3.connect(str(DB_PATH), timeout=30.0, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA busy_timeout = 10000;")
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
     return conn
 
 def hash_password(password: str, salt: Optional[str] = None) -> Tuple[str, str]:
@@ -209,6 +216,28 @@ class DatabaseService:
                 pass
 
         cur.execute("""
+<<<<<<< HEAD
+=======
+        CREATE TABLE IF NOT EXISTS review_revisions (
+            id TEXT PRIMARY KEY,
+            organization_id TEXT NOT NULL,
+            review_id TEXT NOT NULL,
+            version_number INTEGER NOT NULL,
+            author_id TEXT NOT NULL,
+            compliance_score REAL DEFAULT 0,
+            status TEXT DEFAULT 'Initial Submission',
+            summary TEXT,
+            content TEXT NOT NULL,
+            accepted_count INTEGER DEFAULT 0,
+            rejected_count INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
+            FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+        )
+        """)
+
+        cur.execute("""
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
         CREATE TABLE IF NOT EXISTS invitations (
             id TEXT PRIMARY KEY,
             organization_id TEXT NOT NULL,

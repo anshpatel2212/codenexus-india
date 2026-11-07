@@ -116,7 +116,11 @@ export const SensaChatDrawer: React.FC<SensaChatDrawerProps> = ({ isOpen, onClos
 
     (async () => {
       try {
-        const response = await apiClient.querySensa(text);
+        const history = messages.map((m) => ({
+          role: m.sender === 'user' ? ('user' as const) : ('model' as const),
+          content: m.content,
+        }));
+        const response = await apiClient.querySensa(text, history);
         setMessages((previous) => [...previous, response]);
       } catch {
         setError('SENSA could not respond just now. Please try again.');

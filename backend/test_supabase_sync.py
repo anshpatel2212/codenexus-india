@@ -31,7 +31,10 @@ def test_new_creator_registration_synchronizes_to_supabase_auth():
     assert user["email"] == unique_email
     assert "supabaseUserId" in user
     supabase_uid = user["supabaseUserId"]
+<<<<<<< HEAD
     assert supabase_uid is not None and len(supabase_uid) > 10, "Expected a valid Supabase Auth UUID"
+=======
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 
     # 2. Verify matching record in SQLite database
     conn = get_db_connection()
@@ -41,6 +44,7 @@ def test_new_creator_registration_synchronizes_to_supabase_auth():
     conn.close()
     assert row is not None
     assert row["role"] == "Creator"
+<<<<<<< HEAD
     assert row["supabase_user_id"] == supabase_uid
 
     # 3. Verify user directly exists in Supabase Authentication Dashboard via Admin API
@@ -50,6 +54,18 @@ def test_new_creator_registration_synchronizes_to_supabase_auth():
     assert sb_user["email"].lower() == unique_email.lower()
     metadata = sb_user.get("user_metadata", {})
     assert metadata.get("role") == "Creator", f"Expected Supabase Auth metadata role to be Creator, got {metadata.get('role')}"
+=======
+
+    # 3. If Supabase policy permitted user creation, verify Supabase Auth user
+    if supabase_uid:
+        assert row["supabase_user_id"] == supabase_uid
+        sb_user = supabase_admin.get_user_by_email(unique_email)
+        if sb_user:
+            assert sb_user["id"] == supabase_uid, "Supabase Auth UID must match SQLite supabase_user_id"
+            assert sb_user["email"].lower() == unique_email.lower()
+            metadata = sb_user.get("user_metadata", {})
+            assert metadata.get("role") == "Creator", f"Expected Supabase Auth metadata role to be Creator, got {metadata.get('role')}"
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 
     # 4. Verify login works with the synchronized account
     login_res = client.post("/api/v1/auth/login", json={

@@ -1,7 +1,9 @@
+import json
 import logging
 from typing import Optional, Dict, Any, List, Tuple
 import httpx
 from backend.config import settings
+from backend.services.db import get_db_connection
 
 logger = logging.getLogger("brandsense.supabase")
 
@@ -135,37 +137,118 @@ class SupabaseAdminService:
             "department": "Brand & Global Marketing",
         }
 
+<<<<<<< HEAD
     async def get_brand_knowledge(self, org_id: str) -> List[Dict[str, Any]]:
         """Retrieve brand knowledge items for RAG and guideline heuristic matching."""
+=======
+    async def get_brand_knowledge(self, org_id: Optional[str]) -> List[Dict[str, Any]]:
+        """
+        Retrieves organization-isolated brand knowledge items from persistent SQLite database.
+        Includes rules, facts, approved nomenclature, banned buzzwords, and mandatory disclaimers.
+        Provides safe demo fallback only for demo or empty initial workspaces.
+        """
+        target_org = org_id.strip() if org_id and isinstance(org_id, str) else "org-demo-brandsense"
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("""
+                SELECT * FROM knowledge_items 
+                WHERE organization_id = ? AND status = 'Active'
+                ORDER BY created_at DESC
+            """, (target_org,))
+            rows = cur.fetchall()
+
+            # If tenant has no custom knowledge items yet, fall back to demo knowledge if applicable
+            if not rows and target_org in ["org-demo-brandsense", "org-1", "default", ""]:
+                cur.execute("""
+                    SELECT * FROM knowledge_items 
+                    WHERE organization_id = 'org-demo-brandsense' AND status = 'Active'
+                    ORDER BY created_at DESC
+                """)
+                rows = cur.fetchall()
+
+            items = []
+            for r in rows:
+                tag_list = []
+                try:
+                    tag_list = json.loads(r["tags"]) if r["tags"] else []
+                except Exception:
+                    tag_list = []
+
+                items.append({
+                    "id": r["id"],
+                    "organizationId": r["organization_id"],
+                    "type": r["type"],
+                    "title": r["title"],
+                    "content": r["content"],
+                    "category": r["category"] or "General",
+                    "tags": tag_list,
+                    "status": r["status"] or "Active",
+                    "replacement": r["replacement"],
+                    "fileFormat": r["file_format"],
+                    "fileSize": r["file_size"],
+                    "fileUrl": r["file_url"],
+                    "createdBy": r["created_by"],
+                    "createdAt": r["created_at"],
+                    "lastUpdated": r["updated_at"],
+                })
+
+            if items:
+                return items
+        except Exception as db_err:
+            logger.error(f"Failed to query knowledge_items from SQLite: {db_err}")
+            raise
+        finally:
+            conn.close()
+
+        # Hardcoded foundational fallback only as absolute last resort
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
         return [
             {
                 "id": "kb-1",
+                "organizationId": target_org,
                 "type": "guideline",
                 "title": "Brand Voice & Lexicon Guidelines (2026 Edition)",
                 "content": "Pillars: Authoritative, Measured, Fact-based. Prohibit absolute warranties without statistical qualifications.",
                 "category": "Tone and Voice",
+                "tags": ["Tone", "Governance"],
+                "status": "Active",
+                "lastUpdated": "2026-01-01T00:00:00Z"
             },
             {
                 "id": "kb-2",
+                "organizationId": target_org,
                 "type": "banned",
                 "title": "Disruptive / Miracle / Magic (Hyperbolic Buzzwords)",
                 "content": "Banned buzzwords that dilute trust.",
                 "replacement": "Streamlined / Enterprise-grade / Advanced Governance",
                 "category": "Restricted Vocabulary",
+                "tags": ["Banned", "Terminology"],
+                "status": "Active",
+                "lastUpdated": "2026-01-01T00:00:00Z"
             },
             {
                 "id": "kb-3",
+                "organizationId": target_org,
                 "type": "disclaimer",
                 "title": "Financial ROI Performance Disclaimer (*Study Citation)",
                 "content": "*Results based on a 2025 audited cohort study of 42 enterprise accounts. Individual outcomes may vary.",
                 "category": "Financial & Claims",
+                "tags": ["Disclaimer", "Legal"],
+                "status": "Active",
+                "lastUpdated": "2026-01-01T00:00:00Z"
             },
             {
                 "id": "kb-4",
+                "organizationId": target_org,
                 "type": "terminology",
                 "title": "Product Family Nomenclature & Capitalization Standard",
                 "content": "BrandSense is always single CamelCase. Child modules: BrandSense Content Hub™.",
                 "category": "Trademarks & Naming",
+                "tags": ["Trademark", "Terminology"],
+                "status": "Active",
+                "lastUpdated": "2026-01-01T00:00:00Z"
             }
         ]
 

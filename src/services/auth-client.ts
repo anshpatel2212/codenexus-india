@@ -190,6 +190,9 @@ export const toPublicUser = (user: StoredUser): UserProfile => {
 
 class BrandSenseAuthClient {
   private seedPromise: Promise<void> | null = null;
+  private cachedUser: UserProfile | null = null;
+  private lastFetchedTime: number = 0;
+  private inFlightSessionPromise: Promise<UserProfile | null> | null = null;
 
   private get supabase() {
     return getSupabaseBrowserClient();
@@ -260,8 +263,13 @@ class BrandSenseAuthClient {
   }
 
   private writeSession(user: UserProfile) {
+<<<<<<< HEAD
     // Clear any previous session state to avoid cross-session contamination
     this.clearSession();
+=======
+    this.cachedUser = user;
+    this.lastFetchedTime = Date.now();
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
     const session: StoredSession = {
       userId: user.id,
       email: user.email,
@@ -316,6 +324,12 @@ class BrandSenseAuthClient {
   }
 
   public clearSession() {
+<<<<<<< HEAD
+=======
+    this.cachedUser = null;
+    this.lastFetchedTime = 0;
+    this.inFlightSessionPromise = null;
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
     if (typeof window === 'undefined') return;
     try {
       localStorage.removeItem(SESSION_KEY);
@@ -324,6 +338,7 @@ class BrandSenseAuthClient {
       localStorage.removeItem('brandsense_active_user');
     } catch {
       // Ignore
+<<<<<<< HEAD
     }
   }
 
@@ -402,12 +417,118 @@ class BrandSenseAuthClient {
   // ---------------------------------------------------------------------------
   // Login with Real Backend Database & Role Portal Enforcement
   // ---------------------------------------------------------------------------
+=======
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Session Handling (Single Source of Truth: Database via /api/v1/auth/me)
+  // ---------------------------------------------------------------------------
+  async getSession(forceRefresh = false): Promise<UserProfile | null> {
+    const token = this.getToken();
+
+    if (!token) {
+      this.clearSession();
+      return null;
+    }
+
+    // In-memory cache hit: avoids duplicate network requests (<0.1ms latency)
+    if (!forceRefresh && this.cachedUser && Date.now() - this.lastFetchedTime < 30000) {
+      return this.cachedUser;
+    }
+
+    // Deduplicate in-flight requests: all callers share the single pending promise
+    if (this.inFlightSessionPromise) {
+      return this.inFlightSessionPromise;
+    }
+
+    this.inFlightSessionPromise = (async () => {
+      try {
+        const res = await fetch('/api/v1/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.ok) {
+          const profile = await res.json();
+          const userProfile: UserProfile = {
+            id: profile.id,
+            name: profile.name,
+            email: profile.email,
+            role: profile.role, // Always taken directly from database
+            organizationId: profile.organizationId,
+            organisation: profile.organisation,
+            avatar: profile.avatar || '',
+            department: profile.department || 'General',
+            isDemo: Boolean(profile.isDemo),
+            supabaseUserId: profile.supabaseUserId || '',
+          };
+          this.cachedUser = userProfile;
+          this.lastFetchedTime = Date.now();
+
+          // Only write to localStorage if user changed to eliminate storage event loops
+          const existing = readJSON<UserProfile>(ACTIVE_USER_KEY);
+          if (!existing || existing.id !== userProfile.id || existing.role !== userProfile.role) {
+            this.writeSession(userProfile);
+          }
+          return userProfile;
+        } else if (res.status === 401 || res.status === 403) {
+          // Token expired, revoked, or rejected by server
+          this.setToken(null);
+          this.clearSession();
+          return null;
+        }
+      } catch (e) {
+        // Backend temporarily unreachable: fail safely with active session if valid
+        console.warn('Backend /auth/me unreachable, failing safely:', e);
+        const cached = this.cachedUser || readJSON<UserProfile>(ACTIVE_USER_KEY);
+        if (cached && cached.id) {
+          return cached;
+        }
+        return null;
+      } finally {
+        this.inFlightSessionPromise = null;
+      }
+
+      // Supabase live session fallback only if token check above did not resolve
+      if (this.isSupabaseLive()) {
+        try {
+          const { data: { session }, error } = await this.supabase.auth.getSession();
+          if (session && !error) {
+            let profile = await this.fetchUserProfile(session.user.id);
+            if (profile) {
+              this.writeSession(profile);
+              return profile;
+            }
+          }
+        } catch (err) {
+          console.warn('Supabase getSession error:', err);
+        }
+      }
+
+      return null;
+    })();
+
+    return this.inFlightSessionPromise;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Login with Real Backend Database & Role Portal Enforcement
+  // ---------------------------------------------------------------------------
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
   async login(email: string, password: string, portalRole?: string): Promise<AuthResult> {
     const normalized = normalizeEmail(email);
     if (!normalized || !password) {
       return { success: false, error: 'Enter your email address and password.', field: 'email' };
     }
 
+<<<<<<< HEAD
+=======
+    // Invalidate stale in-memory caches before authenticating
+    this.cachedUser = null;
+    this.lastFetchedTime = 0;
+
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
     // 1. Primary: Persistent Backend Relational Database Authentication
     try {
       const resp = await fetch('/api/v1/auth/login', {
@@ -429,6 +550,7 @@ class BrandSenseAuthClient {
         return { success: true, user: data.user };
       }
 
+<<<<<<< HEAD
       // If backend returned 401 or 403, respect the strict security rejection
       if (resp.status === 401 || resp.status === 403) {
         const errData = await resp.json().catch(() => ({}));
@@ -438,6 +560,15 @@ class BrandSenseAuthClient {
           field: resp.status === 401 ? 'password' : 'email',
         };
       }
+=======
+      // Backend returned HTTP error status (400, 401, 403, 500)
+      const errData = await resp.json().catch(() => ({}));
+      return {
+        success: false,
+        error: errData.detail || 'Authentication failed. Please verify your credentials and role access.',
+        field: resp.status === 401 ? 'password' : 'email',
+      };
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
     } catch (netErr) {
       // Backend not running locally, fallback gracefully
       console.warn('Backend auth endpoint unreachable, attempting fallback authentication.');

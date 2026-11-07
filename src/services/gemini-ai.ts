@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { ReviewItem, Finding, SensaMessage, FindingCategory, SeverityLevel, ContentType, ApprovedFactStatus } from '@/types';
+=======
+import { ReviewItem, Finding, SensaMessage, FindingCategory, SeverityLevel, ContentType } from '@/types';
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 
 /**
  * BrandSense AI Integration Engine (Powered by Google Gemini AI Studio)
@@ -7,12 +11,17 @@ import { ReviewItem, Finding, SensaMessage, FindingCategory, SeverityLevel, Cont
  */
 
 const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
+<<<<<<< HEAD
 const CANDIDATE_MODELS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-3.1-flash-lite-preview', 'gemini-flash-lite-latest'];
+=======
+const CANDIDATE_MODELS = ['gemini-3.1-flash-lite-preview', 'gemini-flash-lite-latest', 'gemini-3-flash-preview'];
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 
 export function isGeminiConfigured(): boolean {
   return Boolean(GEMINI_API_KEY && GEMINI_API_KEY.trim() !== '');
 }
 
+<<<<<<< HEAD
 export function sanitizeRewrittenContent(text: string): string {
   if (!text) return '';
   const unsupported = [
@@ -31,6 +40,8 @@ export function sanitizeRewrittenContent(text: string): string {
   return cleaned;
 }
 
+=======
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 interface RawLLMOutput {
   overallScore: number;
   categoryScores: {
@@ -42,6 +53,7 @@ interface RawLLMOutput {
     'Accessibility': number;
   };
   suggestedContent: string;
+<<<<<<< HEAD
   suggested_rewritten_content?: string;
   approved_facts_verification?: string;
   overall_risk?: 'Critical' | 'High' | 'Medium' | 'Low';
@@ -61,6 +73,19 @@ interface RawLLMOutput {
     explanation: string;
     approved_fact_status?: ApprovedFactStatus;
     governance_escalation_required: boolean;
+=======
+  findings: Array<{
+    category: FindingCategory;
+    severity: SeverityLevel;
+    reason: string;
+    evidence: string;
+    highlightedText: string;
+    sourceDocument: string;
+    sourceSection: string;
+    confidence: number;
+    suggestedFix: string;
+    explanation: string;
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
   }>;
 }
 
@@ -148,6 +173,7 @@ EVALUATION CATEGORIES:
 5. Accessibility: Flag visual-only directional cues (e.g., "click the green button on the right") per WCAG 2.2 standards. Convert to accessible action text.
 6. Visual Consistency: Validate alignment with designated brand profile standards.
 
+<<<<<<< HEAD
 CRITICAL AUDIT ACCURACY RULES:
 1. STRICT EVIDENCE-BASED REWRITING:
    - Never introduce new marketing claims.
@@ -172,6 +198,12 @@ CRITICAL AUDIT ACCURACY RULES:
 
 5. CLEAR DISTINCTION IN FINDINGS:
    - Clearly distinguish: Verified facts, Unverified claims, Potential risks, and Model-generated recommendations.
+=======
+CRITICAL RULES:
+- CITE OR STAY SILENT: Every finding must cite an approved corporate policy document (e.g. "Global Legal & Regulatory Guardrails 2026.pdf", "Brand Voice & Lexicon Guide v4.pdf", "Master Trademark & Product Nomenclature.pdf") and section.
+- INTENT-PRESERVING FIXES: In suggestedFix and suggestedContent, never destroy the author's creativity. Surgically replace violations while preserving sentence flow.
+- STRICT JSON: Return only valid JSON conforming exactly to the requested schema.
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 
 FEW-SHOT CALIBRATION EXAMPLES (Derived from Civil Comments Benchmark):
 1. Input: "This author has no clue, what an utter idiot and garbage take."
@@ -210,18 +242,33 @@ Return a JSON object with this exact structure:
     "Visual Consistency": number (0-100),
     "Accessibility": number (0-100)
   },
+<<<<<<< HEAD
   "suggested_rewritten_content": "complete revised text with all fixes applied cleanly",
   "approved_facts_verification": "Report on whether brand guidelines were verified or unavailable",
   "overall_risk": "Critical" | "High" | "Medium" | "Low",
   "escalation_reason": "Rationale for escalation if required else null",
+=======
+  "suggestedContent": "complete revised text with all fixes applied cleanly",
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
   "findings": [
     {
       "category": "Tone and Voice" | "Terminology" | "Facts and Claims" | "Promotional Claims" | "Visual Consistency" | "Accessibility",
       "severity": "Critical" | "High" | "Medium" | "Low" | "Needs Human Review",
+<<<<<<< HEAD
       "explanation": "detailed rationale for the fix distinguishing content observation from technical audit",
       "evidence": ["exact problematic sentence or quote"],
       "recommended_correction": "compliant drop-in replacement text without unverified superlatives",
       "governance_escalation_required": boolean
+=======
+      "reason": "short bold explanation of issue",
+      "evidence": "the sentence containing the issue",
+      "highlightedText": "exact substring to highlight",
+      "sourceDocument": "e.g. Global Legal & Regulatory Guardrails 2026.pdf",
+      "sourceSection": "e.g. Section 4.2 — Prohibited Performance Warranties",
+      "confidence": number (80-99),
+      "suggestedFix": "drop-in replacement text",
+      "explanation": "detailed rationale for the fix"
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
     }
   ]
 }
@@ -230,6 +277,7 @@ Return a JSON object with this exact structure:
   const rawJson = await callGeminiGenerate(`${systemPrompt}\n\n${userPrompt}`, 0.1);
   const parsed: RawLLMOutput = JSON.parse(rawJson);
 
+<<<<<<< HEAD
   let hasCritical = false;
   let hasHigh = false;
   let hasMedium = false;
@@ -300,6 +348,24 @@ Return a JSON object with this exact structure:
   const cleanSuggested = sanitizeRewrittenContent(parsed.suggested_rewritten_content || parsed.suggestedContent || data.content);
 
   const overallRisk = hasCritical ? 'Critical' : (hasHigh ? 'High' : (hasMedium ? 'Medium' : 'Low'));
+=======
+  const findings: Finding[] = (parsed.findings || []).map((f, index) => ({
+    id: `f-${index + 1}`,
+    category: f.category,
+    severity: f.severity,
+    reason: f.reason,
+    evidence: f.evidence,
+    highlightedText: f.highlightedText,
+    sourceDocument: f.sourceDocument || 'Master Brand Voice Guide v4.pdf',
+    sourceSection: f.sourceSection || 'Section 3.1',
+    confidence: f.confidence || 95,
+    suggestedFix: f.suggestedFix,
+    explanation: f.explanation,
+    status: 'pending'
+  }));
+
+  const reviewId = `REV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 
   const reviewItem: ReviewItem = {
     id: reviewId,
@@ -317,8 +383,12 @@ Return a JSON object with this exact structure:
     overallScore: parsed.overallScore || 78,
     status: findings.length > 0 ? 'Changes Requested' : 'Approved',
     originalContent: data.content,
+<<<<<<< HEAD
     suggestedContent: cleanSuggested,
     suggested_rewritten_content: cleanSuggested,
+=======
+    suggestedContent: parsed.suggestedContent || data.content,
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
     categoryScores: parsed.categoryScores || {
       'Tone and Voice': 80,
       'Terminology': 85,
@@ -329,9 +399,12 @@ Return a JSON object with this exact structure:
     },
     findings,
     revisionCount: 1,
+<<<<<<< HEAD
     approved_facts_verification: parsed.approved_facts_verification || 'Verified against configured brand guidelines.',
     overall_risk: parsed.overall_risk || overallRisk,
     escalation_reason: parsed.escalation_reason || (hasCritical ? 'High-liability claims detected requiring governance escalation.' : null),
+=======
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
   };
 
   return reviewItem;
@@ -351,6 +424,7 @@ Creators and marketers ask you questions about tone, claim validity, trademark t
 Always respond helpfully, constructively, and empathetically.
 Respond directly to whatever the user says or asks.
 
+<<<<<<< HEAD
 CRITICAL AUDIT ACCURACY RULES:
 - Never assume brand values (e.g. trust, transparency, empowerment) unless stated in configured brand guidelines.
 - Never introduce unverified superlatives ("industry-leading", "trusted worldwide", "growing teams", "industry standards").
@@ -359,6 +433,11 @@ CRITICAL AUDIT ACCURACY RULES:
 - Distinguish verified facts, unverified claims, potential risks, and recommendations.
 - If brand guidelines are unavailable, state that guidelines could not be verified.
 - Provide your complete conversational answer or greeting directly in the "content" field.
+=======
+CRITICAL RULES:
+- Provide your complete conversational answer or greeting directly in the "content" field.
+- Do not add artificial citations or separate suggested fixes for conversational queries or greetings.
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 - Return response strictly as JSON.
 `;
 
@@ -384,6 +463,10 @@ Return JSON matching:
     id: `sensa-res-${Date.now()}`,
     sender: 'sensa',
     timestamp: 'Just now',
+<<<<<<< HEAD
     content: sanitizeRewrittenContent(content) || 'Hello! How can I assist you today?',
+=======
+    content: content || 'Hello! How can I assist you today?',
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
   };
 }

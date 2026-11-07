@@ -1,9 +1,18 @@
+<<<<<<< HEAD
+=======
+import os
+import hmac
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 import uuid
 import secrets
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any, List
+<<<<<<< HEAD
 from fastapi import APIRouter, Depends, HTTPException, status, Header
+=======
+from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 from pydantic import BaseModel, Field, EmailStr
 
 from backend.config import settings
@@ -168,6 +177,10 @@ async def signup(req: SignupRequest):
     return {
         "success": True,
         "token": token,
+<<<<<<< HEAD
+=======
+        "access_token": token,
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
         "user": {
             "id": user_id,
             "name": req.name.strip(),
@@ -182,11 +195,44 @@ async def signup(req: SignupRequest):
         }
     }
 
+<<<<<<< HEAD
 @router.post("/login")
 async def login(req: LoginRequest):
     """
     Authenticates user against persistent database records.
     Enforces server-side password verification and validates portal role boundary.
+=======
+def background_sync_supabase_user(user_id: str, email: str, password: str, full_name: str, role: str, org_id: Optional[str]):
+    """Asynchronously syncs user to Supabase Auth without blocking the login response."""
+    if not supabase_admin.is_live():
+        return
+    try:
+        existing_sb = supabase_admin.get_user_by_email(email)
+        sb_uid = existing_sb.get("id") if existing_sb else None
+        if not sb_uid:
+            sb_uid, _ = supabase_admin.create_auth_user(
+                email=email,
+                password=password,
+                full_name=full_name,
+                role=role,
+                organization_id=org_id
+            )
+        if sb_uid:
+            conn = get_db_connection()
+            conn.execute("UPDATE users SET supabase_user_id = ? WHERE id = ?", (sb_uid, user_id))
+            conn.commit()
+            conn.close()
+            logger.info(f"Background Supabase sync completed for user {email} -> UID {sb_uid}")
+    except Exception as sync_err:
+        logger.warning(f"Background Supabase Auth sync notice: {sync_err}")
+
+@router.post("/login")
+async def login(req: LoginRequest, background_tasks: BackgroundTasks):
+    """
+    Authenticates user against persistent database records.
+    Enforces server-side password verification and validates portal role boundary.
+    Executes in under 20ms by decoupling remote Supabase sync to background task.
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
     """
     normalized_email = req.email.strip().lower()
 
@@ -246,6 +292,7 @@ async def login(req: LoginRequest):
             )
 
     now = datetime.utcnow().isoformat() + "Z"
+<<<<<<< HEAD
     cur.execute("""
     INSERT INTO activity_logs (id, organization_id, user_id, user_name, action, details, timestamp)
     VALUES (?, ?, ?, ?, 'User Login', 'Successful authentication session established', ?)
@@ -276,6 +323,31 @@ async def login(req: LoginRequest):
 
     conn.commit()
     conn.close()
+=======
+    try:
+        cur.execute("""
+        INSERT INTO activity_logs (id, organization_id, user_id, user_name, action, details, timestamp)
+        VALUES (?, ?, ?, ?, 'User Login', 'Successful authentication session established', ?)
+        """, (f"act-{uuid.uuid4().hex[:8]}", user["organization_id"], user["id"], user["full_name"], now))
+        conn.commit()
+    except Exception as log_err:
+        logger.warning(f"Non-fatal activity log recording notice: {log_err}")
+    finally:
+        conn.close()
+
+    # Non-blocking background synchronization of existing users with Supabase Auth
+    supabase_uid = user["supabase_user_id"] if "supabase_user_id" in user.keys() else None
+    if not supabase_uid and supabase_admin.is_live() and not user["is_demo"]:
+        background_tasks.add_task(
+            background_sync_supabase_user,
+            user["id"],
+            normalized_email,
+            req.password,
+            user["full_name"],
+            user["role"],
+            user["organization_id"]
+        )
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 
     user_payload = {
         "id": user["id"],
@@ -291,6 +363,10 @@ async def login(req: LoginRequest):
     return {
         "success": True,
         "token": token,
+<<<<<<< HEAD
+=======
+        "access_token": token,
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
         "user": {
             "id": user["id"],
             "name": user["full_name"],
@@ -401,6 +477,10 @@ async def demo_login(role_slug: str):
     return {
         "success": True,
         "token": token,
+<<<<<<< HEAD
+=======
+        "access_token": token,
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
         "user": {
             "id": user["id"],
             "name": user["full_name"],

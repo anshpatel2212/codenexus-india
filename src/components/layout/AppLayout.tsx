@@ -28,7 +28,11 @@ import { SensaChatDrawer } from '@/components/assistant/SensaChatDrawer';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { RequireAuth } from '@/components/auth/RequireAuth';
+<<<<<<< HEAD
 import { authClient } from '@/services/auth-client';
+=======
+import { authClient, getDashboardRouteForRole } from '@/services/auth-client';
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 import { apiClient } from '@/services/api-client';
 import { ApprovalItem } from '@/types';
 import { TeamCredit } from '@/components/ui/TeamCredit';
@@ -133,6 +137,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     };
   }, [logoutConfirmOpen, sensaOpen, orgDropdownOpen, notifDropdownOpen, profileMenuOpen, sidebarOpen]);
 
+<<<<<<< HEAD
+=======
+  useEffect(() => {
+    setSidebarOpen(false);
+    setProfileMenuOpen(false);
+    setNotifDropdownOpen(false);
+    setOrgDropdownOpen(false);
+  }, [pathname]);
+
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
   const handleLogout = () => {
     logout();
     setLogoutConfirmOpen(false);
@@ -142,14 +156,18 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   };
 
   const navigation = [
-    { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'New Review', href: '/review/new', icon: FilePlus2, badge: 'New' },
-    { name: 'Review History', href: '/history', icon: History },
+    { name: 'Overview', href: getDashboardRouteForRole(user?.role), icon: LayoutDashboard },
+    { name: 'New Review', href: user?.role === 'Creator' ? '/creator/new-review' : '/review/new', icon: FilePlus2, badge: 'New' },
+    { name: 'Review History', href: user?.role === 'Creator' ? '/creator/history' : (user?.role === 'Reviewer' || user?.role === 'Manager') ? '/reviewer/history' : '/history', icon: History },
     { name: 'Brand Knowledge', href: '/knowledge', icon: BookMarked },
+<<<<<<< HEAD
     { name: 'Approvals', href: '/approvals', icon: CheckSquare, badgeCount: pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined },
+=======
+    { name: 'Approvals', href: (user?.role === 'Reviewer' || user?.role === 'Manager') ? '/reviewer/assigned' : '/approvals', icon: CheckSquare, badgeCount: pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined },
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
     { name: 'Insights', href: '/insights', icon: BarChart3 },
     { name: 'SENSA AI', href: '/assistant', icon: Sparkles, highlight: true },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Settings', href: user?.role === 'Creator' ? '/creator/settings' : (user?.role === 'Reviewer' || user?.role === 'Manager') ? '/reviewer/settings' : user?.role === 'Admin' ? '/admin/settings' : user?.role === 'Super Admin' ? '/super-admin/settings' : '/settings', icon: Settings },
   ];
 
   const getBreadcrumb = () => {

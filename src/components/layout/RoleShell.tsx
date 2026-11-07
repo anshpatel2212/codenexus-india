@@ -143,6 +143,16 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
     };
   }, []);
 
+<<<<<<< HEAD
+=======
+  // Ensure drawers and menus automatically close on route navigation
+  useEffect(() => {
+    setSidebarOpen(false);
+    setProfileMenuOpen(false);
+    setNotifDropdownOpen(false);
+  }, [pathname]);
+
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
   const handleLogout = () => {
     logout();
     setLogoutConfirmOpen(false);
@@ -296,7 +306,11 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
         {/* Role-Specific Isolated Sidebar */}
         <aside
           className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-[#C4D5E0] flex flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+<<<<<<< HEAD
             sidebarOpen ? 'translate-x-0' : '-translate-x-0 -translate-x-full'
+=======
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
           }`}
         >
           {/* Brand Logo & Role Pill */}

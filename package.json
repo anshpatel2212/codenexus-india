@@ -4,7 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
+<<<<<<< HEAD
     "build": "next build --webpack",
+=======
+    "build": "next build",
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
     "start": "next start",
     "lint": "next lint",
     "test": "node --test tests/*.test.mjs"

@@ -101,6 +101,10 @@ export default function SignupPage() {
       // Consistent, single source of truth role redirect
       const destination = getDashboardRouteForRole(result.user.role);
       router.replace(destination);
+<<<<<<< HEAD
+=======
+      router.refresh();
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
     } catch (err: any) {
       setLoading(false);
       isSubmittingRef.current = false;

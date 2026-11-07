@@ -75,10 +75,13 @@ export interface ReviewItem {
   revisionCount: number;
   filePath?: string;
   fileUrl?: string;
+<<<<<<< HEAD
   approved_facts_verification?: string;
   overall_risk?: 'Critical' | 'High' | 'Medium' | 'Low';
   suggested_rewritten_content?: string;
   escalation_reason?: string | null;
+=======
+>>>>>>> 050db5a4b1a5a7ab1ae529b9ddc5eb2c1274d9d8
 }
 
 export interface KnowledgeItem {
