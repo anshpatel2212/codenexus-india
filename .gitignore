@@ -1,0 +1,19 @@
+node_modules/
+.next/
+.env*
+!.env.example
+backend/.env*
+!backend/.env.example
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+tsconfig.tsbuildinfo
+.firebase/
+
+# BrandSense sensitive database files
+*.db
+*.db-wal
+*.db-shm
+backend/data/
