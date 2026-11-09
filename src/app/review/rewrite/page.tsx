@@ -11,9 +11,11 @@ import {
   Check, 
   RotateCcw, 
   Undo2, 
-  ShieldCheck,
-  FileCheck,
-  Loader2
+  ShieldCheck, 
+  FileCheck, 
+  Loader2,
+  Download,
+  FileText
 } from 'lucide-react';
 import { sampleReviews } from '@/data/mock-data';
 import { useToast } from '@/components/ui/Toast';
@@ -40,6 +42,29 @@ export default function RewriteStudioPage() {
   const [editableSuggestedText, setEditableSuggestedText] = useState('');
   const [selectedChangeId, setSelectedChangeId] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [viewMode, setViewMode] = useState<'side-by-side' | 'tracked-diff'>('side-by-side');
+  const [intentScore, setIntentScore] = useState<number>(98.5);
+
+  const handleExportDocument = (format: 'txt' | 'diff') => {
+    if (!review) return;
+    let fileContent = '';
+    let filename = '';
+    if (format === 'txt') {
+      fileContent = editableSuggestedText;
+      filename = `${review.title.replace(/\s+/g, '_')}_Clean_Compliant.txt`;
+    } else {
+      fileContent = `# BrandSense AI Rewrite Audit & Diff Report\nReview ID: ${review.id}\nTitle: ${review.title}\nCompliance Score: ${review.overallScore}%\nIntent Preservation Score: ${intentScore}%\n\n## Applied Intent-Preserving Changes (${changes.length}):\n${changes.map((c, i) => `${i + 1}. [${c.status.toUpperCase()}] ${c.category}\n   Original: "${c.original}"\n   Compliant Replacement: "${c.replacement}"\n   Reason: ${c.reason}`).join('\n\n')}\n\n## Final Compliant Copy:\n${editableSuggestedText}`;
+      filename = `${review.title.replace(/\s+/g, '_')}_Audit_Diff.md`;
+    }
+    const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast(`Exported ${filename}`, 'success');
+  };
 
   useEffect(() => {
     let active = true;
@@ -229,6 +254,10 @@ export default function RewriteStudioPage() {
                 <Sparkles className="w-3.5 h-3.5 text-[#416F89]" aria-hidden="true" />
                 Intent-Preserved
               </span>
+              <span className="px-2.5 py-0.5 rounded bg-[#1F7560]/15 text-[#1F7560] border border-[#1F7560]/30 text-xs font-bold flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#1F7560]" aria-hidden="true" />
+                {intentScore}% Intent Preserved
+              </span>
             </div>
             <p className="mt-1 text-xs sm:text-sm text-[#4F6576]">
               Interactive side-by-side comparison for <strong className="text-[#20364A]">{review.title}</strong>. Accept individual suggestions or manually refine your draft.
@@ -255,7 +284,134 @@ export default function RewriteStudioPage() {
           </div>
         </div>
 
-        {/* Dual Editor Workspace */}
+        {/* View Mode Toggle & Document Info */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-[#C4D5E0]">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#4F6576] uppercase tracking-wider">Mode:</span>
+            <div className="inline-flex rounded-lg border border-[#C4D5E0] p-0.5 bg-[#EDF3F6]/50">
+              <button
+                type="button"
+                onClick={() => setViewMode('side-by-side')}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                  viewMode === 'side-by-side'
+                    ? 'bg-[#416F89] text-white shadow-sm'
+                    : 'text-[#4F6576] hover:text-[#20364A]'
+                }`}
+              >
+                Side-by-Side View
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('tracked-diff')}
+                className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
+                  viewMode === 'tracked-diff'
+                    ? 'bg-[#416F89] text-white shadow-sm'
+                    : 'text-[#4F6576] hover:text-[#20364A]'
+                }`}
+              >
+                Tracked Changes Diff
+              </button>
+            </div>
+            {review.fileName && (
+              <span className="text-xs font-mono text-[#315C74] bg-[#D5E3EC] px-2 py-0.5 rounded ml-2">
+                📄 {review.fileName} ({review.fileType || 'Doc'}, {review.pageCount || 1} page(s))
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Download className="w-3.5 h-3.5" aria-hidden="true" />}
+              onClick={() => handleExportDocument('txt')}
+            >
+              Export Clean Text
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<FileText className="w-3.5 h-3.5" aria-hidden="true" />}
+              onClick={() => handleExportDocument('diff')}
+            >
+              Export Diff Audit
+            </Button>
+          </div>
+        </div>
+
+        {/* Workspace Display based on View Mode */}
+        {viewMode === 'tracked-diff' ? (
+          <div className="bg-white rounded-xl border border-[#C4D5E0] shadow-subtle p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#C4D5E0]">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#1F7560]" aria-hidden="true" />
+                <h2 className="text-xs font-bold text-[#20364A] uppercase tracking-wider">
+                  Tracked Changes Inline Diff
+                </h2>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="inline-flex items-center gap-1 text-[#A94842] font-semibold">
+                  <span className="w-2.5 h-2.5 rounded bg-[#A94842]/20 border border-[#A94842]" /> Flagged / Deleted
+                </span>
+                <span className="inline-flex items-center gap-1 text-[#1F7560] font-semibold">
+                  <span className="w-2.5 h-2.5 rounded bg-[#1F7560]/20 border border-[#1F7560]" /> Intent-Preserved Replacement
+                </span>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-lg bg-[#F4F8FA]/60 border border-[#C4D5E0] text-xs sm:text-sm leading-relaxed text-[#20364A] font-sans space-y-4">
+              <div className="space-y-3">
+                <p>
+                  <del className="bg-[#A94842]/20 text-[#A94842] line-through px-1 rounded mr-1">
+                    BrandSense guarantees a 100% elimination of all regulatory compliance fines within 30 days.
+                  </del>
+                  <ins className="bg-[#1F7560]/15 text-[#1F7560] font-bold no-underline px-1 rounded">
+                    BrandSense is designed to help reduce regulatory risk and streamline compliance reviews.
+                  </ins>{' '}
+                  Our{' '}
+                  <del className="bg-[#A94842]/20 text-[#A94842] line-through px-1 rounded mr-1">
+                    disruptive miracle platform
+                  </del>
+                  <ins className="bg-[#1F7560]/15 text-[#1F7560] font-bold no-underline px-1 rounded">
+                    enterprise content governance platform
+                  </ins>{' '}
+                  revolutionises how your team reviews content. Connect your repository with{' '}
+                  <del className="bg-[#A94842]/20 text-[#A94842] line-through px-1 rounded mr-1">
+                    brand sense Cloud Sync
+                  </del>
+                  <ins className="bg-[#1F7560]/15 text-[#1F7560] font-bold no-underline px-1 rounded">
+                    BrandSense Content Hub™
+                  </ins>{' '}
+                  in one click.
+                </p>
+                <p>
+                  Clients typically see{' '}
+                  <del className="bg-[#A94842]/20 text-[#A94842] line-through px-1 rounded mr-1">
+                    an instant 450% ROI on their enterprise license in quarter one
+                  </del>
+                  <ins className="bg-[#1F7560]/15 text-[#1F7560] font-bold no-underline px-1 rounded">
+                    measurable workflow acceleration (*Results based on a 2025 cohort study of 42 enterprise accounts; individual outcomes vary)
+                  </ins>
+                  .{' '}
+                  <del className="bg-[#A94842]/20 text-[#A94842] line-through px-1 rounded mr-1">
+                    Don’t be a dinosaur! Grab your license today before your competitors leave you in the dust!
+                  </del>
+                  <ins className="bg-[#1F7560]/15 text-[#1F7560] font-bold no-underline px-1 rounded">
+                    Equip your marketing and compliance teams with proactive governance today.
+                  </ins>{' '}
+                  <del className="bg-[#A94842]/20 text-[#A94842] line-through px-1 rounded mr-1">
+                    Click the green button on the right side of the screen
+                  </del>
+                  <ins className="bg-[#1F7560]/15 text-[#1F7560] font-bold no-underline px-1 rounded">
+                    Select the ‘Download Report’ button below
+                  </ins>{' '}
+                  to get started.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+        /* Dual Editor Workspace */
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column: Original Content */}
           <div className="bg-white rounded-xl border border-[#C4D5E0] shadow-subtle flex flex-col justify-between overflow-hidden">
@@ -355,6 +511,7 @@ export default function RewriteStudioPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Change Explanation Card */}
         {selectedChange && (

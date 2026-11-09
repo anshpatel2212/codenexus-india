@@ -5,12 +5,15 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/Button';
 import { 
   Download, 
-  HelpCircle
+  HelpCircle,
+  ShieldAlert,
+  AlertTriangle,
+  RotateCcw,
+  CheckCircle2,
+  FileCheck,
+  TrendingUp,
+  Sparkles
 } from 'lucide-react';
-import { 
-  complianceTrendsData, 
-  departmentActivityData 
-} from '@/data/mock-data';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -24,92 +27,56 @@ import {
 import { useToast } from '@/components/ui/Toast';
 import { apiClient } from '@/services/api-client';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { GovernanceInsights } from '@/types';
 
 export default function InsightsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [totalFindingsCount, setTotalFindingsCount] = useState(0);
-  const [fixAcceptanceRate, setFixAcceptanceRate] = useState<number | null>(null);
-  const [avgScore, setAvgScore] = useState<number | null>(null);
+  const [insights, setInsights] = useState<GovernanceInsights | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    if (user?.organizationId) {
-      apiClient.getReviews(user.organizationId).then((revs) => {
+
+    const loadData = async () => {
+      try {
+        const data = await apiClient.getGovernanceInsights(user?.organizationId);
         if (!active) return;
-        setReviews(revs);
-        setLoading(false);
+        setInsights(data);
+      } catch (err) {
+        console.error('Failed to load governance insights:', err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
 
-        if (revs.length > 0) {
-          let totalFindings = 0;
-          let accepted = 0;
-          let rejected = 0;
-          let scoreSum = 0;
+    loadData();
 
-          revs.forEach((r) => {
-            scoreSum += r.overallScore || 0;
-            (r.findings || []).forEach((f: any) => {
-              totalFindings++;
-              if (f.status === 'accepted') accepted++;
-              if (f.status === 'rejected') rejected++;
-            });
-          });
-
-          setTotalFindingsCount(totalFindings);
-          setAvgScore(Math.round((scoreSum / revs.length) * 10) / 10);
-          const totalDecided = accepted + rejected;
-          if (totalDecided > 0) {
-            setFixAcceptanceRate(Math.round((accepted / totalDecided) * 1000) / 10);
-          }
-        }
-      });
-    } else {
-      setLoading(false);
-    }
     return () => {
       active = false;
     };
   }, [user?.organizationId]);
 
-  const hasReviews = reviews.length > 0;
+  const metrics = insights?.metrics;
+  const repeatedViolations = insights?.repeatedViolations || [];
+  const frequentlyOverridden = insights?.frequentlyOverriddenRules || [];
+  const unclearGuidelines = insights?.unclearGuidelines || [];
+  const turnaroundData = insights?.turnaroundByChannel || [];
+  const violationDistribution = insights?.violationDistribution || [];
 
-  const violationDistribution = React.useMemo(() => {
-    if (!hasReviews) return [];
-    const catMap: Record<string, number> = {};
-    reviews.forEach((r) => {
-      (r.findings || []).forEach((f: any) => {
-        const cat = f.category || 'General';
-        catMap[cat] = (catMap[cat] || 0) + 1;
-      });
-    });
-
-    const colors: Record<string, string> = {
-      'Promotional Claims': '#A94842',
-      'Terminology': '#416F89',
-      'Disclaimers': '#9A682D',
-      'Tone & Voice': '#315C74',
-      'Brand Guidelines': '#258A70',
-      'Accessibility': '#4F6576',
-    };
-
-    return Object.entries(catMap).map(([name, count]) => ({
-      name,
-      value: totalFindingsCount > 0 ? Math.round((count / totalFindingsCount) * 100) : count,
-      count,
-      color: colors[name] || '#416F89',
-    }));
-  }, [reviews, hasReviews, totalFindingsCount]);
-
-  const turnaroundData = React.useMemo(() => {
-    if (!hasReviews) return [];
-    return [
-      { channel: 'Social Media', hours: 0.8 },
-      { channel: 'Email Blasts', hours: 1.4 },
-      { channel: 'Press Releases', hours: 2.2 },
-    ];
-  }, [hasReviews]);
+  const handleExportBI = () => {
+    if (!insights) return;
+    const report = `# BrandSense Enterprise Governance BI Metrics Report\nOrganization: ${user?.organisation || 'BrandSense Enterprise'}\nGenerated: ${insights.generatedAt}\n\n## High-Level Metrics\n- Total Audits: ${metrics?.totalReviews || 0}\n- Detected Infractions: ${metrics?.totalFindings || 0}\n- Overall Compliance Index: ${metrics?.auditComplianceScore || 0} / 100\n- Fix Acceptance Rate: ${metrics?.fixAcceptanceRate || 0}%\n- Average Turnaround: ${metrics?.avgTurnaroundHours || 0.5} hrs\n\n## Repeated Brand Infractions (${repeatedViolations.length}):\n${repeatedViolations.map((v, i) => `${i + 1}. [${v.riskTier} Risk] ${v.category}: ${v.reason}\n   Occurrences: ${v.occurrences} | Grounded Confidence: ${v.avgConfidence}%\n   Sample Flagged Copy: "${v.samplePhrase}"\n   Source Guideline: ${v.sourceDocument}`).join('\n\n')}\n\n## Frequently Overridden Rules (${frequentlyOverridden.length}):\n${frequentlyOverridden.map((r, i) => `${i + 1}. ${r.category}: ${r.ruleDescription}\n   Total Overrides: ${r.totalOverrides} (Rejected: ${r.rejectedCount}, Modified: ${r.modifiedCount})\n   Creator Rationale: ${r.primaryReason}`).join('\n\n')}\n\n## Unclear Guidelines Needing Clarification (${unclearGuidelines.length}):\n${unclearGuidelines.map((u, i) => `${i + 1}. ${u.guidelineTitle} (Friction Score: ${u.frictionScore}/100)\n   Issue: ${u.issueSummary}\n   Recommended Action: ${u.recommendedClarification}`).join('\n\n')}`;
+    
+    const blob = new Blob([report], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BrandSense_Governance_Insights_${Date.now()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Governance Intelligence Report exported successfully.');
+  };
 
   return (
     <AppLayout>
@@ -117,17 +84,18 @@ export default function InsightsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-xl border border-[#C4D5E0] shadow-subtle">
           <div>
-            <span className="bs-eyebrow block mb-1.5">Insights</span>
+            <span className="bs-eyebrow block mb-1.5">Governance Analytics</span>
             <div className="flex items-center gap-2">
               <h1 className="font-heading text-xl sm:text-2xl font-extrabold text-[#20364A] tracking-tight">
                 Enterprise Governance Insights &amp; Trends
               </h1>
-              <span className="px-2.5 py-0.5 rounded bg-[#D5E3EC] text-[#20364A] text-xs font-bold">
-                Quarterly Intelligence
+              <span className="px-2.5 py-0.5 rounded bg-[#D5E3EC] text-[#20364A] text-xs font-bold flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-[#416F89]" aria-hidden="true" />
+                Live Database Grounding
               </span>
             </div>
             <p className="mt-1 text-xs sm:text-sm text-[#4F6576]">
-              Cross-departmental compliance analytics, recurring brand guideline friction, and fix acceptance metrics.
+              Recurring brand guideline friction, automated override tracking, and evidence-backed policy diagnostics.
             </p>
           </div>
 
@@ -135,9 +103,9 @@ export default function InsightsPage() {
             variant="outline"
             size="sm"
             leftIcon={<Download className="w-3.5 h-3.5" aria-hidden="true" />}
-            onClick={() => toast('Exporting Executive Governance Summary (CSV + PDF)...')}
+            onClick={handleExportBI}
           >
-            Export BI Metrics
+            Export BI Metrics (.MD)
           </Button>
         </div>
 
@@ -147,14 +115,12 @@ export default function InsightsPage() {
             <span className="text-xs font-bold text-[#4F6576]">Fix Acceptance Rate</span>
             <div className="flex items-baseline justify-between mt-2">
               <span className="font-heading text-2xl font-extrabold text-[#1F7560] tracking-tight">
-                {fixAcceptanceRate !== null ? `${fixAcceptanceRate}%` : '—'}
+                {metrics ? `${metrics.fixAcceptanceRate}%` : '—'}
               </span>
-              {fixAcceptanceRate !== null && (
-                <span className="text-xs text-[#1F7560] font-bold">Compliant</span>
-              )}
+              <span className="text-xs text-[#1F7560] font-bold">Compliant</span>
             </div>
             <p className="text-xs text-[#4F6576] mt-1">
-              {hasReviews ? 'Creators adopt AI-recommended compliant wording' : 'No review submissions evaluated yet'}
+              Creators adopt AI-recommended compliant wording
             </p>
           </div>
 
@@ -162,29 +128,27 @@ export default function InsightsPage() {
             <span className="text-xs font-bold text-[#4F6576]">Avg Review Turnaround</span>
             <div className="flex items-baseline justify-between mt-2">
               <span className="font-heading text-2xl font-extrabold text-[#20364A] tracking-tight">
-                {hasReviews ? '0.5 hrs' : '—'}
+                {metrics ? `${metrics.avgTurnaroundHours} hrs` : '0.5 hrs'}
               </span>
-              {hasReviews && (
-                <span className="text-xs text-[#1F7560] font-bold">Fast-track</span>
-              )}
+              <span className="text-xs text-[#1F7560] font-bold">Fast-track</span>
             </div>
             <p className="text-xs text-[#4F6576] mt-1">
-              {hasReviews ? 'Compared to manual email approvals' : 'Awaiting first review submission'}
+              Automated pre-publication approval SLA
             </p>
           </div>
 
           <div className="bg-white p-5 rounded-xl border border-[#C4D5E0] shadow-subtle">
-            <span className="text-xs font-bold text-[#4F6576]">Repeat Vocabulary Errors</span>
+            <span className="text-xs font-bold text-[#4F6576]">Repeat Brand Infractions</span>
             <div className="flex items-baseline justify-between mt-2">
-              <span className="font-heading text-2xl font-extrabold text-[#20364A] tracking-tight">
-                {totalFindingsCount > 0 ? `${totalFindingsCount}` : '0%'}
+              <span className="font-heading text-2xl font-extrabold text-[#A94842] tracking-tight">
+                {metrics ? metrics.repeatInfractionsCount : 0}
               </span>
-              <span className="text-xs text-[#1F7560] font-bold">
-                {totalFindingsCount === 0 ? 'Zero issues' : 'Tracked'}
+              <span className="text-xs text-[#A94842] font-bold">
+                Clustered
               </span>
             </div>
             <p className="text-xs text-[#4F6576] mt-1">
-              {totalFindingsCount === 0 ? 'Zero blacklisted hyperbolic terms detected' : 'Detected policy infractions'}
+              Persistent friction points across submissions
             </p>
           </div>
 
@@ -192,15 +156,164 @@ export default function InsightsPage() {
             <span className="text-xs font-bold text-[#4F6576]">Audit Compliance Score</span>
             <div className="flex items-baseline justify-between mt-2">
               <span className="font-heading text-2xl font-extrabold text-[#416F89] tracking-tight">
-                {avgScore !== null ? `${avgScore} / 100` : '—'}
+                {metrics ? `${metrics.auditComplianceScore} / 100` : '—'}
               </span>
               <span className="text-xs text-[#315C74] font-bold">
-                {avgScore !== null ? (avgScore >= 85 ? 'Tier 1' : 'Tier 2') : 'Unrated'}
+                {metrics && metrics.auditComplianceScore >= 80 ? 'Tier 1' : 'Tier 2'}
               </span>
             </div>
             <p className="text-xs text-[#4F6576] mt-1">
-              {user?.organisation || 'BrandSense Workspace'} compliance index
+              {user?.organisation || 'Enterprise'} organizational compliance index
             </p>
+          </div>
+        </div>
+
+        {/* Improvement 3: Repeated Brand Violation Detection Table */}
+        <div className="bg-white rounded-xl border border-[#C4D5E0] shadow-subtle overflow-hidden">
+          <div className="p-6 border-b border-[#C4D5E0] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-[#A94842]" aria-hidden="true" />
+                <h2 className="font-heading text-base font-bold text-[#20364A]">
+                  Repeated Brand Violation Detection
+                </h2>
+              </div>
+              <p className="text-xs text-[#4F6576] mt-0.5">
+                Automatically clustered recurring rule violations across all department drafts
+              </p>
+            </div>
+            <span className="text-xs font-bold bg-[#A94842]/10 text-[#A94842] px-2.5 py-1 rounded-md border border-[#A94842]/20">
+              {repeatedViolations.length} Recurrent Patterns Detected
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs" aria-label="Repeated brand violations table">
+              <thead className="bg-[#D5E3EC]/40 text-[#4F6576] uppercase tracking-wider text-xs font-bold border-b border-[#C4D5E0]">
+                <tr>
+                  <th scope="col" className="px-6 py-3.5">Pillar / Category</th>
+                  <th scope="col" className="px-6 py-3.5">Detected Rule Violation</th>
+                  <th scope="col" className="px-6 py-3.5">Occurrences</th>
+                  <th scope="col" className="px-6 py-3.5">Risk Tier</th>
+                  <th scope="col" className="px-6 py-3.5">Grounded Confidence</th>
+                  <th scope="col" className="px-6 py-3.5">Sample Problem Phrase</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#C4D5E0] text-[#20364A]">
+                {repeatedViolations.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-8 text-center text-xs text-[#4F6576]">
+                      No repeated brand infractions detected in current workspace submissions.
+                    </td>
+                  </tr>
+                ) : (
+                  repeatedViolations.map((v, i) => (
+                    <tr key={i} className="hover:bg-[#F4F8FA]/60 transition-colors">
+                      <td className="px-6 py-4 font-bold text-[#20364A] whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded bg-[#EDF3F6] border border-[#C4D5E0] text-xs">
+                          {v.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-medium text-[#20364A] max-w-xs">
+                        {v.reason}
+                        <span className="block text-[11px] text-[#4F6576] font-mono mt-0.5">
+                          Source: {v.sourceDocument}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-mono font-bold text-[#20364A]">
+                        {v.occurrences}x
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                          v.riskTier === 'High' || v.riskTier === 'Critical'
+                            ? 'bg-[#A94842]/15 text-[#A94842] border border-[#A94842]/30'
+                            : v.riskTier === 'Medium'
+                            ? 'bg-[#9A682D]/15 text-[#9A682D] border border-[#9A682D]/30'
+                            : 'bg-[#416F89]/15 text-[#416F89] border border-[#416F89]/30'
+                        }`}>
+                          {v.riskTier} Risk
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-mono text-[#1F7560] font-bold">
+                        {v.avgConfidence}%
+                      </td>
+                      <td className="px-6 py-4 font-mono text-xs text-[#A94842] max-w-xs truncate">
+                        “{v.samplePhrase}”
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Improvement 3: Frequently Overridden Rules Analytics Table */}
+        <div className="bg-white rounded-xl border border-[#C4D5E0] shadow-subtle overflow-hidden">
+          <div className="p-6 border-b border-[#C4D5E0] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-[#9A682D]" aria-hidden="true" />
+                <h2 className="font-heading text-base font-bold text-[#20364A]">
+                  Frequently Overridden Brand Rules
+                </h2>
+              </div>
+              <p className="text-xs text-[#4F6576] mt-0.5">
+                Brand rules where creators or reviewers frequently reject or modify automated AI suggestions
+              </p>
+            </div>
+            <span className="text-xs font-bold bg-[#9A682D]/10 text-[#9A682D] px-2.5 py-1 rounded-md border border-[#9A682D]/20">
+              Override Governance Tracker
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs" aria-label="Frequently overridden rules table">
+              <thead className="bg-[#D5E3EC]/40 text-[#4F6576] uppercase tracking-wider text-xs font-bold border-b border-[#C4D5E0]">
+                <tr>
+                  <th scope="col" className="px-6 py-3.5">Category</th>
+                  <th scope="col" className="px-6 py-3.5">Rule / Policy Description</th>
+                  <th scope="col" className="px-6 py-3.5">Total Overrides</th>
+                  <th scope="col" className="px-6 py-3.5">Rejected vs Modified</th>
+                  <th scope="col" className="px-6 py-3.5">Observed Creator Rationale</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#C4D5E0] text-[#20364A]">
+                {frequentlyOverridden.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-xs text-[#4F6576]">
+                      No rule overrides recorded yet. Suggestions are currently accepted as recommended.
+                    </td>
+                  </tr>
+                ) : (
+                  frequentlyOverridden.map((r, idx) => (
+                    <tr key={idx} className="hover:bg-[#F4F8FA]/60 transition-colors">
+                      <td className="px-6 py-4 font-bold text-[#20364A]">
+                        <span className="px-2 py-0.5 rounded bg-[#EDF3F6] border border-[#C4D5E0] text-xs">
+                          {r.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-medium text-[#20364A] max-w-sm">
+                        {r.ruleDescription}
+                        <span className="block text-[11px] text-[#4F6576] font-mono mt-0.5">
+                          {r.sourceDocument}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-mono font-bold text-[#20364A]">
+                        {r.totalOverrides}
+                      </td>
+                      <td className="px-6 py-4 font-mono text-xs">
+                        <span className="text-[#A94842] font-bold">{r.rejectedCount} Rejected</span> •{' '}
+                        <span className="text-[#315C74] font-bold">{r.modifiedCount} Custom</span>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-[#4F6576] max-w-xs">
+                        {r.primaryReason}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -208,7 +321,7 @@ export default function InsightsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-7 bg-white p-6 rounded-xl border border-[#C4D5E0] shadow-subtle">
             <h2 className="font-heading text-sm font-bold text-[#20364A] mb-1">
-              Top Detected Infractions by Governance Pillar
+              Detected Infractions by Governance Pillar
             </h2>
             <p className="text-xs text-[#4F6576] mb-6">Percentage share of total detected issues across all departments</p>
 
@@ -252,7 +365,7 @@ export default function InsightsPage() {
             </h2>
             <p className="text-xs text-[#4F6576] mb-6">Average hours from creator submission to legal sign-off</p>
 
-            {!hasReviews ? (
+            {turnaroundData.length === 0 ? (
               <div className="h-64 w-full flex flex-col items-center justify-center border border-dashed border-[#C4D5E0] rounded-xl bg-[#F4F8FA]/60 p-6 text-center">
                 <p className="text-xs font-bold text-[#20364A]">No Channel Data Yet</p>
                 <p className="text-[11px] text-[#4F6576] max-w-xs mt-1">
@@ -270,7 +383,7 @@ export default function InsightsPage() {
                     <div className="w-full bg-[#D5E3EC]/70 h-2 rounded-full overflow-hidden" aria-hidden="true">
                       <div
                         className="bg-[#416F89] h-full rounded-full transition-all duration-500"
-                        style={{ width: `${(t.hours / 5) * 100}%` }}
+                        style={{ width: `${Math.min(100, (t.hours / 4) * 100)}%` }}
                       />
                     </div>
                   </div>
@@ -280,92 +393,41 @@ export default function InsightsPage() {
           </div>
         </div>
 
-        {/* Department Compliance Table */}
-        <div className="bg-white rounded-xl border border-[#C4D5E0] shadow-subtle overflow-hidden">
-          <div className="p-6 border-b border-[#C4D5E0] flex items-center justify-between">
-            <div>
-              <h2 className="font-heading text-base font-bold text-[#20364A]">Department Governance Performance</h2>
-              <p className="text-xs text-[#4F6576]">Comparison across organizational business units</p>
-            </div>
-            <span className="text-xs font-bold text-[#4F6576]">Active Audit Cycle</span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs" aria-label="Department governance performance table">
-              <thead className="bg-[#D5E3EC]/40 text-[#4F6576] uppercase tracking-wider text-xs font-bold border-b border-[#C4D5E0]">
-                <tr>
-                  <th scope="col" className="px-6 py-3.5">Department</th>
-                  <th scope="col" className="px-6 py-3.5">Reviews Logged</th>
-                  <th scope="col" className="px-6 py-3.5">First-Pass Rate</th>
-                  <th scope="col" className="px-6 py-3.5">Avg Turnaround</th>
-                  <th scope="col" className="px-6 py-3.5">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#C4D5E0] text-[#263B4D]">
-                {!hasReviews ? (
-                  <tr className="hover:bg-[#F4F8FA]/60 transition-colors">
-                    <td className="px-6 py-4 font-bold text-[#20364A]">{user?.department || 'Brand & Marketing'}</td>
-                    <td className="px-6 py-4 font-mono">0</td>
-                    <td className="px-6 py-4 font-mono text-[#4F6576]">—</td>
-                    <td className="px-6 py-4 font-mono text-[#4F6576]">—</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-[#D5E3EC] text-[#20364A]">
-                        Active
-                      </span>
-                    </td>
-                  </tr>
-                ) : (
-                  departmentActivityData.map((d, i) => (
-                    <tr key={i} className="hover:bg-[#F4F8FA]/60 transition-colors">
-                      <td className="px-6 py-4 font-bold text-[#20364A]">{d.department}</td>
-                      <td className="px-6 py-4 font-mono">{d.reviews}</td>
-                      <td className="px-6 py-4">
-                        <span className="font-mono font-bold text-[#1F7560]">{d.passRate}%</span>
-                      </td>
-                      <td className="px-6 py-4 font-mono">{d.avgTurnaroundHours} hrs</td>
-                      <td className="px-6 py-4">
-                        <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-[#1F7560]/10 text-[#1F7560]">
-                          Compliant
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Proactive Recommendations */}
+        {/* Improvement 3: Unclear Guidelines Recommendations */}
         <div className="p-6 rounded-xl bg-[#F4D77B]/20 border border-[#B77938]/30 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
             <HelpCircle className="w-5 h-5 text-[#9A682D]" aria-hidden="true" />
             <h2 className="font-heading text-sm sm:text-base font-bold text-[#20364A]">
-              Guideline Clarification Recommendations (AI Policy Diagnosis)
+              Identification of Unclear Guidelines &amp; Policy Editorial Friction
             </h2>
           </div>
           <p className="text-xs sm:text-sm text-[#4F6576] leading-relaxed mb-4">
-            SENSA detected consistent editorial friction in 2 specific sections of your corporate guidelines. Updating these policies will reduce review cycles:
+            SENSA detected recurring editorial friction and high override rates in the following guidelines. Updating these policies in your knowledge base will prevent revision bottlenecks:
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm">
-            <div className="p-4 bg-white/90 rounded-lg border border-[#C4D5E0] text-[#20364A]">
-              <span className="font-bold text-[#20364A] block mb-1">
-                Section 4.2 — Financial Warranties vs Target Projections
-              </span>
-              <p className="text-[#4F6576]">
-                Marketing teams frequently confuse forward-looking product ROI estimates with guaranteed performance warranties. Clarify permitted phrasing for projected savings in the guideline.
-              </p>
-            </div>
-
-            <div className="p-4 bg-white/90 rounded-lg border border-[#C4D5E0] text-[#20364A]">
-              <span className="font-bold text-[#20364A] block mb-1">
-                Appendix B — Social Media Tone Guidelines
-              </span>
-              <p className="text-[#4F6576]">
-                Copywriters in regional teams report uncertainty over emoji usage in LinkedIn B2B posts. A clear emoji allowance chart would cut 28% of tone-related revisions.
-              </p>
-            </div>
+            {unclearGuidelines.map((ug, idx) => (
+              <div key={idx} className="p-4 bg-white/95 rounded-lg border border-[#C4D5E0] text-[#20364A] shadow-subtle space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-[#20364A]">{ug.guidelineTitle}</span>
+                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-[#9A682D]/15 text-[#9A682D] border border-[#9A682D]/30">
+                    Friction Score: {ug.frictionScore}/100
+                  </span>
+                </div>
+                <p className="text-xs text-[#4F6576] leading-relaxed">
+                  <strong className="text-[#20364A]">Diagnosis: </strong>
+                  {ug.issueSummary}
+                </p>
+                <div className="pt-2 border-t border-[#C4D5E0]/60">
+                  <span className="text-[11px] font-bold text-[#1F7560] block mb-0.5">
+                    Recommended Policy Clarification:
+                  </span>
+                  <p className="text-xs text-[#20364A] font-medium bg-[#1F7560]/10 p-2.5 rounded border border-[#1F7560]/20">
+                    {ug.recommendedClarification}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

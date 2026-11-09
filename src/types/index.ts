@@ -38,6 +38,12 @@ export interface Finding {
   explanation: string;
   status: 'pending' | 'accepted' | 'rejected' | 'modified';
   userNote?: string;
+  verificationStatus?: 'verified' | 'unverified' | 'flagged' | 'escalated';
+  verificationConfidence?: number;
+  verificationNotes?: string;
+  escalatedToHuman?: boolean;
+  sourcePage?: number;
+  evidenceQuote?: string;
 }
 
 export interface ReviewItem {
@@ -69,6 +75,10 @@ export interface ReviewItem {
   revisionCount: number;
   filePath?: string;
   fileUrl?: string;
+  fileType?: string;
+  fileName?: string;
+  pageCount?: number;
+  pages?: Array<{ pageNumber: number; section: string; text: string }>;
 }
 
 export interface KnowledgeItem {
@@ -179,4 +189,81 @@ export interface OrganizationUser {
   isDemo?: boolean;
   organizationId?: string;
   organisation?: string;
+}
+
+export interface ExtractedDocument {
+  success: boolean;
+  filename: string;
+  format: 'pdf' | 'docx' | 'text' | 'asset';
+  pageCount: number;
+  fullText: string;
+  pages: Array<{
+    pageNumber: number;
+    section: string;
+    text: string;
+  }>;
+}
+
+export interface RewriteResponse {
+  success: boolean;
+  reviewId: string;
+  originalText: string;
+  rewrittenText: string;
+  intentPreservationScore: number;
+  keyFactsRetained: string[];
+  targetFindingId?: string;
+}
+
+export interface GovernanceInsights {
+  success: boolean;
+  metrics: {
+    totalReviews: number;
+    totalFindings: number;
+    auditComplianceScore: number;
+    fixAcceptanceRate: number;
+    avgTurnaroundHours: number;
+    humanEscalationsCount: number;
+    repeatInfractionsCount: number;
+  };
+  repeatedViolations: Array<{
+    category: string;
+    reason: string;
+    occurrences: number;
+    riskTier: 'Critical' | 'High' | 'Medium' | 'Low';
+    avgConfidence: number;
+    samplePhrase: string;
+    sourceDocument: string;
+  }>;
+  frequentlyOverriddenRules: Array<{
+    category: string;
+    ruleDescription: string;
+    sourceDocument: string;
+    totalOverrides: number;
+    rejectedCount: number;
+    modifiedCount: number;
+    primaryReason: string;
+  }>;
+  unclearGuidelines: Array<{
+    id: string;
+    guidelineTitle: string;
+    category: string;
+    frictionScore: number;
+    overrideCount: number;
+    humanEscalations: number;
+    issueSummary: string;
+    recommendedClarification: string;
+  }>;
+  turnaroundByChannel: Array<{
+    channel: string;
+    hours: number;
+    reviewCount: number;
+    avgScore: number;
+  }>;
+  violationDistribution: Array<{
+    name: string;
+    count: number;
+    value: number;
+    color: string;
+  }>;
+  generatedAt: string;
 }

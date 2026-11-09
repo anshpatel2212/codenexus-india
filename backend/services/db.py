@@ -134,9 +134,44 @@ class DatabaseService:
             explanation TEXT,
             confidence REAL DEFAULT 90,
             status TEXT DEFAULT 'pending',
+            verification_status TEXT DEFAULT 'verified',
+            verification_confidence REAL DEFAULT 90.0,
+            verification_notes TEXT,
+            escalated_to_human INTEGER DEFAULT 0,
+            source_page INTEGER DEFAULT 1,
+            source_section TEXT,
+            source_document TEXT DEFAULT 'Enterprise Brand Guidelines',
+            evidence_quote TEXT,
             FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE
         )
         """)
+
+        # Safe migrations for findings table
+        for col, col_def in [
+            ("verification_status", "TEXT DEFAULT 'verified'"),
+            ("verification_confidence", "REAL DEFAULT 90.0"),
+            ("verification_notes", "TEXT"),
+            ("escalated_to_human", "INTEGER DEFAULT 0"),
+            ("source_document", "TEXT DEFAULT 'Enterprise Brand Guidelines'"),
+            ("source_page", "INTEGER DEFAULT 1"),
+            ("source_section", "TEXT"),
+            ("evidence_quote", "TEXT")
+        ]:
+            try:
+                cur.execute(f"ALTER TABLE findings ADD COLUMN {col} {col_def}")
+            except Exception:
+                pass
+
+        # Safe migrations for reviews table
+        for col, col_def in [
+            ("file_type", "TEXT"),
+            ("file_name", "TEXT"),
+            ("page_count", "INTEGER DEFAULT 1")
+        ]:
+            try:
+                cur.execute(f"ALTER TABLE reviews ADD COLUMN {col} {col_def}")
+            except Exception:
+                pass
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS approvals (
@@ -228,11 +263,23 @@ class DatabaseService:
             content TEXT NOT NULL,
             accepted_count INTEGER DEFAULT 0,
             rejected_count INTEGER DEFAULT 0,
+            diff_summary TEXT,
+            decision_trail TEXT,
             created_at TEXT NOT NULL,
             FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
             FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
         )
         """)
+
+        # Safe migrations for review_revisions table
+        for col, col_def in [
+            ("diff_summary", "TEXT"),
+            ("decision_trail", "TEXT")
+        ]:
+            try:
+                cur.execute(f"ALTER TABLE review_revisions ADD COLUMN {col} {col_def}")
+            except Exception:
+                pass
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS invitations (
@@ -307,6 +354,16 @@ class DatabaseService:
                 "department": "Creative & Social Media",
                 "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
                 "is_demo": 1
+            },
+            {
+                "id": "usr-test-creator-p",
+                "email": "p@pr.com",
+                "full_name": "Prince Patel (Creator)",
+                "role": "Creator",
+                "organization_id": "org-demo-brandsense",
+                "department": "Content Creation",
+                "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+                "is_demo": 0
             },
             {
                 "id": "usr-demo-reviewer",

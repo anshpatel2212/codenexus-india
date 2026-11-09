@@ -231,6 +231,10 @@ export default function NewReviewPage() {
       let filePath: string | undefined = undefined;
       let fileUrl: string | undefined = undefined;
 
+      let docPages: Array<{ pageNumber: number; section: string; text: string }> | undefined = undefined;
+      let docFormat: string | undefined = undefined;
+      let pageCount = 1;
+
       if (inputMode === 'file' && selectedFile) {
         // Upload file to review-files bucket
         const safeName = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -246,15 +250,25 @@ export default function NewReviewPage() {
           filePath = `${orgId}/${safeName}`;
         }
 
-        // Truthful text extraction if text-readable, otherwise truthful representation without fake claims
-        if (selectedFile.type.startsWith('text/') || selectedFile.name.endsWith('.txt') || selectedFile.name.endsWith('.md')) {
-          try {
+        // Real document text extraction (PDF, DOCX, TXT, MD)
+        try {
+          const extracted = await apiClient.extractDocument(selectedFile);
+          if (extracted && extracted.fullText && !extracted.fullText.startsWith('[Uploaded')) {
+            finalContent = extracted.fullText;
+            docPages = extracted.pages;
+            pageCount = extracted.pageCount || 1;
+            docFormat = extracted.format;
+          } else if (selectedFile.type.startsWith('text/') || selectedFile.name.endsWith('.txt') || selectedFile.name.endsWith('.md')) {
             const rawText = await selectedFile.text();
-            finalContent = rawText.trim() || `[Uploaded file: ${selectedFile.name} (${formatFileSize(selectedFile.size)})]`;
-          } catch {
+            if (rawText.trim()) {
+              finalContent = rawText.trim();
+              docPages = [{ pageNumber: 1, section: 'Main Body', text: finalContent }];
+            }
+          } else {
             finalContent = `[Uploaded ${getFileTypeLabel(selectedFile)}: ${selectedFile.name} (${formatFileSize(selectedFile.size)}) - Creative Asset submitted for brand review]`;
           }
-        } else {
+        } catch (extractErr) {
+          console.warn('Document extraction fallback:', extractErr);
           finalContent = `[Uploaded ${getFileTypeLabel(selectedFile)}: ${selectedFile.name} (${formatFileSize(selectedFile.size)}) - Creative Asset submitted for brand review]`;
         }
       }
@@ -271,6 +285,10 @@ export default function NewReviewPage() {
         authorId: user.id,
         authorName: user.name,
         authorEmail: user.email,
+        pages: docPages,
+        fileType: docFormat || (inputMode === 'file' && selectedFile ? getFileTypeLabel(selectedFile) : 'text'),
+        fileName: selectedFile?.name,
+        pageCount,
       });
 
       clearInterval(stepInterval);

@@ -19,7 +19,9 @@ import {
   ChevronUp, 
   ExternalLink,
   Eye,
-  FileCheck
+  FileCheck,
+  AlertCircle,
+  ShieldCheck
 } from 'lucide-react';
 import { sampleReviews } from '@/data/mock-data';
 import { sampleFindings } from '@/data/mock-findings';
@@ -81,6 +83,7 @@ export default function ReviewResultsPage() {
   const review = currentReview;
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedSeverity, setSelectedSeverity] = useState<string>('All');
+  const [selectedVerification, setSelectedVerification] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedEvidence, setExpandedEvidence] = useState<{ [id: string]: boolean }>({ 'f-1': true });
   const [activeSourceModal, setActiveSourceModal] = useState<Finding | null>(null);
@@ -157,11 +160,14 @@ export default function ReviewResultsPage() {
   const filteredFindings = findings.filter(f => {
     const matchesCategory = selectedCategory === 'All' || f.category === selectedCategory;
     const matchesSeverity = selectedSeverity === 'All' || f.severity === selectedSeverity;
+    const matchesVerification = selectedVerification === 'All' ||
+      (selectedVerification === 'verified' && f.verificationStatus === 'verified' && !f.escalatedToHuman) ||
+      (selectedVerification === 'escalated' && (f.verificationStatus === 'escalated' || f.escalatedToHuman || f.severity === 'Needs Human Review'));
     const matchesSearch = 
       f.reason.toLowerCase().includes(searchQuery.toLowerCase()) ||
       f.evidence.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.sourceDocument.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSeverity && matchesSearch;
+      (f.sourceDocument && f.sourceDocument.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesCategory && matchesSeverity && matchesVerification && matchesSearch;
   });
 
   if (!review && !loading) {
@@ -337,6 +343,17 @@ export default function ReviewResultsPage() {
               <option value="Low">Low</option>
               <option value="Needs Human Review">Needs Human Review</option>
             </select>
+
+            <select
+              value={selectedVerification}
+              onChange={(e) => setSelectedVerification(e.target.value)}
+              aria-label="Filter by verification status"
+              className="px-2.5 py-1.5 text-xs bg-white border border-[#C4D5E0] rounded-lg text-[#20364A] focus:outline-none focus:ring-2 focus:ring-[#416F89]/25 focus:border-[#416F89]"
+            >
+              <option value="All">All Verification Statuses</option>
+              <option value="verified">Dual-Pass Verified</option>
+              <option value="escalated">Escalated to Human Review</option>
+            </select>
           </div>
 
           <div className="relative w-full sm:w-64">
@@ -374,6 +391,20 @@ export default function ReviewResultsPage() {
                     <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-[#D5E3EC]/70 text-[#20364A]">
                       {finding.category}
                     </span>
+                    {finding.verificationStatus === 'verified' && !finding.escalatedToHuman ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold bg-[#1F7560]/15 text-[#1F7560] border border-[#1F7560]/30">
+                        <ShieldCheck className="w-3 h-3 text-[#1F7560]" /> Dual-Pass Verified
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold bg-[#9A682D]/15 text-[#9A682D] border border-[#9A682D]/30">
+                        <AlertCircle className="w-3 h-3 text-[#9A682D]" /> Escalated to Human Review
+                      </span>
+                    )}
+                    {finding.sourcePage ? (
+                      <span className="px-2 py-0.5 rounded text-xs font-mono font-semibold bg-[#EDF3F6] text-[#4F6576] border border-[#C4D5E0]">
+                        Page {finding.sourcePage}
+                      </span>
+                    ) : null}
                     <span className="text-xs text-[#4F6576] font-bold">
                       Confidence: {finding.confidence}%
                     </span>
@@ -459,7 +490,16 @@ export default function ReviewResultsPage() {
                             <ExternalLink className="w-3 h-3" aria-hidden="true" /> Open Document
                           </button>
                         </div>
-                        <p className="text-[#4F6576] text-xs">{finding.sourceSection}</p>
+                        <p className="text-[#4F6576] text-xs">
+                          {finding.sourceSection}
+                          {finding.sourcePage ? ` • Document Page ${finding.sourcePage}` : ''}
+                        </p>
+                        {finding.verificationNotes ? (
+                          <div className="mt-2 p-2.5 rounded bg-white border border-[#C4D5E0] text-[11px] text-[#20364A]">
+                            <span className="font-bold text-[#315C74] block mb-0.5">Dual-Pass Verification Audit:</span>
+                            {finding.verificationNotes}
+                          </div>
+                        ) : null}
                       </div>
                     )}
                   </div>

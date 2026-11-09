@@ -71,6 +71,14 @@ def test_new_creator_registration_synchronizes_to_supabase_auth():
 
 def test_duplicate_registration_rejected():
     existing_email = "test_creator_check@example.com"
+    # Ensure user is registered first
+    client.post("/api/v1/auth/signup", json={
+        "name": "First Register",
+        "email": existing_email,
+        "password": "Password123!",
+        "role": "Creator"
+    })
+    # Attempt duplicate registration with same email
     res = client.post("/api/v1/auth/signup", json={
         "name": "Duplicate User",
         "email": existing_email,

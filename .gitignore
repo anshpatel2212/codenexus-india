@@ -17,3 +17,26 @@ tsconfig.tsbuildinfo
 *.db-wal
 *.db-shm
 backend/data/
+
+# Next.js generated files
+next-env.d.ts
+
+# Python testing cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Deployment cache
+.vercel/
+
+# Logs
+*.log
+npm-debug.log*

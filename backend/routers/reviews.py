@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -7,7 +7,7 @@ import json
 import logging
 
 from backend.auth.jwt_guard import get_current_user, require_role, AuthenticatedUser
-from backend.services.ai_review_engine import ai_review_engine
+from backend.services.ai_review_engine import ai_review_engine, extract_document_text
 from backend.services.db import get_db_connection
 
 logger = logging.getLogger("brandsense.reviews")
@@ -22,10 +22,15 @@ class SubmitReviewRequest(BaseModel):
     instructions: Optional[str] = None
     filePath: Optional[str] = None
     fileUrl: Optional[str] = None
+    pages: Optional[List[Dict[str, Any]]] = None
+    fileType: Optional[str] = None
+    fileName: Optional[str] = None
+    pageCount: Optional[int] = 1
 
 class RewriteRequest(BaseModel):
     originalText: str
     targetFindingId: Optional[str] = None
+    instructions: Optional[str] = None
 
 class CreateRevisionRequest(BaseModel):
     content: str = Field(..., min_length=5)
@@ -53,12 +58,13 @@ async def submit_review(
     org_id = current_user.organization_id or "org-demo-brandsense"
     now_iso = datetime.utcnow().isoformat() + "Z"
 
-    # 1. Run AI Review Engine
+    # 1. Run Dual-Pass AI Review Engine
     overall_score, category_scores, findings, suggested_content = await ai_review_engine.analyze_content(
         content=req.content,
         content_type=req.contentType,
         brand_profile_name=req.brandProfile or "Corporate Core",
-        org_id=org_id
+        org_id=org_id,
+        pages=req.pages
     )
 
     review_status = "Approved" if overall_score >= 95 else "Changes Requested"
@@ -73,8 +79,8 @@ async def submit_review(
             INSERT INTO reviews (
                 id, organization_id, title, content_type, original_content,
                 suggested_content, instructions, overall_score, category_scores,
-                status, author_id, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                status, author_id, file_type, file_name, page_count, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             review_id,
             org_id,
@@ -87,11 +93,14 @@ async def submit_review(
             json.dumps(category_scores),
             review_status,
             current_user.id,
+            req.fileType or ("document" if req.pages else "text"),
+            req.fileName,
+            req.pageCount or (len(req.pages) if req.pages else 1),
             now_iso,
             now_iso
         ))
 
-        # Insert Findings
+        # Insert Verified Findings
         for idx, f in enumerate(findings):
             fid = f"fnd-{uuid.uuid4().hex[:10]}"
             f["id"] = fid
@@ -99,8 +108,10 @@ async def submit_review(
                 INSERT INTO findings (
                     id, review_id, organization_id, category, severity,
                     reason, evidence, highlighted_text, suggested_fix,
-                    explanation, confidence, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    explanation, confidence, status,
+                    verification_status, verification_confidence, verification_notes,
+                    escalated_to_human, source_page, source_section, source_document, evidence_quote
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 fid,
                 review_id,
@@ -113,7 +124,15 @@ async def submit_review(
                 f.get("suggestedFix"),
                 f.get("explanation"),
                 f.get("confidence", 90),
-                f.get("status", "pending")
+                f.get("status", "pending"),
+                f.get("verificationStatus") or f.get("verification_status") or "verified",
+                f.get("verificationConfidence") or f.get("verification_confidence") or 90.0,
+                f.get("verificationNotes") or f.get("verification_notes") or "",
+                1 if (f.get("escalatedToHuman") or f.get("escalated_to_human")) else 0,
+                f.get("sourcePage") or f.get("source_page") or 1,
+                f.get("sourceSection") or f.get("source_section") or "General",
+                f.get("sourceDocument") or f.get("source_document") or "Enterprise Brand Guidelines",
+                f.get("evidenceQuote") or f.get("evidence_quote") or f.get("evidence")
             ))
 
         # Insert Revision #1
@@ -246,7 +265,21 @@ async def list_reviews(
                     "suggestedFix": f["suggested_fix"],
                     "explanation": f["explanation"],
                     "confidence": f["confidence"],
-                    "status": f["status"]
+                    "status": f["status"],
+                    "verificationStatus": f["verification_status"] or "verified",
+                    "verification_status": f["verification_status"] or "verified",
+                    "verificationConfidence": f["verification_confidence"] or f["confidence"] or 90.0,
+                    "verification_confidence": f["verification_confidence"] or f["confidence"] or 90.0,
+                    "verificationNotes": f["verification_notes"] or "",
+                    "verification_notes": f["verification_notes"] or "",
+                    "escalatedToHuman": bool(f["escalated_to_human"]),
+                    "escalated_to_human": bool(f["escalated_to_human"]),
+                    "sourcePage": f["source_page"] or 1,
+                    "source_page": f["source_page"] or 1,
+                    "sourceSection": f["source_section"] or "General",
+                    "source_section": f["source_section"] or "General",
+                    "evidenceQuote": f["evidence_quote"] or f["evidence"],
+                    "evidence_quote": f["evidence_quote"] or f["evidence"]
                 }
                 for f in f_rows
             ]
@@ -333,7 +366,21 @@ async def get_review(
                 "suggestedFix": f["suggested_fix"],
                 "explanation": f["explanation"],
                 "confidence": f["confidence"],
-                "status": f["status"]
+                "status": f["status"],
+                "verificationStatus": f["verification_status"] or "verified",
+                "verification_status": f["verification_status"] or "verified",
+                "verificationConfidence": f["verification_confidence"] or f["confidence"] or 90.0,
+                "verification_confidence": f["verification_confidence"] or f["confidence"] or 90.0,
+                "verificationNotes": f["verification_notes"] or "",
+                "verification_notes": f["verification_notes"] or "",
+                "escalatedToHuman": bool(f["escalated_to_human"]),
+                "escalated_to_human": bool(f["escalated_to_human"]),
+                "sourcePage": f["source_page"] or 1,
+                "source_page": f["source_page"] or 1,
+                "sourceSection": f["source_section"] or "General",
+                "source_section": f["source_section"] or "General",
+                "evidenceQuote": f["evidence_quote"] or f["evidence"],
+                "evidence_quote": f["evidence_quote"] or f["evidence"]
             }
             for f in f_rows
         ]
@@ -634,15 +681,42 @@ async def rewrite_review_content(
         except Exception:
             pass
 
-    rewritten = await ai_review_engine.rewrite_text(
+    res = await ai_review_engine.rewrite_text(
         original_text=req.originalText,
-        finding_reason=finding_reason
+        finding_reason=finding_reason,
+        instructions=req.instructions
     )
 
     return {
         "success": True,
         "reviewId": review_id,
         "originalText": req.originalText,
-        "rewrittenText": rewritten,
+        "rewrittenText": res.get("rewrittenText", req.originalText),
+        "intentPreservationScore": res.get("intentPreservationScore", 98.0),
+        "keyFactsRetained": res.get("keyFactsRetained", []),
         "targetFindingId": req.targetFindingId
     }
+
+@router.post("/extract-document")
+async def extract_document(
+    file: UploadFile = File(...),
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
+    """
+    Server-side multi-page document parser for PDF, DOCX, TXT, and Markdown files.
+    Extracts text, page counts, and section-level headings for deep governance auditing.
+    """
+    try:
+        content = await file.read()
+        extracted = extract_document_text(content, file.filename or "document")
+        return {
+            "success": True,
+            "filename": file.filename,
+            "format": extracted["format"],
+            "pageCount": extracted["pageCount"],
+            "fullText": extracted["fullText"],
+            "pages": extracted["pages"]
+        }
+    except Exception as e:
+        logger.error(f"Failed to extract document: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to extract text from document: {str(e)}")
