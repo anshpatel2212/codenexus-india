@@ -109,6 +109,32 @@ class SupabaseAdminService:
             logger.error(f"Network error contacting Supabase Auth for {normalized_email}: {e}")
             return None, str(e)
 
+    def verify_password_with_supabase(self, email: str, password: str) -> Optional[Dict[str, Any]]:
+        """
+        Validates user password directly with Supabase Auth API token endpoint.
+        Used to dynamically recover and self-heal user records after container resets.
+        """
+        if not self.is_live():
+            return None
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                res = client.post(
+                    f"{self.url}/auth/v1/token?grant_type=password",
+                    headers={
+                        "apikey": self.service_role_key,
+                        "Content-Type": "application/json"
+                    },
+                    json={"email": email.strip().lower(), "password": password}
+                )
+                if res.status_code == 200:
+                    data = res.json()
+                    return data.get("user")
+                elif res.status_code != 400:
+                    logger.warning(f"Supabase token verification notice ({res.status_code}): {res.text}")
+        except Exception as e:
+            logger.warning(f"Error checking Supabase password for {email}: {e}")
+        return None
+
     def delete_auth_user(self, supabase_uid: str) -> bool:
         """
         Rollback helper: Deletes an identity in Supabase Auth if a subsequent database transaction fails.

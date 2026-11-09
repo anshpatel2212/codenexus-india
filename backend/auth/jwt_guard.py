@@ -349,6 +349,58 @@ async def get_current_user(
         detail="User profile not registered in persistent system records."
     )
 
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security)
+) -> Optional[AuthenticatedUser]:
+    """
+    Returns the authenticated user if a valid bearer token is provided;
+    returns None without throwing 401 if credentials are missing or invalid.
+    Used for public or guest-friendly endpoints like SENSA AI chat.
+    """
+    if not credentials:
+        return None
+    try:
+        token = credentials.credentials
+        payload = verify_supabase_jwt(token)
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, email, full_name, role, organization_id, department, supabase_user_id FROM users WHERE id = ? OR supabase_user_id = ?",
+            (user_id, user_id)
+        )
+        row = cur.fetchone()
+        conn.close()
+
+        if row:
+            sb_uid = row["supabase_user_id"] if "supabase_user_id" in row.keys() else None
+            return AuthenticatedUser(
+                id=row["id"],
+                organization_id=row["organization_id"],
+                email=row["email"],
+                full_name=row["full_name"],
+                role=row["role"],
+                department=row["department"],
+                supabase_user_id=sb_uid
+            )
+
+        if payload.get("email") and payload.get("role"):
+            return AuthenticatedUser(
+                id=user_id,
+                organization_id=payload.get("organization_id"),
+                email=payload.get("email"),
+                full_name=payload.get("full_name") or payload.get("email", "").split("@")[0],
+                role=payload.get("role", "Creator"),
+                department=payload.get("department", "General"),
+                supabase_user_id=payload.get("supabase_user_id")
+            )
+        return None
+    except Exception:
+        return None
+
 def require_role(allowed_roles: List[str]):
     """
     Dependency factory to enforce strict Role-Based Access Control (RBAC).

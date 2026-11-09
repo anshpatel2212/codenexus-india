@@ -235,6 +235,40 @@ async def login(req: LoginRequest, background_tasks: BackgroundTasks):
     """, (normalized_email,))
     user = cur.fetchone()
 
+    # Self-healing dynamic recovery: If user is missing from SQLite (e.g. after ephemeral container restart),
+    # verify directly with Supabase Auth and recreate SQLite record seamlessly.
+    if not user and supabase_admin.is_live():
+        sb_user = supabase_admin.verify_password_with_supabase(normalized_email, req.password)
+        if sb_user:
+            user_id = f"usr-{uuid.uuid4().hex[:10]}"
+            meta = sb_user.get("user_metadata") or {}
+            full_name = meta.get("full_name") or normalized_email.split("@")[0]
+            role = meta.get("role") or "Creator"
+            org_id = meta.get("organization_id") or f"org-{uuid.uuid4().hex[:8]}"
+            p_hash, salt = hash_password(req.password)
+            now = datetime.utcnow().isoformat() + "Z"
+
+            cur.execute("SELECT id FROM organizations WHERE id = ?", (org_id,))
+            if not cur.fetchone():
+                cur.execute("""
+                INSERT INTO organizations (id, name, slug, tier, status, created_at, updated_at)
+                VALUES (?, ?, ?, 'Standard Plan', 'active', ?, ?)
+                """, (org_id, "BrandSense Workspace", f"org-{uuid.uuid4().hex[:6]}", now, now))
+
+            cur.execute("""
+            INSERT INTO users (id, email, password_hash, salt, full_name, role, organization_id, department, avatar_url, status, is_demo, supabase_user_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Brand Management', '', 'active', 0, ?, ?, ?)
+            """, (user_id, normalized_email, p_hash, salt, full_name, role, org_id, sb_user.get("id"), now, now))
+            conn.commit()
+
+            cur.execute("""
+            SELECT u.*, o.name as org_name
+            FROM users u
+            LEFT JOIN organizations o ON u.organization_id = o.id
+            WHERE u.email = ?
+            """, (normalized_email,))
+            user = cur.fetchone()
+
     if not user:
         conn.close()
         raise HTTPException(

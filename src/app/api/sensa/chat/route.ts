@@ -46,7 +46,7 @@ CRITICAL INSTRUCTIONS:
   for (const model of CANDIDATE_MODELS) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
     try {
       const response = await fetch(url, {
@@ -78,6 +78,11 @@ CRITICAL INSTRUCTIONS:
         throw new Error('AI provider rate limit reached (HTTP 429). Please wait a moment.');
       }
 
+      if (response.status === 401 || response.status === 403 || response.status === 400) {
+        // Authentication or policy rejection for this key: break immediately to fast fallback
+        break;
+      }
+
       if (!response.ok) {
         const errText = await response.text().catch(() => '');
         throw new Error(`Gemini API error ${response.status}: ${errText.slice(0, 150)}`);
@@ -102,6 +107,7 @@ CRITICAL INSTRUCTIONS:
       if (err instanceof Error && err.message.includes('429')) {
         throw err;
       }
+      break;
     }
   }
 
@@ -190,7 +196,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+    const apiKey = (process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '').trim();
     let content = '';
 
     if (apiKey) {

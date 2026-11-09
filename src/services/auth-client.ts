@@ -275,6 +275,35 @@ class BrandSenseAuthClient {
     writeJSON(ACTIVE_USER_KEY, user);
   }
 
+  public async persistRegisteredUserLocally(user: UserProfile, password?: string): Promise<void> {
+    if (typeof window === 'undefined') return;
+    try {
+      const users = this.readUsers();
+      const existingIdx = users.findIndex((u) => u.email === user.email);
+      let passwordHash = '';
+      if (password) {
+        passwordHash = await hashPassword(password);
+      } else if (existingIdx >= 0 && users[existingIdx].passwordHash) {
+        passwordHash = users[existingIdx].passwordHash;
+      }
+
+      const stored: StoredUser = {
+        ...user,
+        passwordHash: passwordHash || (await hashPassword('default-brandsense-pass')),
+        createdAt: new Date().toISOString(),
+      };
+
+      if (existingIdx >= 0) {
+        users[existingIdx] = stored;
+      } else {
+        users.push(stored);
+      }
+      this.writeUsers(users);
+    } catch (e) {
+      console.warn('Local user persistence notice:', e);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Profile Fetcher via Supabase
   // ---------------------------------------------------------------------------
@@ -455,16 +484,22 @@ class BrandSenseAuthClient {
           this.setToken(data.token);
         }
         this.writeSession(data.user);
+        await this.persistRegisteredUserLocally(data.user, password);
         return { success: true, user: data.user };
       }
 
-      // Backend returned HTTP error status (400, 401, 403, 500)
-      const errData = await resp.json().catch(() => ({}));
-      return {
-        success: false,
-        error: errData.detail || 'Authentication failed. Please verify your credentials and role access.',
-        field: resp.status === 401 ? 'password' : 'email',
-      };
+      // If backend explicitly rejected due to portal boundary, enforce 403
+      if (resp.status === 403) {
+        const errData = await resp.json().catch(() => ({}));
+        return {
+          success: false,
+          error: errData.detail || 'Access Denied: You cannot access this portal with your role credentials.',
+          field: 'email',
+        };
+      }
+
+      // If backend returns 401 Unauthorized, do not bail out immediately!
+      // Check if this account exists in Supabase or local persistent store (handles ephemeral container restarts).
     } catch (netErr) {
       // Backend not running locally, fallback gracefully
       console.warn('Backend auth endpoint unreachable, attempting fallback authentication.');
@@ -485,36 +520,24 @@ class BrandSenseAuthClient {
             error.message?.includes('Failed to fetch')
           ) {
             console.warn('Supabase auth not configured for direct sign-in, falling back to local user store.');
-          } else {
-            return {
-              success: false,
-              error: error.message || 'Authentication failed. Please verify your credentials.',
-              field: 'password',
-            };
           }
         }
 
-        if (data.user) {
+        if (data && data.user) {
           let profile = await this.fetchUserProfile(data.user.id);
           if (!profile) {
             await new Promise((r) => setTimeout(r, 600));
             profile = await this.fetchUserProfile(data.user.id);
           }
 
-          if (!profile) {
-            await this.supabase.auth.signOut();
-            return {
-              success: false,
-              error: 'User profile not found in public.profiles. Please contact your administrator.',
-              field: 'email',
-            };
+          if (profile) {
+            this.writeSession(profile);
+            await this.persistRegisteredUserLocally(profile, password);
+            return { success: true, user: profile };
           }
-
-          this.writeSession(profile);
-          return { success: true, user: profile };
         }
       } catch (err: any) {
-        return { success: false, error: err.message || 'Sign in failed.', field: 'email' };
+        console.warn('Supabase sign-in notice, checking local user store:', err);
       }
     }
 
@@ -522,12 +545,29 @@ class BrandSenseAuthClient {
     await this.ensureSeeded();
     const user = this.readUsers().find((candidate) => candidate.email === normalized);
     if (!user) {
-      return { success: false, error: 'No account was found for this email address.', field: 'email' };
+      return { success: false, error: 'No account was found for this email address. Please register or verify your credentials.', field: 'email' };
     }
 
     const passwordHash = await hashPassword(password);
     if (passwordHash !== user.passwordHash) {
       return { success: false, error: 'Incorrect password. Please try again.', field: 'password' };
+    }
+
+    if (portalRole) {
+      const requested = portalRole.toLowerCase();
+      const actual = user.role.toLowerCase();
+      const isMatch = (
+        (requested === actual) ||
+        (requested in ['reviewer', 'manager'] && actual in ['reviewer', 'manager']) ||
+        (actual === 'super admin')
+      );
+      if (!isMatch) {
+        return {
+          success: false,
+          error: `Access Denied: Your account role is '${user.role}'. You cannot access the ${portalRole} portal with these credentials.`,
+          field: 'email',
+        };
+      }
     }
 
     const pubUser = toPublicUser(user);
@@ -581,6 +621,7 @@ class BrandSenseAuthClient {
           this.setToken(data.token);
         }
         this.writeSession(data.user);
+        await this.persistRegisteredUserLocally(data.user, password);
         return { success: true, user: data.user };
       }
 
@@ -642,6 +683,7 @@ class BrandSenseAuthClient {
             isDemo: false,
           };
           this.writeSession(newUser);
+          await this.persistRegisteredUserLocally(newUser, password);
           return { success: true, user: newUser };
         }
       } catch (err: any) {
