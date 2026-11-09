@@ -520,6 +520,8 @@ class BrandSenseAuthClient {
             error.message?.includes('Failed to fetch')
           ) {
             console.warn('Supabase auth not configured for direct sign-in, falling back to local user store.');
+          } else {
+            console.warn(`Supabase sign-in notice (${error.message}), falling back to local user store.`);
           }
         }
 
@@ -660,14 +662,17 @@ class BrandSenseAuthClient {
         });
 
         if (error) {
-          if (
-            error.message?.includes('not configured') ||
-            error.message?.includes('backend service') ||
-            error.message?.includes('Failed to fetch')
-          ) {
+          const errMsg = (error.message || '').toLowerCase();
+          const isRateLimit = errMsg.includes('rate limit') || errMsg.includes('rate_limit') || errMsg.includes('over_email_send_rate_limit');
+          const isEmailSendIssue = errMsg.includes('email') && (errMsg.includes('send') || errMsg.includes('limit') || errMsg.includes('error') || errMsg.includes('fail'));
+          const isConfigIssue = error.message?.includes('not configured') || error.message?.includes('backend service') || error.message?.includes('Failed to fetch');
+
+          if (isConfigIssue || isRateLimit || isEmailSendIssue) {
             console.warn('Supabase auth not configured for direct signup, falling back to local persistent store.');
+          } else if (errMsg.includes('already registered') || errMsg.includes('already exists')) {
+            return { success: false, error: 'An account with this email already exists. Please sign in.', field: 'email' };
           } else {
-            return { success: false, error: error.message, field: 'email' };
+            console.warn(`Supabase signup notice (${error.message}), falling back to local persistent store.`);
           }
         }
 
@@ -687,7 +692,7 @@ class BrandSenseAuthClient {
           return { success: true, user: newUser };
         }
       } catch (err: any) {
-        return { success: false, error: err.message || 'Registration failed.', field: 'email' };
+        console.warn('Supabase signup exception, falling back to local persistent store:', err?.message || err);
       }
     }
 

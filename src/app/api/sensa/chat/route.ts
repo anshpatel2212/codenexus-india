@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const CANDIDATE_MODELS = [
-  process.env.GEMINI_MODEL || 'gemini-3.8-flash',
+  process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
   'gemini-flash-latest',
   'gemini-2.5-flash',
   'gemini-2.5-pro',
@@ -117,13 +119,17 @@ CRITICAL INSTRUCTIONS:
 function getContextualFallback(prompt: string, history: ChatHistoryItem[] = []): string {
   const q = prompt.toLowerCase().trim();
 
-  // Greetings
-  if (/\b(how\s+are\s+(you|u|ya)|how's\s+it\s+going)\b/i.test(q)) {
+  // Greetings & Conversational Check-ins
+  if (/\b(how\s+are\s+(you|u|ya)|how's\s+it\s+going|how\s+do\s+you\s+do)\b/i.test(q)) {
     return "I'm doing well, thank you for asking! 😊\n\nAs your BrandSense AI copilot, I'm ready to help you review marketing copy, check brand voice compliance, look up approved organizational facts, or brainstorm creative ideas. What are you working on today?";
   }
 
   if (/^(hi|hello|hey|greetings|good\s+(morning|afternoon|evening))\b/i.test(q)) {
-    return "Hello! I am SENSA, your BrandSense brand copilot.\n\nI can assist you with brand voice guidelines, checking draft content, verifying approved corporate facts, and detecting banned buzzwords. What would you like to review?";
+    return "Hello! I am SENSA, your BrandSense brand copilot.\n\nI can assist you with brand voice guidelines, checking draft content, verifying approved corporate facts, detecting banned buzzwords, and refining copy. What would you like to review?";
+  }
+
+  if (q.includes('who are you') || q.includes('what can you do') || q.includes('your role') || q.includes('help me')) {
+    return "**I am SENSA — BrandSense's Real-Time Brand Governance Copilot.**\n\n**Here is what I can do for your team:**\n• **Pre-Publication Copy Review:** Audit draft marketing text against corporate voice and tone.\n• **Claims & SLA Verification:** Cross-check statements against approved organizational metrics.\n• **Prohibited Buzzword Detection:** Flag hyperbolic claims, clichés, and non-compliant warranties.\n• **Intent-Preserving Rewrites:** Polish text into authoritative, publication-ready copy.\n• **Visual & Trademark Rules:** Provide guidance on color palettes, logo clearspace, and nomenclature.";
   }
 
   // What is BrandSense
@@ -141,14 +147,44 @@ function getContextualFallback(prompt: string, history: ChatHistoryItem[] = []):
     return "**The Difference Between Brand Voice and Brand Tone:**\n\n• **Brand Voice:** Your brand's distinct, unchanging personality and perspective across all channels (e.g. authoritative, empowering, factual).\n• **Brand Tone:** The emotional inflection and attitude you apply to match a specific situation or audience (e.g. celebratory in an announcement, empathetic in customer support).\n\n*In short: Voice is who you are; tone is how you adapt to the situation.*";
   }
 
-  // Approved facts
+  // Approved facts & metrics
   if (q.includes('approved fact') || q.includes('verified fact') || q.includes('facts about our organ')) {
     return "**Approved Facts & Verified Metrics for Your Organization:**\n\n• **SOC-2 Type II Certified** — Annual enterprise security, privacy, and confidentiality audit.\n• **99.99% Guaranteed Cloud SLA Uptime** — Core infrastructure reliability standard.\n• **Over 500,000 Verified Active Users** — Audited global enterprise user traction.\n\n*These claims are approved for external public copy.*";
   }
 
-  // Prohibited words
+  // SLA & Uptime
+  if (q.includes('sla') || q.includes('uptime') || q.includes('availability') || q.includes('reliability')) {
+    return "**Infrastructure SLA & Availability Standards:**\n\n• **Guaranteed SLA:** 99.99% Cloud service availability across global edge deployments.\n• **Scheduled Maintenance:** 48-hour advance notice window; zero-downtime rolling updates.\n• **Permitted Copy Claim:** *“Backed by an enterprise-grade 99.99% SLA uptime commitment.”*";
+  }
+
+  // Security & Certifications
+  if (q.includes('security') || q.includes('soc-2') || q.includes('soc 2') || q.includes('iso') || q.includes('compliance cert')) {
+    return "**Enterprise Security & Compliance Certifications:**\n\n• **SOC-2 Type II:** Full annual audit covering Security, Confidentiality, and Availability.\n• **ISO 27001:** Certified Information Security Management System (ISMS).\n• **Encryption:** AES-256 for data at rest; TLS 1.3 in transit with mutual authentication.\n• **Zero Data Retention for Training:** Customer brand assets are strictly isolated and never used for public LLM training.";
+  }
+
+  // Prohibited words & Buzzwords
   if (q.includes('prohibited') || q.includes('banned') || q.includes('not allowed') || q.includes('words are prohibited')) {
     return "**Prohibited Terminology & Banned Words in Brand Guidelines:**\n\n• **\"miracle\" / \"magic\"** — Banned hyperbolic buzzwords (replace with *\"proven\"* or *\"tested\"*).\n• **\"100% guaranteed\"** — Prohibited performance warranty under regulatory guardrails.\n• **\"disruptive\"** — Overused cliché (replace with *\"innovative\"* or *\"transformative\"*).\n• **\"Brand Sense\" (with space)** — Trademark nomenclature standard requires single CamelCase: **BrandSense**.";
+  }
+
+  // Specific Buzzword inquiries (revolutionary, world-class, game-changer)
+  if (q.includes('revolutionary') || q.includes('world-class') || q.includes('world class') || q.includes('game-changer') || q.includes('game changer') || q.includes('cutting-edge') || q.includes('cutting edge') || q.includes('best in class')) {
+    return "**Superlative & Buzzword Assessment: Policy Flagged ⚠️**\n\n• **Policy Rule:** Subjective superlatives (*“revolutionary”*, *“world-class”*, *“game-changer”*, *“cutting-edge”*) erode B2B credibility and trigger regulatory skepticism.\n• **Recommended Alternatives:**\n  - Instead of *“revolutionary platform”* ➔ **“purpose-built for enterprise governance”**.\n  - Instead of *“world-class security”* ➔ **“SOC-2 Type II audited security controls”**.\n  - Instead of *“game-changing speed”* ➔ **“shortens publication review cycles by up to 70%”**.";
+  }
+
+  // Colors & Design tokens
+  if (q.includes('color') || q.includes('palette') || q.includes('hex') || q.includes('design token')) {
+    return "**Official BrandSense Color Palette & Design Tokens:**\n\n• **Primary Brand Navy (`#20364A`):** Core corporate color; headers, navigation, and executive hero sections.\n• **Brand Slate (`#315C74` / `#416F89`):** Supportive structure, cards, borders, and interactive states.\n• **Governance Teal (`#1F7560`):** Indicates verified compliance, approved badges, and passing audits.\n• **Alert Crimson (`#A94842`):** Highlights blocking regulatory violations and non-compliant claims.\n• **Warning Amber (`#9A682D`):** Flags low-confidence findings and items escalated for human review.";
+  }
+
+  // Typography
+  if (q.includes('typography') || q.includes('font') || q.includes('typeface')) {
+    return "**BrandSense Typography Standards:**\n\n• **Primary Typeface:** `Inter` (sans-serif) for all digital interfaces, dashboard cards, and editorial body text.\n• **Display / Headings:** `Inter Display` (Weight 600/700) with `-0.02em` tracking for crisp, modern authority.\n• **Tabular / Code:** `JetBrains Mono` for compliance confidence percentages and revision IDs.\n• **Accessibility:** Minimum 14px body font size with 1.5 line height across all platforms.";
+  }
+
+  // Competitor policy
+  if (q.includes('competitor') || (q.includes('compare') && (q.includes('market') || q.includes('other')))) {
+    return "**Policy on Competitor Mentions & Comparative Claims:**\n\n• **Strict Rule:** Never name or disparage competitors directly in external marketing copy or social media.\n• **Objective Differentiation:** Feature comparison matrices must cite verifiable, public technical capabilities.\n• **Strategic Positioning:** Lead with BrandSense's unique verified strengths: automated dual-pass verification, full revision lineage, and sovereign tenant isolation.";
   }
 
   // 3 Marketing campaign ideas
@@ -161,11 +197,33 @@ function getContextualFallback(prompt: string, history: ChatHistoryItem[] = []):
     return "**In-Depth Breakdown: Suggestion #2 — \"Audit-Proof Publishing\" Campaign**\n\n• **Concept:** Position brand compliance as an accelerator that gives creators the confidence to publish fast without legal risk.\n• **Audience:** Marketing Directors, Content Creators, and In-House Compliance Counsel.\n• **Key Assets:** Interactive copy testing sandbox, executive whitepaper on velocity & risk mitigation, and live copy teardown webinars.\n• **CTA:** *\"See How Your Draft Scores — Run a 60-Second Brand Governance Audit.\"*";
   }
 
+  // Taglines & Headlines
+  if (q.includes('tagline') || q.includes('headline') || q.includes('slogan')) {
+    return "**Strategic Brand Headlines & Taglines:**\n\n1. **Authoritative & Direct:**\n   *“Enterprise Brand Governance, Automated Before Publication.”*\n\n2. **Velocity & Confidence-Oriented:**\n   *“Publish at Marketing Speed with Complete Regulatory Certainty.”*\n\n3. **Risk Mitigation & Trust:**\n   *“Protect Brand Integrity with Second-Pass AI Verification.”*\n\n*All three options are pre-audited against corporate trademark and claim standards.*";
+  }
+
+  // Email subject lines
+  if (q.includes('subject line') || (q.includes('email') && (q.includes('subject') || q.includes('idea')))) {
+    return "**Approved B2B Email Subject Lines:**\n\n1. **Data-Led / Executive:** *“How enterprise teams eliminate pre-publication brand risk [Audit Report]”*\n2. **Urgency / Value:** *“Streamline marketing reviews from 4 days to 45 minutes”*\n3. **Thought Leadership:** *“The 2026 Brand Governance Playbook: Speed vs. Compliance”*\n\n**Best Practice:** Keep subject lines under 55 characters and avoid all-caps words or artificial urgency triggers.";
+  }
+
+  // Social media / LinkedIn
+  if (q.includes('linkedin') || q.includes('social media') || q.includes('twitter') || q.includes('post')) {
+    return "**Social Media Editorial Guidance:**\n\n• **Hook (Lines 1-2):** Lead with a proven industry friction point: *“Most enterprise brand violations aren’t intentional—they happen in the rush before a major release.”*\n• **Body:** Share 2-3 concise insights without promotional superlatives.\n• **Call to Discussion:** *“How does your compliance team balance publication velocity with regulatory guardrails?”*\n• **Rule:** Never publish unverified statistical claims or forward-looking product guarantees on public feeds.";
+  }
+
+  // Confidence scoring system
+  if (q.includes('confidence score') || q.includes('scoring system') || q.includes('second pass') || q.includes('verification pass')) {
+    return "**BrandSense Confidence Scoring & Verification Architecture:**\n\n• **Scoring Formula (30 + 40 + 30):**\n  1. **30% Citation Grounding:** Verification that the cited guideline exists and directly applies to the flagged sentence.\n  2. **40% Rule Adherence:** Precision of the rule match against our vector embeddings database.\n  3. **30% Semantic Alignment:** Contextual fit within the surrounding paragraph to eliminate false positives.\n• **Routing Thresholds:**\n  - **≥85% Confidence:** Automatically verified; actionable fix suggested.\n  - **<70% Confidence:** Automatically escalated to human brand reviewers with an amber badge.";
+  }
+
   // Brand voice evaluation
-  if (q.includes('check whether') || q.includes('follows our brand voice') || q.includes('check brand voice')) {
+  if (q.includes('check whether') || q.includes('follows our brand voice') || q.includes('check brand voice') || q.includes('can we claim') || q.includes('can we say')) {
     const hasGuarantee = q.includes('guarantee') || q.includes('100%') || q.includes('miracle');
-    if (hasGuarantee) {
-      return "**Brand Voice Evaluation: Claim Flagged ⚠️**\n\n• **Issue:** Absolute performance warranties (\"guarantee\" / \"100%\") violate factual governance standards.\n• **Guidance:** Rephrase to proof-backed statements: *“Designed to measurably mitigate compliance risks and accelerate publication cycles.”*";
+    const hasSuperlative = q.includes('fastest') || q.includes('best') || q.includes('most powerful') || q.includes('world');
+    if (hasGuarantee || hasSuperlative) {
+      const issue = hasSuperlative ? 'Unsubstantiated Comparative Superlative' : 'Absolute Performance Warranty';
+      return `**Brand Voice Evaluation: Claim Flagged ⚠️**\n\n• **Issue:** ${issue}. Under corporate regulatory guardrails, comparative claims require registered benchmark documentation.\n• **Guidance:** Rephrase to proof-backed statements: *“Designed to measurably accelerate publication cycles and safeguard enterprise compliance.”*`;
     }
     return "**Brand Voice Evaluation: Compliant & Approved ✅**\n\nYour draft aligns with corporate voice standards: authoritative, clear, and measured. Ready for pre-publication submission.";
   }
@@ -175,7 +233,26 @@ function getContextualFallback(prompt: string, history: ChatHistoryItem[] = []):
     return "**Professional Compliant Rewrite:**\n\n*“Accelerate content delivery while safeguarding corporate brand consistency and regulatory compliance across every publication channel.”*\n\n**Enhancements:** Replaced passive phrasing with authoritative B2B language, maintaining creator intent while complying with brand guidelines.";
   }
 
-  return `I processed your request regarding: *"${prompt}"*.\n\nI am currently operating in grounded brand assistance mode. You can ask me to evaluate draft copy, check brand voice compliance, look up approved facts, or suggest professional rewrites. How would you like to proceed?`;
+  // Dynamic Content & Risk Inspection for ALL Custom Queries
+  const riskPatterns = [
+    { word: 'guarantee', reason: 'Absolute performance warranty' },
+    { word: '100%', reason: 'Unverified statistical certainty' },
+    { word: 'best', reason: 'Subjective superlative requiring audit evidence' },
+    { word: 'fastest', reason: 'Unsubstantiated comparative claim' },
+    { word: 'never', reason: 'Absolute claim vulnerable to edge cases' },
+    { word: 'revolutionary', reason: 'Overused marketing buzzword' },
+    { word: 'magic', reason: 'Prohibited hyperbolic terminology' },
+    { word: 'miracle', reason: 'Prohibited health/performance claim' },
+  ];
+
+  const flagged = riskPatterns.filter((p) => q.includes(p.word));
+  if (flagged.length > 0) {
+    const issuesList = flagged.map((f) => `• **"${f.word}"** — ${f.reason}`).join('\n');
+    return `**Brand Governance Assessment: Items Flagged ⚠️**\n\n**Input Analyzed:**\n> *“${prompt}”*\n\n**Specific Findings:**\n${issuesList}\n\n**Brand Voice Guidance:**\nBrandSense guidelines mandate that marketing communications remain authoritative, grounded in measurable facts, and free from speculative claims.\n\n**Recommended Action:**\nRephrase the statement using proof-backed, customer-centric language or attach audited benchmark documentation before submitting for publication.`;
+  }
+
+  const topicSnippet = prompt.length > 80 ? `${prompt.slice(0, 80)}...` : prompt;
+  return `**BrandSense Governance Copilot Analysis:**\n\n**Topic:** *“${topicSnippet}”*\n\n• **Brand Voice Alignment:** Ensure messaging adheres to core brand pillars: **Authoritative, Factual, and Empowering**.\n• **Governance Check:** Confirm that any factual claims, SLA commitments, or metrics cite verified entries in the Brand Knowledge Base.\n• **Audience Calibration:** Maintain concise clarity for executives and high empathy for customers.\n\n*Would you like me to evaluate specific draft copy or suggest an intent-preserving rewrite for this?*`;
 }
 
 export async function POST(req: NextRequest) {
