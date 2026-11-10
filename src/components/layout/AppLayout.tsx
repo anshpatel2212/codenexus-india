@@ -147,6 +147,24 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     router.replace('/login');
   };
 
+  const handleDemoSwitch = async (roleSlug: string) => {
+    setProfileMenuOpen(false);
+    try {
+      const res = await authClient.loginAsDemo(roleSlug);
+      if (res.success && res.user) {
+        toast(`Switched persona to: ${res.user.name} (${res.user.role})`, 'success');
+        const dest = 
+          roleSlug === 'creator' ? '/creator/dashboard' :
+          roleSlug === 'reviewer' || roleSlug === 'manager' ? '/reviewer/dashboard' :
+          roleSlug === 'admin' ? '/admin/dashboard' :
+          roleSlug === 'super-admin' ? '/super-admin/dashboard' : '/dashboard';
+        window.location.href = dest;
+      }
+    } catch (err: any) {
+      toast(err?.message || 'Failed to switch demo persona', 'error');
+    }
+  };
+
   const navigation = [
     { name: 'Overview', href: getDashboardRouteForRole(user?.role), icon: LayoutDashboard },
     { name: 'New Review', href: user?.role === 'Creator' ? '/creator/new-review' : '/review/new', icon: FilePlus2, badge: 'New' },
@@ -369,20 +387,74 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                       Account settings
                     </Link>
                     {user?.isDemo && (
-                      <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          setProfileMenuOpen(false);
-                          authClient.resetDemoData();
-                          toast('Demo sandbox reset to initial seed state.');
-                          setTimeout(() => window.location.reload(), 300);
-                        }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[#B77938] hover:bg-[#F4D77B]/20 transition-colors focus:outline-none focus-visible:bg-[#F4F8FA]/20"
-                      >
-                        <RotateCcw className="w-4 h-4" aria-hidden="true" />
-                        Reset Demo Data
-                      </button>
+                      <>
+                        <div className="px-3 py-1.5 text-[10px] font-bold text-[#718494] uppercase tracking-wider border-t border-[#C4D5E0] bg-[#F4F8FA]">
+                          Switch Demo Persona
+                        </div>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => handleDemoSwitch('creator')}
+                          className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left hover:bg-[#EDF3F6] transition-colors ${user.role === 'Creator' ? 'text-[#1F7560] font-bold bg-emerald-50/50' : 'text-[#20364A] font-medium'}`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            Creator (Marcus)
+                          </span>
+                          {user.role === 'Creator' && <span className="text-[10px] text-emerald-700 font-bold">Active</span>}
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => handleDemoSwitch('reviewer')}
+                          className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left hover:bg-[#EDF3F6] transition-colors ${user.role === 'Reviewer' || user.role === 'Manager' ? 'text-[#9A682D] font-bold bg-amber-50/50' : 'text-[#20364A] font-medium'}`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            Reviewer (Sarah Chen)
+                          </span>
+                          {(user.role === 'Reviewer' || user.role === 'Manager') && <span className="text-[10px] text-amber-700 font-bold">Active</span>}
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => handleDemoSwitch('admin')}
+                          className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left hover:bg-[#EDF3F6] transition-colors ${user.role === 'Admin' ? 'text-[#315C74] font-bold bg-blue-50/50' : 'text-[#20364A] font-medium'}`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-blue-500" />
+                            Admin (Julian)
+                          </span>
+                          {user.role === 'Admin' && <span className="text-[10px] text-blue-700 font-bold">Active</span>}
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => handleDemoSwitch('super-admin')}
+                          className={`w-full flex items-center justify-between px-3 py-1.5 text-xs text-left hover:bg-[#EDF3F6] transition-colors ${user.role === 'Super Admin' ? 'text-purple-700 font-bold bg-purple-50/50' : 'text-[#20364A] font-medium'}`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-purple-500" />
+                            Super Admin (Alex)
+                          </span>
+                          {user.role === 'Super Admin' && <span className="text-[10px] text-purple-700 font-bold">Active</span>}
+                        </button>
+
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setProfileMenuOpen(false);
+                            authClient.resetDemoData();
+                            toast('Demo sandbox reset to initial seed state.');
+                            setTimeout(() => window.location.reload(), 300);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[#B77938] hover:bg-[#F4D77B]/20 transition-colors focus:outline-none focus-visible:bg-[#F4F8FA]/20 border-t border-[#C4D5E0]"
+                        >
+                          <RotateCcw className="w-4 h-4" aria-hidden="true" />
+                          Reset Demo Data
+                        </button>
+                      </>
                     )}
                     <button
                       type="button"

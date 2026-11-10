@@ -785,6 +785,10 @@ class BrandSenseAuthClient {
     return { success: true, user: pubUser };
   }
 
+  async loginAsDemo(profile: string): Promise<AuthResult> {
+    return this.signInDemo(profile as DemoProfile);
+  }
+
   // ---------------------------------------------------------------------------
   // Profile Update (Name, Avatar, Department)
   // ---------------------------------------------------------------------------
