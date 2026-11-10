@@ -480,6 +480,32 @@ USER QUESTION / TASK:
                     }],
                     "suggestedFix": "“Modernize your editorial operations with automated policy verification.”",
                 }
+
+            is_pure_command = bool(
+                re.match(r"^(check\s+(whether\s+)?(this\s+)?(content|sentence|text|draft|copy)?\s*(follows|aligns\s+with)?\s*(our\s+)?brand\s+voice(\s+and\s+tone)?(\s+guidelines)?[\.\?]?)$", q)
+            ) or q in ["check brand voice tone", "check brand voice", "check brand voice and tone", "check voice", "check tone"] or (
+                q.startswith("check ") and not any(sep in prompt for sep in [":", '"', "'", "“", "”", "\n"]) and len(q.split()) <= 10 and not any(w in q for w in ["say", "claim", "platform", "product", "accelerate", "we "])
+            )
+
+            if is_pure_command:
+                return {
+                    "id": f"sensa-res-{uuid_time()}",
+                    "sender": "sensa",
+                    "timestamp": "Just now",
+                    "content": (
+                        "**Brand Voice Evaluation & Copy Audit:**\n\n"
+                        "Please provide the draft copy or headline you would like to evaluate (for example: *“Check brand voice: [paste your copy here]”*).\n\n"
+                        "**I will evaluate your copy for:**\n"
+                        "• **Voice & Tone Consistency:** Clear, authoritative, and measured.\n"
+                        "• **Claims & Warranties:** Flagging absolute guarantees or comparative claims requiring proof.\n"
+                        "• **Terminology:** Detecting prohibited buzzwords and non-compliant claims.\n\n"
+                        "*ℹ️ Workspace Notice: If your workspace has not yet uploaded custom guidelines in Brand Knowledge, evaluation will apply enterprise B2B governance standards.*"
+                    ),
+                    "confidence": 99,
+                    "requiresHumanReview": False,
+                    "citations": [],
+                    "suggestedFix": None,
+                }
             else:
                 return {
                     "id": f"sensa-res-{uuid_time()}",

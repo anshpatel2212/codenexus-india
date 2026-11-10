@@ -218,14 +218,29 @@ function getContextualFallback(prompt: string, history: ChatHistoryItem[] = []):
   }
 
   // Brand voice evaluation
-  if (q.includes('check whether') || q.includes('follows our brand voice') || q.includes('check brand voice') || q.includes('can we claim') || q.includes('can we say')) {
-    const hasGuarantee = q.includes('guarantee') || q.includes('100%') || q.includes('miracle');
-    const hasSuperlative = q.includes('fastest') || q.includes('best') || q.includes('most powerful') || q.includes('world');
+  if (q.includes('check whether') || q.includes('follows our brand voice') || q.includes('check brand voice') || q.includes('voice tone') || q.includes('can we claim') || q.includes('can we say')) {
+    const hasGuarantee = q.includes('guarantee') || q.includes('100%') || q.includes('zero error') || q.includes('zero compliance') || q.includes('miracle');
+    const hasSuperlative = q.includes('fastest') || q.includes('best') || q.includes('most powerful') || q.includes('unbeatable') || q.includes('world');
     if (hasGuarantee || hasSuperlative) {
       const issue = hasSuperlative ? 'Unsubstantiated Comparative Superlative' : 'Absolute Performance Warranty';
-      return `**Brand Voice Evaluation: Claim Flagged ⚠️**\n\n• **Issue:** ${issue}. Under corporate regulatory guardrails, comparative claims require registered benchmark documentation.\n• **Guidance:** Rephrase to proof-backed statements: *“Designed to measurably accelerate publication cycles and safeguard enterprise compliance.”*`;
+      return `**Brand Voice Evaluation: Claim Flagged ⚠️**\n\n• **Issue:** ${issue}. Under corporate regulatory guardrails, comparative claims require registered benchmark documentation and absolute performance warranties are prohibited.\n• **Guidance:** Rephrase to proof-backed statements: *“Designed to measurably accelerate publication cycles and safeguard enterprise compliance.”*`;
     }
-    return "**Brand Voice Evaluation: Compliant & Approved ✅**\n\nYour draft aligns with corporate voice standards: authoritative, clear, and measured. Ready for pre-publication submission.";
+
+    const isPureCommand =
+      /^(check\s+(whether\s+)?(this\s+)?(content|sentence|text|draft|copy)?\s*(follows|aligns\s+with)?\s*(our\s+)?brand\s+voice(\s+and\s+tone)?(\s+guidelines)?[\.\?]?)$/i.test(q) ||
+      q === 'check brand voice tone' ||
+      q === 'check brand voice' ||
+      q === 'check brand voice and tone' ||
+      (q.startsWith('check ') && !q.includes(':') && !q.includes('"') && !q.includes("'") && !q.includes('“') && q.split(' ').length <= 10 && !q.includes('platform') && !q.includes('product') && !q.includes('say'));
+
+    if (isPureCommand) {
+      return "**Brand Voice Evaluation & Copy Audit:**\n\nPlease provide the draft copy or headline you would like to evaluate (for example: *“Check brand voice: [paste your copy here]”*).\n\n**I will evaluate your copy for:**\n• **Voice & Tone Consistency:** Clear, authoritative, and measured.\n• **Claims & Warranties:** Flagging absolute guarantees or comparative claims requiring proof.\n• **Terminology:** Detecting prohibited buzzwords and non-compliant claims.\n\n*ℹ️ Workspace Notice: If your workspace has not yet uploaded custom guidelines in Brand Knowledge, evaluation will apply enterprise B2B governance standards.*";
+    }
+
+    const draftExtract = prompt.replace(/^(check\s+(whether\s+)?(this\s+)?(content|sentence|text|draft|copy)?\s*(follows|aligns\s+with)?\s*(our\s+)?brand\s+voice[^\n:]*[:\-]?\s*)/i, '').trim();
+    const citedDraft = draftExtract && draftExtract.length > 5 ? `\n\n**Draft Evaluated:**\n> *“${draftExtract}”*` : '';
+
+    return `**Brand Voice Evaluation: Compliant & Approved ✅**${citedDraft}\n\nYour draft aligns with corporate voice standards: authoritative, clear, and measured. Ready for pre-publication submission.\n\n*ℹ️ Workspace Notice: Evaluated against enterprise B2B governance standards. To audit against your company's custom voice guidelines, upload your manual in **Brand Knowledge**.*`;
   }
 
   // Rewrite sentence

@@ -196,7 +196,7 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
     ],
     'Reviewer': [
       { name: 'Review Dashboard', href: '/reviewer/dashboard', icon: LayoutDashboard },
-      { name: 'Assigned Queue', href: '/reviewer/assigned', icon: Clock, badgeCount: 3 },
+      { name: 'Assigned Queue', href: '/reviewer/assigned', icon: Clock },
       { name: 'Approved Content', href: '/reviewer/approved', icon: CheckCircle2 },
       { name: 'Rejected & Revisions', href: '/reviewer/rejected', icon: AlertTriangle },
       { name: 'Decision History', href: '/reviewer/history', icon: History },
@@ -485,21 +485,18 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
                   aria-label="View notifications"
                 >
                   <Bell className="w-4 h-4" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#A94842] rounded-full ring-2 ring-white" />
                 </button>
 
                 {notifDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-dropdown border border-[#C4D5E0] py-2 z-50">
                     <div className="px-4 py-2 border-b border-[#C4D5E0] flex items-center justify-between">
                       <span className="text-xs font-bold text-[#20364A]">Governance Notifications</span>
-                      <span className="text-[10px] font-bold text-[#416F89] bg-[#D5E3EC] px-2 py-0.5 rounded">Real-time</span>
+                      <span className="text-[10px] font-bold text-[#4F6576] bg-[#EDF3F6] px-2 py-0.5 rounded">0 Unread</span>
                     </div>
-                    <div className="divide-y divide-[#C4D5E0]/70 max-h-60 overflow-y-auto">
-                      <div className="px-4 py-3 hover:bg-[#F4F8FA] text-xs">
-                        <p className="font-bold text-[#20364A]">System Alert</p>
-                        <p className="text-[#4F6576] text-[11px] mt-0.5">Automated policy checks synchronized across workspaces.</p>
-                        <span className="text-[10px] text-[#4F6576] mt-1 block">5 mins ago</span>
-                      </div>
+                    <div className="px-4 py-8 text-center text-xs">
+                      <Bell className="w-6 h-6 mx-auto mb-2 text-[#C4D5E0]" />
+                      <p className="font-bold text-[#20364A]">No New Notifications</p>
+                      <p className="text-[#4F6576] text-[11px] mt-1">You're all caught up! New alerts will appear here when content is submitted or reviewed.</p>
                     </div>
                   </div>
                 )}

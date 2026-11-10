@@ -480,11 +480,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     type="button"
                     onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
                     className="p-2 text-[#4F6576] hover:text-[#20364A] hover:bg-[#F4F8FA] rounded-lg relative transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89]"
-                    aria-label="Notifications (2 unread)"
+                    aria-label="Notifications"
                     aria-expanded={notifDropdownOpen}
                   >
                     <Bell className="w-4 h-4" />
-                    <span className="w-2 h-2 rounded-full bg-[#9A682D] absolute top-2 right-2 ring-2 ring-white" aria-hidden="true" />
                   </button>
 
                   {notifDropdownOpen && (
@@ -495,19 +494,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     >
                       <div className="px-4 py-2 border-b border-[#C4D5E0] flex items-center justify-between">
                         <span className="text-xs font-bold text-[#20364A]">Governance Alerts</span>
-                        <span className="text-xs font-bold text-[#315C74] bg-[#D5E3EC] px-2 py-0.5 rounded">2 New</span>
+                        <span className="text-xs font-bold text-[#4F6576] bg-[#EDF3F6] px-2 py-0.5 rounded">0 New</span>
                       </div>
-                      <div className="divide-y divide-[#C4D5E0]/70 max-h-64 overflow-y-auto">
-                        <div className="px-4 py-3 hover:bg-[#F4F8FA] text-xs">
-                          <p className="font-bold text-[#20364A]">Critical Finding on Q3 Campaign</p>
-                          <p className="text-[#4F6576] text-xs mt-0.5">Unverified ROI claim flagged by the rule engine.</p>
-                          <span className="text-xs text-[#4F6576] mt-1 block">15 mins ago</span>
-                        </div>
-                        <div className="px-4 py-3 hover:bg-[#F4F8FA] text-xs">
-                          <p className="font-bold text-[#20364A]">Review Approved by Legal</p>
-                          <p className="text-[#4F6576] text-xs mt-0.5">Julian Thorne signed off on ESG Annual Disclosure.</p>
-                          <span className="text-xs text-[#4F6576] mt-1 block">1 hour ago</span>
-                        </div>
+                      <div className="px-4 py-8 text-center text-xs">
+                        <Bell className="w-6 h-6 mx-auto mb-2 text-[#C4D5E0]" />
+                        <p className="font-bold text-[#20364A]">No New Notifications</p>
+                        <p className="text-[#4F6576] text-[11px] mt-1">You're all caught up! New alerts will appear here when content is submitted or reviewed.</p>
                       </div>
                     </div>
                   )}

@@ -175,7 +175,7 @@ This version keeps the partner offer and the confident tone, but removes the abs
 export const sensaPromptSuggestions = [
   {
     label: 'Check brand voice tone',
-    prompt: 'Check whether this content follows our brand voice and tone guidelines.',
+    prompt: 'Check brand voice: "Our enterprise platform accelerates publishing while safeguarding regulatory compliance."',
   },
   {
     label: 'Find approved facts',
