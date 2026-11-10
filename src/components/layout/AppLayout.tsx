@@ -326,15 +326,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <p className="text-xs text-[#D5E3EC] leading-relaxed mb-3">
                   Instant claim and voice verification against active brand guidelines.
                 </p>
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  onClick={() => setSensaOpen(true)}
-                  className="w-full"
-                >
-                  Ask SENSA
-                </Button>
+                <Link href="/assistant" className="w-full block">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    className="w-full"
+                  >
+                    Ask SENSA
+                  </Button>
+                </Link>
               </div>
             )}
 
@@ -534,22 +535,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </main>
           </div>
         </div>
-
-        {pathname !== '/assistant' && (
-          <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
-            <button
-              type="button"
-              onClick={() => setSensaOpen(!sensaOpen)}
-              className="group flex items-center gap-2 px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm bg-[#20364A] hover:bg-[#315C74] text-white rounded-full shadow-elevated transition-colors active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#416F89] focus-visible:ring-offset-2"
-              aria-label="Open SENSA Brand Intelligence Assistant"
-            >
-              <Sparkles className="w-4 h-4 text-[#F4D77B] flex-shrink-0" aria-hidden="true" />
-              <span className="text-xs font-bold tracking-tight">Ask SENSA</span>
-            </button>
-          </div>
-        )}
-
-        <SensaChatDrawer isOpen={sensaOpen} onClose={() => setSensaOpen(false)} />
 
         {logoutConfirmOpen && (
           <div

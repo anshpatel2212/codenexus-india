@@ -529,23 +529,6 @@ export const RoleShell: React.FC<RoleShellProps> = ({ role, title, children }) =
         </div>
       </div>
 
-      {/* Floating Ask SENSA Copilot Button */}
-      {pathname !== '/assistant' && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
-          <button
-            type="button"
-            onClick={() => setSensaOpen(!sensaOpen)}
-            className="flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm bg-[#20364A] hover:bg-[#315C74] text-white rounded-full shadow-elevated transition-colors"
-            aria-label="Ask SENSA AI Copilot"
-          >
-            <Sparkles className="w-4 h-4 text-[#F4D77B]" />
-            <span className="text-xs font-bold tracking-tight">Ask SENSA</span>
-          </button>
-        </div>
-      )}
-
-      <SensaChatDrawer isOpen={sensaOpen} onClose={() => setSensaOpen(false)} />
-
       {/* Logout Confirmation Modal */}
       {logoutConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#20364A]/50">

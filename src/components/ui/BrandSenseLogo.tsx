@@ -1,19 +1,28 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { getDashboardRouteForRole } from '@/services/auth-client';
 
 interface LogoProps {
   className?: string;
   collapsed?: boolean;
   variant?: 'light' | 'dark';
+  href?: string;
 }
 
 export const BrandSenseLogo: React.FC<LogoProps> = ({ 
   className = '', 
   collapsed = false,
-  variant = 'dark' 
+  variant = 'dark',
+  href,
 }) => {
+  const { user } = useAuth();
+  const targetHref = href || (user ? getDashboardRouteForRole(user.role) : '/');
+
   return (
-    <Link href="/" className={`inline-flex items-center gap-2.5 group transition-transform active:scale-[0.98] ${className}`}>
+    <Link href={targetHref} className={`inline-flex items-center gap-2.5 group transition-transform active:scale-[0.98] ${className}`}>
       {/* Exact BrandSense Logo Mark: Navy container with letter B and warm yellow dot */}
       <div className={`relative w-[35px] h-[35px] rounded-[10px] flex items-center justify-center font-heading font-extrabold text-[19px] shadow-sm overflow-hidden flex-shrink-0 ${
         variant === 'light' ? 'bg-[#416F89] text-white' : 'bg-[#20364A] text-white'

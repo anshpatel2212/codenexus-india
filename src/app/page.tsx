@@ -14,6 +14,32 @@ export default function LandingPage() {
       year.textContent = String(new Date().getFullYear());
     }
 
+    // If already logged in, update header CTAs to return directly to their dashboard
+    try {
+      const rawUser = typeof window !== 'undefined' ? localStorage.getItem('brandsense_active_user') : null;
+      if (rawUser) {
+        const u = JSON.parse(rawUser);
+        if (u && u.role) {
+          const dest =
+            u.role === 'Creator' ? '/creator/dashboard' :
+            u.role === 'Admin' ? '/admin/dashboard' :
+            u.role === 'Reviewer' || u.role === 'Manager' ? '/reviewer/dashboard' :
+            u.role === 'Super Admin' ? '/super-admin/dashboard' : '/creator/dashboard';
+
+          document.querySelectorAll('a[href="/login"]').forEach((el) => {
+            el.setAttribute('href', dest);
+            el.textContent = 'Dashboard';
+          });
+          document.querySelectorAll('a[href="/dashboard"]').forEach((el) => {
+            el.setAttribute('href', dest);
+            el.textContent = 'Dashboard';
+          });
+        }
+      }
+    } catch {
+      // Ignore
+    }
+
     if (!menuToggle || !navLinks) {
       return;
     }

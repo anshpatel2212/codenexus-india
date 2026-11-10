@@ -74,7 +74,7 @@ const DEMO_PERSONAS: DemoPersona[] = [
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { login, signInDemo } = useAuth();
+  const { user, isLoading, login, signInDemo } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -87,6 +87,12 @@ export default function LoginPage() {
   const [demoLoadingRole, setDemoLoadingRole] = useState<string | null>(null);
 
   const isSubmittingRef = useRef(false);
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      router.replace(getDashboardRouteForRole(user.role));
+    }
+  }, [user, isLoading, router]);
 
   useEffect(() => {
     try {
