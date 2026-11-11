@@ -23,14 +23,11 @@ export default function CreatorMyContentPage() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    if (user?.organizationId) {
-      apiClient.getReviews(user.organizationId).then((data) => {
-        setReviews(data || []);
-        setLoading(false);
-      }).catch(() => setLoading(false));
-    } else {
+    const orgId = user?.organizationId || 'org-demo-brandsense';
+    apiClient.getReviews(orgId).then((data) => {
+      setReviews(data || []);
       setLoading(false);
-    }
+    }).catch(() => setLoading(false));
   }, [user?.organizationId]);
 
   const filtered = reviews.filter((r) =>

@@ -52,21 +52,32 @@ export default function CreatorNewReviewPage() {
     }
 
     const orgId = user?.organizationId || 'org-demo-brandsense';
-    const result = await apiClient.submitReview({
-      title: title.trim(),
-      contentType,
-      brandProfile: 'Corporate Core (Global English)',
-      content: content.trim(),
-      instructions: 'Ensure full adherence to FTC claims substantiation and brand vocabulary rules.',
-      orgId,
-      authorId: user?.id,
-      authorName: user?.name,
-      authorEmail: user?.email,
-    });
+    try {
+      const result = await apiClient.submitReview({
+        title: title.trim(),
+        contentType,
+        brandProfile: 'Corporate Core (Global English)',
+        content: content.trim(),
+        instructions: 'Ensure full adherence to FTC claims substantiation and brand vocabulary rules.',
+        orgId,
+        authorId: user?.id,
+        authorName: user?.name,
+        authorEmail: user?.email,
+      });
 
-    setIsProcessing(false);
-    toast('AI Review complete! Findings and suggestions ready.');
-    router.push(`/creator/content/${result.id}`);
+      setIsProcessing(false);
+
+      if (!result || !result.id) {
+        toast('Failed to obtain a valid review ID from server. Please try again.', 'error');
+        return;
+      }
+
+      toast('AI Review complete! Findings and suggestions ready.');
+      router.push(`/creator/content/${result.id}`);
+    } catch (err: any) {
+      setIsProcessing(false);
+      toast(err?.message || 'Review submission failed. Please try again.', 'error');
+    }
   };
 
   const handleLoadSampleDraft = () => {

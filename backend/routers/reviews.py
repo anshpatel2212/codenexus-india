@@ -184,6 +184,8 @@ async def submit_review(
 
     return {
         "id": review_id,
+        "review_id": review_id,
+        "reviewId": review_id,
         "title": req.title.strip(),
         "contentType": req.contentType,
         "content_type": req.contentType,
@@ -286,6 +288,8 @@ async def list_reviews(
 
             reviews_list.append({
                 "id": r["id"],
+                "review_id": r["id"],
+                "reviewId": r["id"],
                 "organizationId": r["organization_id"],
                 "organization_id": r["organization_id"],
                 "title": r["title"],
@@ -419,6 +423,8 @@ async def get_review(
 
         return {
             "id": r["id"],
+            "review_id": r["id"],
+            "reviewId": r["id"],
             "organizationId": r["organization_id"],
             "organization_id": r["organization_id"],
             "title": r["title"],

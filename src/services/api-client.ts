@@ -87,8 +87,10 @@ function normalizeReview(r: any): ReviewItem {
     evidenceQuote: f.evidenceQuote || f.evidence_quote || f.evidence || '',
   }));
 
+  const reviewId = r.id || r.review_id || r.reviewId || '';
+
   return {
-    id: r.id,
+    id: reviewId,
     title: r.title || 'Untitled Draft',
     contentType: r.contentType || r.content_type || 'Social Media',
     brandProfile: r.brandProfile || r.brand_profile || 'Corporate Core (Global English)',
@@ -227,9 +229,13 @@ function normalizeApproval(a: any): ApprovalItem {
 class BrandSenseApiClient {
   private inFlightGetRequests = new Map<string, Promise<any>>();
 
-  private async fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  private async fetchWithAuth(endpoint: string, options: RequestInit & { timeout?: number } = {}): Promise<Response> {
+    const isHeavyEndpoint = endpoint.includes('/submit') || endpoint.includes('/rewrite') || endpoint.includes('/extract-document');
+    const defaultTimeout = isHeavyEndpoint ? 60000 : 15000;
+    const timeoutMs = options.timeout ?? defaultTimeout;
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     let token: string | null = null;
     try {
@@ -243,9 +249,11 @@ class BrandSenseApiClient {
       // Ignore token retrieval errors
     }
 
+    const { timeout: _unusedTimeout, ...fetchOptions } = options;
+
     const headers: Record<string, string> = {
-      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
-      ...(options.headers as Record<string, string> || {}),
+      ...(fetchOptions.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+      ...(fetchOptions.headers as Record<string, string> || {}),
     };
 
     if (token) {
@@ -255,7 +263,7 @@ class BrandSenseApiClient {
     try {
       const url = resolveApiUrl(endpoint, API_BASE_URL);
       const res = await fetch(url, {
-        ...options,
+        ...fetchOptions,
         headers,
         signal: controller.signal,
       });
@@ -347,7 +355,7 @@ class BrandSenseApiClient {
       const res = await this.fetchWithAuth(`/api/v1/reviews/${id}`);
       if (res.ok) {
         const data = await res.json();
-        if (data && data.id) {
+        if (data && (data.id || data.review_id || data.reviewId)) {
           return normalizeReview(data);
         }
       }
@@ -386,11 +394,15 @@ class BrandSenseApiClient {
       const res = await this.fetchWithAuth('/api/v1/reviews/submit', {
         method: 'POST',
         body: JSON.stringify(payload),
+        timeout: 60000,
       });
 
       if (res.ok) {
         const result = await res.json();
         const normalized = normalizeReview(result);
+        if (!normalized || !normalized.id) {
+          throw new Error('Server returned an empty or invalid review ID.');
+        }
         if (typeof window !== 'undefined') {
           const userKey = data.authorId ? `brandsense_current_review_${data.authorId}` : 'brandsense_current_review';
           localStorage.setItem(userKey, JSON.stringify(normalized));
@@ -405,15 +417,27 @@ class BrandSenseApiClient {
         const errData = await res.json().catch(() => ({ detail: 'Validation failed' }));
         const msg = Array.isArray(errData.detail) ? errData.detail[0]?.msg : errData.detail;
         throw new Error(msg || 'Validation error: please verify all required fields.');
+      } else {
+        const errData = await res.json().catch(() => ({ detail: `HTTP ${res.status}: Failed to submit review` }));
+        throw new Error(errData.detail || `Server error (${res.status}): Failed to submit review.`);
       }
     } catch (backendErr: any) {
-      if (backendErr?.message && (backendErr.message.includes('Authentication required') || backendErr.message.includes('Validation error'))) {
+      if (
+        backendErr?.message && (
+          backendErr.message.includes('Authentication required') ||
+          backendErr.message.includes('Validation error') ||
+          backendErr.message.includes('Server error') ||
+          backendErr.message.includes('HTTP ') ||
+          backendErr.message.includes('Failed to submit review') ||
+          backendErr.name === 'AbortError'
+        )
+      ) {
         throw backendErr;
       }
-      console.warn('FastAPI backend submission failed or unreachable, checking local AI:', backendErr);
+      console.warn('FastAPI backend submission failed or unreachable, checking local fallback:', backendErr);
     }
 
-    // 2. Fallback: Local demo heuristic review
+    // 2. Fallback: Local demo heuristic review (only when backend is completely unreachable)
     const fallbackReview = await supabaseDataService.createReview(payload);
     if (typeof window !== 'undefined' && fallbackReview) {
       const userKey = data.authorId ? `brandsense_current_review_${data.authorId}` : 'brandsense_current_review';
