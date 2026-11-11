@@ -36,14 +36,10 @@ export default function CreatorContentDetailsPage() {
 
   useEffect(() => {
     if (reviewId) {
-      apiClient.getReview(reviewId, user?.organizationId).then((data: any) => {
+      apiClient.getReview(reviewId).then((data: any) => {
         if (data) {
           setReview(data);
-          // Prioritize saved modifiedContent, never overwrite with originalContent if modifiedContent exists
-          const resolvedContent = (data.modifiedContent && typeof data.modifiedContent === 'string' && data.modifiedContent.trim().length > 0)
-            ? data.modifiedContent
-            : (data.originalContent || '');
-          setActiveContent(resolvedContent);
+          setActiveContent(data.modifiedContent || data.originalContent || '');
           const initialAccepted: Record<string, boolean> = {};
           if (Array.isArray(data.findings)) {
             data.findings.forEach((f: Finding) => {
@@ -57,19 +53,14 @@ export default function CreatorContentDetailsPage() {
         setLoading(false);
       }).catch(() => setLoading(false));
     }
-  }, [reviewId, user?.organizationId]);
+  }, [reviewId]);
 
   const handleApplyFix = async (finding: Finding) => {
     if (!finding.suggestedFix || savingFindingId) return;
 
     // 1. Calculate updated content preserving existing modifications
     let updated = activeContent;
-    const cleanHighlight = finding.highlightedText?.trim();
-    if (cleanHighlight && updated.includes(cleanHighlight)) {
-      const targetHasQuotes = cleanHighlight.startsWith('"') || cleanHighlight.startsWith('“');
-      const cleanFix = targetHasQuotes ? finding.suggestedFix : finding.suggestedFix.replace(/^[“”"']+|[“”"']+$/g, '');
-      updated = updated.replace(cleanHighlight, cleanFix);
-    } else if (finding.highlightedText && updated.includes(finding.highlightedText)) {
+    if (finding.highlightedText && updated.includes(finding.highlightedText)) {
       updated = updated.replace(finding.highlightedText, finding.suggestedFix);
     } else {
       updated += `\n\n[Correction]: ${finding.suggestedFix}`;
@@ -87,9 +78,8 @@ export default function CreatorContentDetailsPage() {
         `Applied AI Fix for ${finding.category}`
       );
 
-      // 3. Update state only after backend confirms save with database-verified values
-      const confirmedContent = res?.modifiedContent || res?.modified_content || updated;
-      setActiveContent(confirmedContent);
+      // 3. Update state only after backend confirms save
+      setActiveContent(updated);
       setAcceptedFixes((prev) => ({ ...prev, [finding.id]: true }));
       const newScore = res?.overallScore ?? res?.overall_score;
       if (newScore !== undefined) {
@@ -100,7 +90,7 @@ export default function CreatorContentDetailsPage() {
                 overallScore: newScore,
                 categoryScores: res.categoryScores || res.category_scores || prev.categoryScores,
                 status: res.status || prev.status,
-                modifiedContent: confirmedContent,
+                modifiedContent: updated,
                 findings: prev.findings.map((f) => (f.id === finding.id ? { ...f, status: 'accepted' } : f)),
               }
             : null

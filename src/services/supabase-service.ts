@@ -1249,6 +1249,7 @@ class SupabaseDataService {
   private mapReviewRecord(r: any): ReviewItem {
     return {
       id: r.id,
+      organizationId: r.organization_id || r.organizationId || undefined,
       title: r.title,
       contentType: r.content_type,
       brandProfile: 'Corporate Core (Global English)',

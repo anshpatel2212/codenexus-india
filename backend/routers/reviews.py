@@ -279,22 +279,13 @@ async def list_reviews(
                 ORDER BY r.created_at DESC
             """)
         else:
-            if org_id in ("org-demo-brandsense", "org-1"):
-                cur.execute("""
-                    SELECT r.*, u.full_name as author_name, u.email as author_email, u.role as author_role, u.avatar_url as author_avatar
-                    FROM reviews r
-                    LEFT JOIN users u ON r.author_id = u.id
-                    WHERE r.organization_id IN ('org-demo-brandsense', 'org-1')
-                    ORDER BY r.created_at DESC
-                """)
-            else:
-                cur.execute("""
-                    SELECT r.*, u.full_name as author_name, u.email as author_email, u.role as author_role, u.avatar_url as author_avatar
-                    FROM reviews r
-                    LEFT JOIN users u ON r.author_id = u.id
-                    WHERE r.organization_id = ?
-                    ORDER BY r.created_at DESC
-                """, (org_id,))
+            cur.execute("""
+                SELECT r.*, u.full_name as author_name, u.email as author_email, u.role as author_role, u.avatar_url as author_avatar
+                FROM reviews r
+                LEFT JOIN users u ON r.author_id = u.id
+                WHERE r.organization_id = ?
+                ORDER BY r.created_at DESC
+            """, (org_id,))
 
         rows = cur.fetchall()
         reviews_list = []
@@ -401,20 +392,12 @@ async def get_review(
                 WHERE r.id = ?
             """, (review_id,))
         else:
-            if org_id in ("org-demo-brandsense", "org-1"):
-                cur.execute("""
-                    SELECT r.*, u.full_name as author_name, u.email as author_email, u.role as author_role, u.avatar_url as author_avatar
-                    FROM reviews r
-                    LEFT JOIN users u ON r.author_id = u.id
-                    WHERE r.id = ? AND r.organization_id IN ('org-demo-brandsense', 'org-1')
-                """, (review_id,))
-            else:
-                cur.execute("""
-                    SELECT r.*, u.full_name as author_name, u.email as author_email, u.role as author_role, u.avatar_url as author_avatar
-                    FROM reviews r
-                    LEFT JOIN users u ON r.author_id = u.id
-                    WHERE r.id = ? AND r.organization_id = ?
-                """, (review_id, org_id))
+            cur.execute("""
+                SELECT r.*, u.full_name as author_name, u.email as author_email, u.role as author_role, u.avatar_url as author_avatar
+                FROM reviews r
+                LEFT JOIN users u ON r.author_id = u.id
+                WHERE r.id = ? AND r.organization_id = ?
+            """, (review_id, org_id))
 
         r = cur.fetchone()
         if not r:
@@ -743,8 +726,7 @@ async def update_review_content(
 
         org_id = rev_row["organization_id"]
         user_org = current_user.organization_id or "org-demo-brandsense"
-        is_demo_pair = (not org_id or org_id in ("org-demo-brandsense", "org-1")) and (not user_org or user_org in ("org-demo-brandsense", "org-1"))
-        if current_user.role != "Super Admin" and org_id != user_org and not is_demo_pair:
+        if current_user.role != "Super Admin" and org_id != user_org:
             raise HTTPException(status_code=403, detail="Not authorized to edit this review.")
 
         # 1. Update review modified_content and updated_at
@@ -761,12 +743,6 @@ async def update_review_content(
                 SET status = ?
                 WHERE id = ? AND review_id = ?
             """, (req.findingStatus or "accepted", req.findingId, review_id))
-            if cur.rowcount == 0:
-                cur.execute("""
-                    UPDATE findings
-                    SET status = ?
-                    WHERE id = ?
-                """, (req.findingStatus or "accepted", req.findingId))
 
         # 3. Recalculate governance score and category scores with updated findings
         cur.execute("SELECT category, severity, status FROM findings WHERE review_id = ?", (review_id,))
@@ -815,41 +791,21 @@ async def update_review_content(
         """, (new_overall_score, "Low" if new_overall_score >= 90 else ("Medium" if new_overall_score >= 75 else "High"), review_id))
 
         conn.commit()
-
-        # Query back the verified persisted record directly from SQLite
-        cur.execute("SELECT * FROM reviews WHERE id = ?", (review_id,))
-        saved_rev = cur.fetchone()
-
-        saved_finding_status = req.findingStatus or "accepted"
-        if req.findingId:
-            cur.execute("SELECT status FROM findings WHERE id = ?", (req.findingId,))
-            f_saved = cur.fetchone()
-            if f_saved:
-                saved_finding_status = f_saved["status"]
-
-        cat_scores_saved = {}
-        try:
-            cat_scores_saved = json.loads(saved_rev["category_scores"]) if saved_rev["category_scores"] else {}
-        except Exception:
-            pass
-
-        logger.info(f"[Reviews] PATCH /{review_id} persisted - score={saved_rev['overall_score']}, modified_len={len(saved_rev['modified_content']) if saved_rev['modified_content'] else 0}")
-
         return {
             "success": True,
-            "id": saved_rev["id"],
-            "reviewId": saved_rev["id"],
-            "overallScore": saved_rev["overall_score"],
-            "overall_score": saved_rev["overall_score"],
-            "categoryScores": cat_scores_saved,
-            "category_scores": cat_scores_saved,
-            "status": saved_rev["status"],
-            "modifiedContent": saved_rev["modified_content"],
-            "modified_content": saved_rev["modified_content"],
+            "id": review_id,
+            "reviewId": review_id,
+            "overallScore": new_overall_score,
+            "overall_score": new_overall_score,
+            "categoryScores": new_cat_scores,
+            "category_scores": new_cat_scores,
+            "status": new_status,
+            "modifiedContent": req.content,
+            "modified_content": req.content,
             "findingId": req.findingId,
-            "findingStatus": saved_finding_status,
+            "findingStatus": req.findingStatus or "accepted",
             "versionNumber": next_ver,
-            "updatedAt": saved_rev["updated_at"]
+            "updatedAt": now_iso
         }
     except HTTPException:
         conn.rollback()

@@ -48,6 +48,7 @@ export interface Finding {
 
 export interface ReviewItem {
   id: string;
+  organizationId?: string;
   title: string;
   contentType: ContentType;
   brandProfile: string;
@@ -62,6 +63,7 @@ export interface ReviewItem {
   overallScore: number;
   status: ReviewStatus;
   originalContent: string;
+  modifiedContent?: string;
   suggestedContent: string;
   categoryScores: {
     [key in FindingCategory]: number;
