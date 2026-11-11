@@ -31,36 +31,123 @@ export default function CreatorContentDetailsPage() {
   const [activeContent, setActiveContent] = useState('');
   const [acceptedFixes, setAcceptedFixes] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const [savingFindingId, setSavingFindingId] = useState<string | null>(null);
+  const [isSubmittingSignoff, setIsSubmittingSignoff] = useState(false);
 
   useEffect(() => {
     if (reviewId) {
-      apiClient.getReview(reviewId).then((data: any) => {
+      apiClient.getReview(reviewId, user?.organizationId).then((data: any) => {
         if (data) {
           setReview(data);
-          setActiveContent(data.originalContent);
+          // Prioritize saved modifiedContent, never overwrite with originalContent if modifiedContent exists
+          const resolvedContent = (data.modifiedContent && typeof data.modifiedContent === 'string' && data.modifiedContent.trim().length > 0)
+            ? data.modifiedContent
+            : (data.originalContent || '');
+          setActiveContent(resolvedContent);
+          const initialAccepted: Record<string, boolean> = {};
+          if (Array.isArray(data.findings)) {
+            data.findings.forEach((f: Finding) => {
+              if (f.status === 'accepted') {
+                initialAccepted[f.id] = true;
+              }
+            });
+          }
+          setAcceptedFixes(initialAccepted);
         }
         setLoading(false);
       }).catch(() => setLoading(false));
     }
-  }, [reviewId]);
+  }, [reviewId, user?.organizationId]);
 
-  const handleApplyFix = (finding: Finding) => {
-    if (!finding.suggestedFix) return;
-    // Replace highlighted or problematic text with suggested fix
+  const handleApplyFix = async (finding: Finding) => {
+    if (!finding.suggestedFix || savingFindingId) return;
+
+    // 1. Calculate updated content preserving existing modifications
     let updated = activeContent;
-    if (finding.highlightedText && updated.includes(finding.highlightedText)) {
+    const cleanHighlight = finding.highlightedText?.trim();
+    if (cleanHighlight && updated.includes(cleanHighlight)) {
+      const targetHasQuotes = cleanHighlight.startsWith('"') || cleanHighlight.startsWith('“');
+      const cleanFix = targetHasQuotes ? finding.suggestedFix : finding.suggestedFix.replace(/^[“”"']+|[“”"']+$/g, '');
+      updated = updated.replace(cleanHighlight, cleanFix);
+    } else if (finding.highlightedText && updated.includes(finding.highlightedText)) {
       updated = updated.replace(finding.highlightedText, finding.suggestedFix);
     } else {
       updated += `\n\n[Correction]: ${finding.suggestedFix}`;
     }
-    setActiveContent(updated);
-    setAcceptedFixes((prev) => ({ ...prev, [finding.id]: true }));
-    toast(`Adopted fix for "${finding.category}".`);
+
+    setSavingFindingId(finding.id);
+
+    try {
+      // 2. Persist updated content and finding status to backend
+      const res = await apiClient.updateReviewContent(
+        reviewId,
+        updated,
+        finding.id,
+        'accepted',
+        `Applied AI Fix for ${finding.category}`
+      );
+
+      // 3. Update state only after backend confirms save with database-verified values
+      const confirmedContent = res?.modifiedContent || res?.modified_content || updated;
+      setActiveContent(confirmedContent);
+      setAcceptedFixes((prev) => ({ ...prev, [finding.id]: true }));
+      const newScore = res?.overallScore ?? res?.overall_score;
+      if (newScore !== undefined) {
+        setReview((prev) =>
+          prev
+            ? {
+                ...prev,
+                overallScore: newScore,
+                categoryScores: res.categoryScores || res.category_scores || prev.categoryScores,
+                status: res.status || prev.status,
+                modifiedContent: confirmedContent,
+                findings: prev.findings.map((f) => (f.id === finding.id ? { ...f, status: 'accepted' } : f)),
+              }
+            : null
+        );
+      }
+      toast(`Adopted fix for "${finding.category}".`);
+    } catch (err: any) {
+      console.error('Failed to persist AI fix:', err);
+      toast(err?.message || 'Failed to save fix to server.', 'error');
+    } finally {
+      setSavingFindingId(null);
+    }
   };
 
   const handleSubmitForSignoff = async () => {
-    toast('Draft submitted to Legal and Brand Review queue for approval!');
-    router.push('/creator/my-content');
+    setIsSubmittingSignoff(true);
+    try {
+      // Ensure latest active content is persisted to backend
+      const res = await apiClient.updateReviewContent(
+        reviewId,
+        activeContent,
+        undefined,
+        undefined,
+        'Final Sign-Off Submission'
+      );
+      const newScore = res?.overallScore ?? res?.overall_score;
+      if (newScore !== undefined) {
+        setReview((prev) =>
+          prev
+            ? {
+                ...prev,
+                overallScore: newScore,
+                categoryScores: res.categoryScores || res.category_scores || prev.categoryScores,
+                status: res.status || prev.status,
+                modifiedContent: activeContent,
+              }
+            : null
+        );
+      }
+      toast('Draft submitted to Legal and Brand Review queue for approval!');
+      router.push('/creator/my-content');
+    } catch (err: any) {
+      console.error('Failed to submit for signoff:', err);
+      toast(err?.message || 'Failed to submit draft.', 'error');
+    } finally {
+      setIsSubmittingSignoff(false);
+    }
   };
 
   if (loading) {
@@ -106,6 +193,7 @@ export default function CreatorContentDetailsPage() {
           <Button
             variant="primary"
             size="sm"
+            isLoading={isSubmittingSignoff}
             onClick={handleSubmitForSignoff}
             leftIcon={<Send className="w-3.5 h-3.5" />}
           >
@@ -186,6 +274,8 @@ export default function CreatorContentDetailsPage() {
                     <Button
                       size="sm"
                       variant={acceptedFixes[finding.id] ? 'outline' : 'primary'}
+                      isLoading={savingFindingId === finding.id}
+                      disabled={savingFindingId === finding.id}
                       onClick={() => handleApplyFix(finding)}
                       leftIcon={acceptedFixes[finding.id] ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Sparkles className="w-3.5 h-3.5" />}
                     >

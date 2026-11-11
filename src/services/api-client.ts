@@ -91,6 +91,7 @@ function normalizeReview(r: any): ReviewItem {
 
   return {
     id: reviewId,
+    organizationId: r.organizationId || r.organization_id || undefined,
     title: r.title || 'Untitled Draft',
     contentType: r.contentType || r.content_type || 'Social Media',
     brandProfile: r.brandProfile || r.brand_profile || 'Corporate Core (Global English)',
@@ -105,6 +106,7 @@ function normalizeReview(r: any): ReviewItem {
     overallScore: r.overallScore !== undefined ? r.overallScore : (r.overall_score !== undefined ? r.overall_score : 80),
     status: r.status || 'Pending Review',
     originalContent: r.originalContent || r.original_content || '',
+    modifiedContent: r.modifiedContent || r.modified_content || undefined,
     suggestedContent: r.suggestedContent || r.suggested_content || '',
     categoryScores: catScores,
     findings,
@@ -356,7 +358,12 @@ class BrandSenseApiClient {
       if (res.ok) {
         const data = await res.json();
         if (data && (data.id || data.review_id || data.reviewId)) {
-          return normalizeReview(data);
+          const normalized = normalizeReview(data);
+          // Keep local cache synchronized with live authoritative backend
+          if (typeof window !== 'undefined' && normalized) {
+            supabaseDataService.saveLocalReview(normalized, normalized.organizationId || orgId);
+          }
+          return normalized;
         }
       }
     } catch (err) {
@@ -447,20 +454,102 @@ class BrandSenseApiClient {
     return fallbackReview;
   }
 
+  async updateReviewContent(
+    reviewId: string,
+    content: string,
+    findingId?: string,
+    findingStatus?: 'accepted' | 'rejected' | 'modified',
+    summary?: string
+  ): Promise<any> {
+    const targetEndpoint = `/api/v1/reviews/${reviewId}`;
+    const targetUrl = resolveApiUrl(targetEndpoint, API_BASE_URL);
+    const payload = {
+      content,
+      findingId,
+      findingStatus: findingStatus || 'accepted',
+      summary,
+    };
+
+    console.log('[apiClient] PATCH /api/v1/reviews/' + reviewId, {
+      requestUrl: targetUrl,
+      reviewId,
+      findingId,
+      findingStatus: payload.findingStatus,
+      contentLength: content.length,
+    });
+
+    try {
+      const res = await this.fetchWithAuth(targetEndpoint, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+
+      console.log('[apiClient] PATCH response status:', res.status);
+
+      if (res.ok) {
+        const data = await res.json();
+        const score = data.overallScore ?? data.overall_score;
+        console.log('[apiClient] PATCH response body:', {
+          reviewId: data.id || data.reviewId,
+          modifiedContent: data.modifiedContent ? `${data.modifiedContent.substring(0, 60)}...` : undefined,
+          findingStatus: data.findingStatus,
+          overallScore: score,
+          status: data.status,
+        });
+
+        await supabaseDataService.updateReviewContent(reviewId, content, findingId, findingStatus, score);
+        return data;
+      }
+
+      // Backend explicitly responded with an HTTP error
+      const errData = await res.json().catch(() => ({}));
+      const errorMsg = errData.detail || `Server returned HTTP ${res.status}`;
+      console.error('[apiClient] PATCH rejected by backend:', {
+        status: res.status,
+        detail: errorMsg,
+      });
+      throw new Error(errorMsg);
+    } catch (e: any) {
+      console.warn('[apiClient] updateReviewContent notice:', e?.message || e);
+      // NEVER silently swallow explicit backend errors (401, 403, 404, 422, 500, etc.)
+      if (
+        e?.message && (
+          e.message.includes('Server returned HTTP') ||
+          e.message.includes('Not authorized') ||
+          e.message.includes('401') ||
+          e.message.includes('403') ||
+          e.message.includes('404') ||
+          e.message.includes('not found') ||
+          e.message.includes('Missing or malformed') ||
+          e.message.includes('Database update failed')
+        )
+      ) {
+        throw e;
+      }
+      // Fallback only if genuinely offline / network unreachable
+      return supabaseDataService.updateReviewContent(reviewId, content, findingId, findingStatus);
+    }
+  }
+
   async updateFinding(
     findingId: string,
     status: 'accepted' | 'rejected' | 'modified',
     suggestedFix?: string,
     userNote?: string,
     reviewId?: string
-  ): Promise<void> {
+  ): Promise<any> {
     if (reviewId) {
       try {
         const res = await this.fetchWithAuth(`/api/v1/reviews/${reviewId}/findings/${findingId}`, {
           method: 'PATCH',
           body: JSON.stringify({ status, suggestedFix, userNote }),
         });
-        if (res.ok) return;
+        if (res.ok) {
+          const data = await res.json().catch(() => null);
+          const score = data?.overallScore ?? data?.overall_score;
+          supabaseDataService.updateFindingStatus(findingId, status, suggestedFix, userNote, score);
+          return data;
+        }
       } catch (e) {
         console.warn('Backend updateFinding notice:', e);
       }

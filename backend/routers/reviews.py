@@ -45,6 +45,47 @@ class UpdateFindingRequest(BaseModel):
     suggestedFix: Optional[str] = None
     userNote: Optional[str] = None
 
+class UpdateReviewContentRequest(BaseModel):
+    content: str = Field(..., min_length=1)
+    findingId: Optional[str] = None
+    findingStatus: Optional[str] = "accepted"
+    summary: Optional[str] = None
+
+def recalculate_review_score(findings: List[Dict[str, Any]]) -> Tuple[float, Dict[str, int], str]:
+    """
+    Recalculates governance score using the established empirical penalty framework:
+      - Critical severity unresolved finding: 15 point penalty
+      - High severity unresolved finding: 8 point penalty
+      - Medium severity unresolved finding: 4 point penalty
+      - Low severity unresolved finding: 2 point penalty
+    Overall score is bounded within [50.0, 100.0].
+    Category scores restore to baseline when category findings are resolved.
+    Status transitions to 'Approved' when overall_score >= 95, else 'Changes Requested'.
+    """
+    unresolved = [f for f in findings if f.get("status") != "accepted"]
+
+    critical_count = sum(1 for f in unresolved if f.get("severity") == "Critical")
+    high_count = sum(1 for f in unresolved if f.get("severity") == "High")
+    med_count = sum(1 for f in unresolved if f.get("severity") == "Medium")
+    low_count = sum(1 for f in unresolved if f.get("severity") == "Low")
+
+    penalty = (critical_count * 15) + (high_count * 8) + (med_count * 4) + (low_count * 2)
+    overall_score = float(max(50, min(100, 100 - penalty)))
+
+    unresolved_categories = {f.get("category") for f in unresolved}
+
+    category_scores = {
+        "Tone and Voice": 75 if "Tone and Voice" in unresolved_categories else 95,
+        "Terminology": 70 if "Terminology" in unresolved_categories else 96,
+        "Facts and Claims": 65 if "Facts and Claims" in unresolved_categories else 94,
+        "Promotional Claims": 60 if "Promotional Claims" in unresolved_categories else 98,
+        "Visual Consistency": 95,
+        "Accessibility": 82 if "Accessibility" in unresolved_categories else 96,
+    }
+
+    review_status = "Approved" if overall_score >= 95 else "Changes Requested"
+    return overall_score, category_scores, review_status
+
 @router.post("/submit", status_code=status.HTTP_201_CREATED)
 async def submit_review(
     req: SubmitReviewRequest,
@@ -78,14 +119,15 @@ async def submit_review(
         cur.execute("""
             INSERT INTO reviews (
                 id, organization_id, title, content_type, original_content,
-                suggested_content, instructions, overall_score, category_scores,
+                modified_content, suggested_content, instructions, overall_score, category_scores,
                 status, author_id, file_type, file_name, page_count, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             review_id,
             org_id,
             req.title.strip(),
             req.contentType,
+            req.content,
             req.content,
             suggested_content,
             req.instructions,
@@ -209,6 +251,8 @@ async def submit_review(
         "status": review_status,
         "originalContent": req.content,
         "original_content": req.content,
+        "modifiedContent": req.content,
+        "modified_content": req.content,
         "suggestedContent": suggested_content,
         "suggested_content": suggested_content,
         "categoryScores": category_scores,
@@ -235,13 +279,22 @@ async def list_reviews(
                 ORDER BY r.created_at DESC
             """)
         else:
-            cur.execute("""
-                SELECT r.*, u.full_name as author_name, u.email as author_email, u.role as author_role, u.avatar_url as author_avatar
-                FROM reviews r
-                LEFT JOIN users u ON r.author_id = u.id
-                WHERE r.organization_id = ?
-                ORDER BY r.created_at DESC
-            """, (org_id,))
+            if org_id in ("org-demo-brandsense", "org-1"):
+                cur.execute("""
+                    SELECT r.*, u.full_name as author_name, u.email as author_email, u.role as author_role, u.avatar_url as author_avatar
+                    FROM reviews r
+                    LEFT JOIN users u ON r.author_id = u.id
+                    WHERE r.organization_id IN ('org-demo-brandsense', 'org-1')
+                    ORDER BY r.created_at DESC
+                """)
+            else:
+                cur.execute("""
+                    SELECT r.*, u.full_name as author_name, u.email as author_email, u.role as author_role, u.avatar_url as author_avatar
+                    FROM reviews r
+                    LEFT JOIN users u ON r.author_id = u.id
+                    WHERE r.organization_id = ?
+                    ORDER BY r.created_at DESC
+                """, (org_id,))
 
         rows = cur.fetchall()
         reviews_list = []
@@ -286,6 +339,8 @@ async def list_reviews(
                 for f in f_rows
             ]
 
+            mod_content = r["modified_content"] if ("modified_content" in r.keys() and r["modified_content"]) else r["original_content"]
+
             reviews_list.append({
                 "id": r["id"],
                 "review_id": r["id"],
@@ -297,6 +352,8 @@ async def list_reviews(
                 "content_type": r["content_type"],
                 "originalContent": r["original_content"],
                 "original_content": r["original_content"],
+                "modifiedContent": mod_content,
+                "modified_content": mod_content,
                 "suggestedContent": r["suggested_content"],
                 "suggested_content": r["suggested_content"],
                 "overallScore": r["overall_score"],
@@ -344,12 +401,20 @@ async def get_review(
                 WHERE r.id = ?
             """, (review_id,))
         else:
-            cur.execute("""
-                SELECT r.*, u.full_name as author_name, u.email as author_email, u.role as author_role, u.avatar_url as author_avatar
-                FROM reviews r
-                LEFT JOIN users u ON r.author_id = u.id
-                WHERE r.id = ? AND r.organization_id = ?
-            """, (review_id, org_id))
+            if org_id in ("org-demo-brandsense", "org-1"):
+                cur.execute("""
+                    SELECT r.*, u.full_name as author_name, u.email as author_email, u.role as author_role, u.avatar_url as author_avatar
+                    FROM reviews r
+                    LEFT JOIN users u ON r.author_id = u.id
+                    WHERE r.id = ? AND r.organization_id IN ('org-demo-brandsense', 'org-1')
+                """, (review_id,))
+            else:
+                cur.execute("""
+                    SELECT r.*, u.full_name as author_name, u.email as author_email, u.role as author_role, u.avatar_url as author_avatar
+                    FROM reviews r
+                    LEFT JOIN users u ON r.author_id = u.id
+                    WHERE r.id = ? AND r.organization_id = ?
+                """, (review_id, org_id))
 
         r = cur.fetchone()
         if not r:
@@ -421,6 +486,8 @@ async def get_review(
         except Exception:
             pass
 
+        mod_content = r["modified_content"] if ("modified_content" in r.keys() and r["modified_content"]) else r["original_content"]
+
         return {
             "id": r["id"],
             "review_id": r["id"],
@@ -432,6 +499,8 @@ async def get_review(
             "content_type": r["content_type"],
             "originalContent": r["original_content"],
             "original_content": r["original_content"],
+            "modifiedContent": mod_content,
+            "modified_content": mod_content,
             "suggestedContent": r["suggested_content"],
             "suggested_content": r["suggested_content"],
             "instructions": r["instructions"],
@@ -559,7 +628,7 @@ async def create_review_revision(
         # Update parent review content
         cur.execute("""
             UPDATE reviews
-            SET original_content = ?, updated_at = ?
+            SET modified_content = ?, updated_at = ?
             WHERE id = ? AND organization_id = ?
         """, (req.content, now_iso, review_id, org_id))
 
@@ -611,7 +680,36 @@ async def update_finding_status(
         
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Finding not found.")
+
+        # Recalculate score based on remaining unresolved findings
+        cur.execute("SELECT category, severity, status FROM findings WHERE review_id = ?", (review_id,))
+        f_rows = [dict(f) for f in cur.fetchall()]
+        new_score, new_cats, new_status = recalculate_review_score(f_rows)
+
+        cur.execute("""
+            UPDATE reviews
+            SET overall_score = ?, category_scores = ?, status = ?, updated_at = ?
+            WHERE id = ?
+        """, (new_score, json.dumps(new_cats), new_status, datetime.utcnow().isoformat() + "Z", review_id))
+
+        cur.execute("""
+            UPDATE approvals
+            SET compliance_score = ?,
+                urgency = ?
+            WHERE review_id = ?
+        """, (new_score, "Low" if new_score >= 90 else ("Medium" if new_score >= 75 else "High"), review_id))
+
         conn.commit()
+        return {
+            "success": True,
+            "findingId": finding_id,
+            "status": req.status,
+            "overallScore": new_score,
+            "overall_score": new_score,
+            "categoryScores": new_cats,
+            "category_scores": new_cats,
+            "reviewStatus": new_status
+        }
     except HTTPException:
         conn.rollback()
         raise
@@ -621,7 +719,148 @@ async def update_finding_status(
     finally:
         conn.close()
 
-    return {"success": True, "findingId": finding_id, "status": req.status}
+@router.patch("/{review_id}")
+@router.put("/{review_id}")
+async def update_review_content(
+    review_id: str,
+    req: UpdateReviewContentRequest,
+    current_user: AuthenticatedUser = Depends(require_role(["Admin", "Creator", "Manager", "Reviewer", "Super Admin"]))
+):
+    """
+    Updates the active modified content of a review and optionally marks a finding status.
+    Recalculates the governance score and category scores using the standard compliance algorithm,
+    persists the updated score in SQLite, records a revision snapshot, and updates approvals.
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+    now_iso = datetime.utcnow().isoformat() + "Z"
+
+    try:
+        cur.execute("SELECT id, organization_id, overall_score, original_content, modified_content FROM reviews WHERE id = ?", (review_id,))
+        rev_row = cur.fetchone()
+        if not rev_row:
+            raise HTTPException(status_code=404, detail="Review not found.")
+
+        org_id = rev_row["organization_id"]
+        user_org = current_user.organization_id or "org-demo-brandsense"
+        is_demo_pair = (not org_id or org_id in ("org-demo-brandsense", "org-1")) and (not user_org or user_org in ("org-demo-brandsense", "org-1"))
+        if current_user.role != "Super Admin" and org_id != user_org and not is_demo_pair:
+            raise HTTPException(status_code=403, detail="Not authorized to edit this review.")
+
+        # 1. Update review modified_content and updated_at
+        cur.execute("""
+            UPDATE reviews
+            SET modified_content = ?, updated_at = ?
+            WHERE id = ?
+        """, (req.content, now_iso, review_id))
+
+        # 2. If findingId provided, update finding status to 'accepted' (or specified status)
+        if req.findingId:
+            cur.execute("""
+                UPDATE findings
+                SET status = ?
+                WHERE id = ? AND review_id = ?
+            """, (req.findingStatus or "accepted", req.findingId, review_id))
+            if cur.rowcount == 0:
+                cur.execute("""
+                    UPDATE findings
+                    SET status = ?
+                    WHERE id = ?
+                """, (req.findingStatus or "accepted", req.findingId))
+
+        # 3. Recalculate governance score and category scores with updated findings
+        cur.execute("SELECT category, severity, status FROM findings WHERE review_id = ?", (review_id,))
+        f_rows = [dict(f) for f in cur.fetchall()]
+        new_overall_score, new_cat_scores, new_status = recalculate_review_score(f_rows)
+
+        # 4. Persist recalculated score and category scores in reviews table
+        cur.execute("""
+            UPDATE reviews
+            SET overall_score = ?, category_scores = ?, status = ?
+            WHERE id = ?
+        """, (new_overall_score, json.dumps(new_cat_scores), new_status, review_id))
+
+        # 5. Insert revision history snapshot with recalculated score
+        cur.execute("SELECT MAX(version_number) FROM review_revisions WHERE review_id = ?", (review_id,))
+        max_ver = cur.fetchone()[0] or 1
+        next_ver = max_ver + 1
+        revision_id = f"rev-snap-{uuid.uuid4().hex[:8]}"
+
+        summary_text = req.summary or (f"Applied AI Fix for finding {req.findingId}" if req.findingId else f"Revision v{next_ver}")
+
+        cur.execute("""
+            INSERT INTO review_revisions (
+                id, organization_id, review_id, version_number, author_id,
+                compliance_score, status, summary, content, accepted_count,
+                rejected_count, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, 'Draft Revision', ?, ?, 1, 0, ?)
+        """, (
+            revision_id,
+            org_id,
+            review_id,
+            next_ver,
+            current_user.id,
+            new_overall_score,
+            summary_text,
+            req.content,
+            now_iso
+        ))
+
+        # 6. Synchronize approvals table compliance score & urgency
+        cur.execute("""
+            UPDATE approvals
+            SET compliance_score = ?,
+                urgency = ?
+            WHERE review_id = ?
+        """, (new_overall_score, "Low" if new_overall_score >= 90 else ("Medium" if new_overall_score >= 75 else "High"), review_id))
+
+        conn.commit()
+
+        # Query back the verified persisted record directly from SQLite
+        cur.execute("SELECT * FROM reviews WHERE id = ?", (review_id,))
+        saved_rev = cur.fetchone()
+
+        saved_finding_status = req.findingStatus or "accepted"
+        if req.findingId:
+            cur.execute("SELECT status FROM findings WHERE id = ?", (req.findingId,))
+            f_saved = cur.fetchone()
+            if f_saved:
+                saved_finding_status = f_saved["status"]
+
+        cat_scores_saved = {}
+        try:
+            cat_scores_saved = json.loads(saved_rev["category_scores"]) if saved_rev["category_scores"] else {}
+        except Exception:
+            pass
+
+        logger.info(f"[Reviews] PATCH /{review_id} persisted - score={saved_rev['overall_score']}, modified_len={len(saved_rev['modified_content']) if saved_rev['modified_content'] else 0}")
+
+        return {
+            "success": True,
+            "id": saved_rev["id"],
+            "reviewId": saved_rev["id"],
+            "overallScore": saved_rev["overall_score"],
+            "overall_score": saved_rev["overall_score"],
+            "categoryScores": cat_scores_saved,
+            "category_scores": cat_scores_saved,
+            "status": saved_rev["status"],
+            "modifiedContent": saved_rev["modified_content"],
+            "modified_content": saved_rev["modified_content"],
+            "findingId": req.findingId,
+            "findingStatus": saved_finding_status,
+            "versionNumber": next_ver,
+            "updatedAt": saved_rev["updated_at"]
+        }
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Failed to update review content: {e}")
+        raise HTTPException(status_code=500, detail=f"Database update failed: {str(e)}")
+    finally:
+        conn.close()
+
 
 @router.delete("/{review_id}")
 async def delete_review(

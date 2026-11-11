@@ -365,7 +365,8 @@ class SupabaseDataService {
     findingId: string, 
     status: 'accepted' | 'rejected' | 'modified', 
     suggestedFix?: string, 
-    userNote?: string
+    userNote?: string,
+    explicitScore?: number
   ): Promise<void> {
     if (this.isConnected()) {
       try {
@@ -391,13 +392,139 @@ class SupabaseDataService {
         rev.findings[idx].status = status;
         if (suggestedFix) rev.findings[idx].suggestedFix = suggestedFix;
         if (userNote) rev.findings[idx].userNote = userNote;
+
+        const unresolved = rev.findings.filter((f) => f.status !== 'accepted');
+        const critPenalty = unresolved.filter((f) => f.severity === 'Critical').length * 15;
+        const highPenalty = unresolved.filter((f) => f.severity === 'High').length * 8;
+        const medPenalty = unresolved.filter((f) => f.severity === 'Medium').length * 4;
+        const lowPenalty = unresolved.filter((f) => f.severity === 'Low').length * 2;
+        const recalculated = Math.max(50, Math.min(100, 100 - (critPenalty + highPenalty + medPenalty + lowPenalty)));
+        rev.overallScore = explicitScore !== undefined ? explicitScore : recalculated;
+        rev.status = rev.overallScore >= 95 ? 'Approved' : 'Changes Requested';
+
         updated = true;
         break;
       }
     }
     if (updated) {
       this.writeLocalReviews(reviews);
+      try {
+        const approvals = this.getLocalApprovals();
+        let apprsUpdated = false;
+        const matchingRev = reviews.find((r) => r.findings?.some((f) => f.id === findingId));
+        if (matchingRev) {
+          for (const appr of approvals) {
+            if (appr.reviewId === matchingRev.id) {
+              appr.complianceScore = matchingRev.overallScore;
+              apprsUpdated = true;
+            }
+          }
+          if (apprsUpdated) this.writeLocalApprovals(approvals);
+        }
+      } catch {}
     }
+  }
+
+  async updateReviewContent(
+    reviewId: string,
+    content: string,
+    findingId?: string,
+    findingStatus?: string,
+    explicitScore?: number
+  ): Promise<any> {
+    const status = (findingStatus as any) || 'accepted';
+
+    // 1. If Supabase is connected, update DB
+    if (this.isConnected()) {
+      try {
+        await this.client
+          .from('reviews')
+          .update({
+            original_content: content,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', reviewId);
+
+        if (findingId) {
+          await this.client
+            .from('findings')
+            .update({ status })
+            .eq('id', findingId);
+        }
+      } catch (err) {
+        console.warn('Failed to update review content in Supabase:', err);
+      }
+    }
+
+    // 2. Update local reviews cache
+    const reviews = this.getLocalReviews();
+    let updated = false;
+    let computedScore = explicitScore;
+    for (const rev of reviews) {
+      if (rev.id === reviewId) {
+        rev.modifiedContent = content;
+        rev.updatedAt = new Date().toISOString();
+        if (findingId && rev.findings) {
+          const f = rev.findings.find((item) => item.id === findingId);
+          if (f) {
+            f.status = status;
+          }
+        }
+
+        const unresolved = rev.findings ? rev.findings.filter((f) => f.status !== 'accepted') : [];
+        const critPenalty = unresolved.filter((f) => f.severity === 'Critical').length * 15;
+        const highPenalty = unresolved.filter((f) => f.severity === 'High').length * 8;
+        const medPenalty = unresolved.filter((f) => f.severity === 'Medium').length * 4;
+        const lowPenalty = unresolved.filter((f) => f.severity === 'Low').length * 2;
+        const recalculated = Math.max(50, Math.min(100, 100 - (critPenalty + highPenalty + medPenalty + lowPenalty)));
+        computedScore = explicitScore !== undefined ? explicitScore : recalculated;
+        rev.overallScore = computedScore;
+        rev.status = rev.overallScore >= 95 ? 'Approved' : 'Changes Requested';
+
+        updated = true;
+        break;
+      }
+    }
+    if (updated) {
+      this.writeLocalReviews(reviews);
+      try {
+        const approvals = this.getLocalApprovals();
+        let apprsUpdated = false;
+        for (const appr of approvals) {
+          if (appr.reviewId === reviewId && computedScore !== undefined) {
+            appr.complianceScore = computedScore;
+            apprsUpdated = true;
+          }
+        }
+        if (apprsUpdated) this.writeLocalApprovals(approvals);
+      } catch {}
+    }
+
+    // 3. Update localStorage current review if matching
+    if (typeof window !== 'undefined') {
+      try {
+        const cur = localStorage.getItem('brandsense_current_review');
+        if (cur) {
+          const parsed = JSON.parse(cur);
+          if (parsed.id === reviewId) {
+            parsed.modifiedContent = content;
+            if (computedScore !== undefined) parsed.overallScore = computedScore;
+            if (findingId && parsed.findings) {
+              const f = parsed.findings.find((item: any) => item.id === findingId);
+              if (f) f.status = status;
+            }
+            localStorage.setItem('brandsense_current_review', JSON.stringify(parsed));
+          }
+        }
+      } catch {}
+    }
+
+    return {
+      success: true,
+      reviewId,
+      overallScore: computedScore,
+      modifiedContent: content,
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -1136,6 +1263,7 @@ class SupabaseDataService {
       overallScore: r.overall_score || 80,
       status: r.status,
       originalContent: r.original_content,
+      modifiedContent: r.modified_content || r.modifiedContent || undefined,
       suggestedContent: r.suggested_content || r.original_content,
       categoryScores: r.category_scores || {
         'Tone and Voice': 80,
