@@ -19,6 +19,39 @@ import { authClient, DEMO_ORG_ID } from './auth-client';
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? '/api/v1' : 'http://127.0.0.1:8000/api/v1');
 
 /**
+ * Resolves the full URL for an API endpoint without duplicate `/api/v1` prefixes.
+ * Handles cases where:
+ * - endpoint is an absolute URL (starts with http:// or https://)
+ * - baseUrl already contains `/api/v1` and endpoint starts with `/api/v1`
+ * - baseUrl does not contain `/api/v1` and endpoint starts with `/api/v1`
+ * - baseUrl has trailing slashes
+ * - endpoint does not have `/api/v1` prefix but backend route requires it
+ */
+export function resolveApiUrl(endpoint: string, baseUrl: string = API_BASE_URL): string {
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+    return endpoint;
+  }
+
+  const cleanBase = (baseUrl || '').trim().replace(/\/+$/, '');
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+
+  // If base URL already ends with /api/v1 and endpoint starts with /api/v1,
+  // strip /api/v1 from endpoint to avoid duplicate /api/v1/api/v1
+  if (cleanBase.endsWith('/api/v1') && cleanEndpoint.startsWith('/api/v1')) {
+    const subPath = cleanEndpoint.slice('/api/v1'.length);
+    return subPath ? `${cleanBase}${subPath.startsWith('/') ? subPath : `/${subPath}`}` : cleanBase;
+  }
+
+  // If base URL does not end with /api/v1 and endpoint does not start with /api/v1,
+  // ensure /api/v1 is included since FastAPI routes are mounted at /api/v1
+  if (!cleanBase.endsWith('/api/v1') && !cleanEndpoint.startsWith('/api/v1')) {
+    return `${cleanBase}/api/v1${cleanEndpoint}`;
+  }
+
+  return `${cleanBase}${cleanEndpoint}`;
+}
+
+/**
  * Normalizes backend snake_case response fields to frontend camelCase standards.
  */
 function normalizeReview(r: any): ReviewItem {
@@ -211,7 +244,7 @@ class BrandSenseApiClient {
     }
 
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(options.headers as Record<string, string> || {}),
     };
 
@@ -220,7 +253,7 @@ class BrandSenseApiClient {
     }
 
     try {
-      const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+      const url = resolveApiUrl(endpoint, API_BASE_URL);
       const res = await fetch(url, {
         ...options,
         headers,
@@ -247,7 +280,7 @@ class BrandSenseApiClient {
   // ---------------------------------------------------------------------------
   async getUsers(): Promise<OrganizationUser[]> {
     try {
-      const res = await this.fetchWithAuth('/auth/users');
+      const res = await this.fetchWithAuth('/api/v1/auth/users');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -255,14 +288,14 @@ class BrandSenseApiClient {
         }
       }
     } catch (err) {
-      console.warn('Backend /auth/users unreachable:', err);
+      console.warn('Backend /api/v1/auth/users unreachable:', err);
     }
     return [];
   }
 
   async inviteUser(email: string, role: string): Promise<{ success: boolean; inviteLink?: string; error?: string }> {
     try {
-      const res = await this.fetchWithAuth('/onboarding/invite', {
+      const res = await this.fetchWithAuth('/api/v1/onboarding/invite', {
         method: 'POST',
         body: JSON.stringify({ email, role }),
       });
@@ -287,7 +320,8 @@ class BrandSenseApiClient {
 
     const fetchPromise = (async () => {
       try {
-        const res = await this.fetchWithAuth('/reviews');
+        const query = orgId ? `?organization_id=${encodeURIComponent(orgId)}` : '';
+        const res = await this.fetchWithAuth(`/api/v1/reviews${query}`);
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
@@ -295,7 +329,7 @@ class BrandSenseApiClient {
           }
         }
       } catch (err) {
-        console.warn('Backend /reviews unreachable, attempting local/fallback:', err);
+        console.warn('Backend /api/v1/reviews unreachable, attempting local/fallback:', err);
       } finally {
         this.inFlightGetRequests.delete(cacheKey);
       }
@@ -310,7 +344,7 @@ class BrandSenseApiClient {
 
   async getReviewById(id: string, orgId?: string): Promise<ReviewItem | undefined> {
     try {
-      const res = await this.fetchWithAuth(`/reviews/${id}`);
+      const res = await this.fetchWithAuth(`/api/v1/reviews/${id}`);
       if (res.ok) {
         const data = await res.json();
         if (data && data.id) {
@@ -318,7 +352,7 @@ class BrandSenseApiClient {
         }
       }
     } catch (err) {
-      console.warn(`Backend /reviews/${id} unreachable, checking fallback:`, err);
+      console.warn(`Backend /api/v1/reviews/${id} unreachable, checking fallback:`, err);
     }
     return supabaseDataService.getReviewById(id, orgId);
   }
@@ -349,7 +383,7 @@ class BrandSenseApiClient {
 
     // 1. Primary: Persistent Backend Relational Database Execution
     try {
-      const res = await this.fetchWithAuth('/reviews/submit', {
+      const res = await this.fetchWithAuth('/api/v1/reviews/submit', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -398,7 +432,7 @@ class BrandSenseApiClient {
   ): Promise<void> {
     if (reviewId) {
       try {
-        const res = await this.fetchWithAuth(`/reviews/${reviewId}/findings/${findingId}`, {
+        const res = await this.fetchWithAuth(`/api/v1/reviews/${reviewId}/findings/${findingId}`, {
           method: 'PATCH',
           body: JSON.stringify({ status, suggestedFix, userNote }),
         });
@@ -412,7 +446,7 @@ class BrandSenseApiClient {
 
   async deleteReview(id: string, orgId?: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const res = await this.fetchWithAuth(`/reviews/${id}`, {
+      const res = await this.fetchWithAuth(`/api/v1/reviews/${id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -432,7 +466,7 @@ class BrandSenseApiClient {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await this.fetchWithAuth('/reviews/extract-document', {
+      const res = await this.fetchWithAuth('/api/v1/reviews/extract-document', {
         method: 'POST',
         body: formData,
       });
@@ -467,7 +501,7 @@ class BrandSenseApiClient {
     instructions?: string
   ): Promise<RewriteResponse> {
     try {
-      const res = await this.fetchWithAuth(`/reviews/${reviewId}/rewrite`, {
+      const res = await this.fetchWithAuth(`/api/v1/reviews/${reviewId}/rewrite`, {
         method: 'POST',
         body: JSON.stringify({
           originalText,
@@ -499,7 +533,7 @@ class BrandSenseApiClient {
 
   async getGovernanceInsights(orgId?: string): Promise<GovernanceInsights> {
     try {
-      const res = await this.fetchWithAuth('/insights/governance');
+      const res = await this.fetchWithAuth('/api/v1/insights/governance');
       if (res.ok) {
         return await res.json();
       }
@@ -612,7 +646,7 @@ class BrandSenseApiClient {
 
     const fetchPromise = (async () => {
       try {
-        const res = await this.fetchWithAuth('/knowledge-base');
+        const res = await this.fetchWithAuth('/api/v1/knowledge-base');
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
@@ -620,7 +654,7 @@ class BrandSenseApiClient {
           }
         }
       } catch (err) {
-        console.warn('Backend /knowledge-base unreachable, using fallback:', err);
+        console.warn('Backend /api/v1/knowledge-base unreachable, using fallback:', err);
       } finally {
         this.inFlightGetRequests.delete(cacheKey);
       }
@@ -638,7 +672,7 @@ class BrandSenseApiClient {
     userId?: string
   ): Promise<KnowledgeItem> {
     try {
-      const res = await this.fetchWithAuth('/knowledge-base', {
+      const res = await this.fetchWithAuth('/api/v1/knowledge-base', {
         method: 'POST',
         body: JSON.stringify(item),
       });
@@ -665,7 +699,7 @@ class BrandSenseApiClient {
 
   async deleteKnowledgeItem(id: string, orgId?: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const res = await this.fetchWithAuth(`/knowledge-base/${id}`, {
+      const res = await this.fetchWithAuth(`/api/v1/knowledge-base/${id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -691,7 +725,7 @@ class BrandSenseApiClient {
 
     const fetchPromise = (async () => {
       try {
-        const res = await this.fetchWithAuth('/approvals');
+        const res = await this.fetchWithAuth('/api/v1/approvals');
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
@@ -699,7 +733,7 @@ class BrandSenseApiClient {
           }
         }
       } catch (err) {
-        console.warn('Backend /approvals unreachable, using fallback:', err);
+        console.warn('Backend /api/v1/approvals unreachable, using fallback:', err);
       } finally {
         this.inFlightGetRequests.delete(cacheKey);
       }
@@ -718,7 +752,7 @@ class BrandSenseApiClient {
     note?: string
   ): Promise<void> {
     try {
-      const res = await this.fetchWithAuth(`/approvals/${id}/decision`, {
+      const res = await this.fetchWithAuth(`/api/v1/approvals/${id}/decision`, {
         method: 'POST',
         body: JSON.stringify({ status, reviewId, note }),
       });
@@ -734,7 +768,7 @@ class BrandSenseApiClient {
 
   async getApprovalComments(approvalId: string): Promise<ApprovalComment[]> {
     try {
-      const res = await this.fetchWithAuth(`/approvals/${approvalId}/comments`);
+      const res = await this.fetchWithAuth(`/api/v1/approvals/${approvalId}/comments`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -759,7 +793,7 @@ class BrandSenseApiClient {
     orgId?: string
   ): Promise<void> {
     try {
-      const res = await this.fetchWithAuth(`/approvals/${approvalId}/comments`, {
+      const res = await this.fetchWithAuth(`/api/v1/approvals/${approvalId}/comments`, {
         method: 'POST',
         body: JSON.stringify({ text }),
       });
@@ -778,7 +812,7 @@ class BrandSenseApiClient {
   // ---------------------------------------------------------------------------
   async getRevisions(reviewId: string) {
     try {
-      const res = await this.fetchWithAuth(`/reviews/${reviewId}/revisions`);
+      const res = await this.fetchWithAuth(`/api/v1/reviews/${reviewId}/revisions`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -805,7 +839,7 @@ class BrandSenseApiClient {
     rejectedCount: number;
   }) {
     try {
-      const res = await this.fetchWithAuth(`/reviews/${data.reviewId}/revisions`, {
+      const res = await this.fetchWithAuth(`/api/v1/reviews/${data.reviewId}/revisions`, {
         method: 'POST',
         body: JSON.stringify({
           content: data.content,
@@ -863,7 +897,7 @@ class BrandSenseApiClient {
   ): Promise<SensaMessage> {
     // 1. Primary: Authenticated backend SENSA endpoint with org knowledge + history
     try {
-      const res = await this.fetchWithAuth('/sensa/chat', {
+      const res = await this.fetchWithAuth('/api/v1/sensa/chat', {
         method: 'POST',
         body: JSON.stringify({ prompt, history, context }),
       });
@@ -875,7 +909,7 @@ class BrandSenseApiClient {
         }
       }
     } catch (err) {
-      console.warn('Backend SENSA endpoint unreachable, trying server route:', err);
+      console.warn('Backend /api/v1/sensa/chat unreachable, trying server route:', err);
     }
 
     // 2. Secondary: Server-side Next.js route with multi-turn history
