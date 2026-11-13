@@ -5,7 +5,7 @@
 ### Autonomous Enterprise Brand Governance, Dual-Pass AI Verification & Real-Time Content Compliance Platform
 
 <p>
-  <a href="https://brandsense-web.onrender.com"><img src="https://img.shields.io/badge/Live_Production-brandsense--web-46E3B7?style=for-the-badge&logo=render&logoColor=black" alt="Live Production Demo" /></a>
+  <a href="https://brandsense-web-gj3s.onrender.com/"><img src="https://img.shields.io/badge/Live_Production-brandsense--web-46E3B7?style=for-the-badge&logo=render&logoColor=black" alt="Live Production Demo" /></a>
   <a href="https://github.com/anshpatel2212/codenexus-india/actions"><img src="https://img.shields.io/badge/Test_Suite-100%25_Passing-brightgreen?style=for-the-badge&logo=githubactions&logoColor=white" alt="Test Suite" /></a>
   <a href="https://github.com/anshpatel2212/codenexus-india/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License" /></a>
 </p>
