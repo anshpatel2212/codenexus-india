@@ -25,11 +25,13 @@
 <p>
   <a href="#-overview">Overview</a> •
   <a href="#-round-3-major-innovations">Round 3 Innovations</a> •
-  <a href="#-core-platform-features">Core Features</a> •
+  <a href="#-tech-stack">Tech Stack</a> •
   <a href="#-architecture">Architecture</a> •
+  <a href="#-project-structure">Project Structure</a> •
   <a href="#-role-based-access-control-rbac">RBAC & Workflows</a> •
-  <a href="#-api-endpoints">API Reference</a> •
+  <a href="#-api-reference">API Reference</a> •
   <a href="#-getting-started">Getting Started</a> •
+  <a href="#-automated-test-suite">Test Suite</a> •
   <a href="#-environment-variables">Environment Variables</a> •
   <a href="#-authors">Authors</a>
 </p>
@@ -131,6 +133,100 @@ Powered by a hybrid architecture—**Next.js 16 (App Router)** frontend, an asyn
                                   │  • Supabase (Postgres, RLS) │
                                   │  • Private Storage Buckets  │
                                   └─────────────────────────────┘
+```
+
+---
+
+## 📁 Project Structure
+
+```text
+codenexus-india/
+├── backend/                             # Asynchronous FastAPI Neural Backend
+│   ├── auth/                            # Authentication & Token Verification
+│   │   └── jwt_guard.py                 # Supabase JWT guard & RBAC dependency
+│   ├── data/                            # Persistent data storage (SQLite WAL)
+│   ├── routers/                         # API route endpoints
+│   │   ├── approvals.py                 # Reviewer approvals & decision workflows
+│   │   ├── auth.py                      # User authentication & role synchronization
+│   │   ├── insights.py                  # Governance metrics & friction index aggregations
+│   │   ├── knowledge.py                 # Brand guidelines & approved facts endpoints
+│   │   ├── onboarding.py                # Organization onboarding & provisioning
+│   │   ├── reviews.py                   # Review submission, document extraction & revisions
+│   │   ├── sensa.py                     # Conversational SENSA AI assistant endpoints
+│   │   └── super_admin.py               # Tenant provisioning & system health management
+│   ├── services/                        # Core backend business logic & AI orchestration
+│   │   ├── ai_review_engine.py          # Dual-pass verification, scoring & document parser
+│   │   ├── db.py                        # SQLite WAL manager & self-healing migrations
+│   │   ├── gemini_interactions.py       # Gemini API client & structured generation
+│   │   ├── sensa_rag.py                 # RAG retrieval & active guideline context builder
+│   │   └── supabase_admin.py            # Supabase service-role client
+│   ├── config.py                        # Pydantic environment configuration
+│   ├── Dockerfile                       # Production container specification
+│   ├── main.py                          # Application entry point, CORS & middleware
+│   ├── requirements.txt                 # Backend Python dependencies
+│   └── test_*.py                        # Backend pytest verification suite
+│
+├── src/                                 # Next.js 16 (App Router) Frontend
+│   ├── app/                             # Role-based pages & routing
+│   │   ├── admin/                       # Brand Admin portal (guidelines, terms, team)
+│   │   ├── api/sensa/chat/              # SENSA conversational API route handler
+│   │   ├── approvals/                   # Reviewer approval workbench
+│   │   ├── assistant/                   # Dedicated SENSA AI copilot chat interface
+│   │   ├── creator/                     # Content Creator portal (submissions, drafts)
+│   │   ├── dashboard/                   # Unified dashboard routing
+│   │   ├── history/                     # Comprehensive review audit logs
+│   │   ├── insights/                    # Real-time governance analytics & friction index
+│   │   ├── knowledge/                   # Guidelines & approved corporate facts
+│   │   ├── login/, signup/, register/   # Multi-role authentication & onboarding
+│   │   ├── review/                      # Multi-step review workflow (new, results, rewrite)
+│   │   ├── reviewer/                    # Brand Reviewer portal (assigned queues)
+│   │   ├── super-admin/                 # Platform administration & organization directory
+│   │   ├── globals.css                  # Global styles & design system variables
+│   │   ├── layout.tsx                   # Root HTML structure & theme wrappers
+│   │   └── page.tsx                     # Public showcase landing page
+│   ├── components/                      # Modular UI component library
+│   │   ├── assistant/                   # SENSA chat drawer, bubbles & rich text renderers
+│   │   ├── auth/                        # AuthProvider, role guards & login/demo shells
+│   │   ├── layout/                      # AppLayout & responsive role navigational shells
+│   │   └── ui/                          # Design system primitives (Badge, ScoreMeter, etc.)
+│   ├── data/                            # Mock datasets & initial seed state
+│   ├── lib/                             # Utility libraries & client configurations
+│   │   ├── env.ts                       # Typed client environment variables
+│   │   └── supabase/                    # Supabase browser & server SSR clients
+│   ├── services/                        # Frontend API & Supabase interaction services
+│   │   ├── api-client.ts                # Typed client for FastAPI neural backend
+│   │   ├── auth-client.ts               # Client-side session & role management
+│   │   └── supabase-service.ts          # Supabase client data access methods
+│   └── types/                           # TypeScript interfaces & domain types
+│       └── index.ts                     # Review findings, RBAC & system data definitions
+│
+├── supabase/                            # Supabase Architecture & Migrations
+│   ├── migrations/                      # PostgreSQL DDL, functions & RLS policies
+│   │   ├── 01_schema_and_extensions.sql # Database schema & required extensions
+│   │   ├── 02_security_functions.sql    # Role verification functions & triggers
+│   │   ├── 03_rls_policies.sql          # Multi-tenant Row-Level Security policies
+│   │   ├── 04_storage_and_indexes.sql   # Storage bucket policies & query optimization
+│   │   └── 05_onboarding_trigger.sql    # Automatic user onboarding trigger hooks
+│   └── seed.sql                         # Initial database seeding script
+│
+├── tests/                               # Comprehensive Automated Test Suite
+│   ├── auth-isolation.test.mjs          # Multi-tenant data isolation & JWT tests
+│   ├── content-submission.test.mjs      # Review submission lifecycle verification
+│   ├── e2e_verification.mjs             # End-to-end full-stack integration test
+│   ├── responsive-auth.test.mjs         # Mobile/desktop authentication UI tests
+│   ├── review-api-endpoints.test.mjs    # Backend API contract tests
+│   ├── storage-security.test.mjs        # Supabase storage permission boundary tests
+│   ├── test_round3_features.py          # Pytest suite for Round 3 verification & rewrites
+│   └── test_sensa_intelligence.py       # Conversational SENSA AI verification tests
+│
+├── .env.example                         # Example environment variables template
+├── AGENTS.md                            # Coding conventions & AI pairing instructions
+├── firebase.json                        # Firebase Hosting deployment configuration
+├── next.config.mjs                      # Next.js compiler & security header settings
+├── package.json                         # Node.js project manifest & dependencies
+├── render.yaml                          # Infrastructure as Code blueprint for Render
+├── tailwind.config.ts                   # Tailwind CSS theme & token definitions
+└── tsconfig.json                        # TypeScript configuration
 ```
 
 ---
